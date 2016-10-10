@@ -17,4 +17,5 @@ for f in BROTLI/dec/*.c BROTLI/enc/*.cc; do
 done
 wait
 
+set -x
 clang++ *.o libFuzzer.a $SCRIPT_DIR/target.cc -I SRC/src $FUZZ_CXXFLAGS -o $EXECUTABLE_NAME_BASE
