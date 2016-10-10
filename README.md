@@ -18,6 +18,7 @@ and potentially other fuzzers.
 * [openssl-1.0.2d](openssl-1.0.2d)
 * [re2-2014-12-09](re2-2014-12-09)
 * [woff2-2016-05-06](woff2-2016-05-06)
+* [harfbuzz-1.3.2](harfbuzz-1.3.2)
 
 # See also
 
