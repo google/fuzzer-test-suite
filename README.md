@@ -2,7 +2,7 @@
 
 This is a set of tests (benchmarks) for fuzzing engines (fuzzers).
 
-The goal of this project is to have a set of fuzzing benchmakrs derived from real-life
+The goal of this project is to have a set of fuzzing benchmarks derived from real-life
 libraries that have interesting bugs, hard-to-find code paths, or other
 challenges for bug finding tools.
 
