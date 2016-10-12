@@ -202,7 +202,7 @@ mkdir MY_CORPUS
 ./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/
 ```
 
-When a libFuzzer-based fuzzer is executed with one more more directory as arguments,
+When a libFuzzer-based fuzzer is executed with one more directory as arguments,
 it will first read files from every directory recursively and execute the target function on all of them.
 Then, any input that triggers interesting code path(s) will be written back into the first
 corpus directory (in this case, `MY_CORPUS`).
