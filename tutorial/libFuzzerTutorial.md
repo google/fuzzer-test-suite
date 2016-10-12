@@ -181,7 +181,7 @@ Most likely you will see that the fuzzer is stuck --
 it is running millions of inputs but can not find many new code paths. 
 ```
 #1      INITED cov: 18 ft: 15 corp: 1/1b exec/s: 0 rss: 27Mb
-#15     NEW    cov: 23 ft: 16 corp: 2/5b exec/s: 0 rss: 27Mb L: 4 MS: 4 InsertByte-CopyPart-ChangeByte-InsertByte-
+#15     NEW    cov: 23 ft: 16 corp: 2/5b exec/s: 0 rss: 27Mb L: 4 MS: 4 InsertByte-...
 #262144 pulse  cov: 23 ft: 16 corp: 2/5b exec/s: 131072 rss: 45Mb
 #524288 pulse  cov: 23 ft: 16 corp: 2/5b exec/s: 131072 rss: 62Mb
 #1048576        pulse  cov: 23 ft: 16 corp: 2/5b exec/s: 116508 rss: 97Mb
@@ -216,11 +216,11 @@ Loading corpus dir: SEED_CORPUS/
 INFO: -max_len is not provided, using 168276
 #0      READ units: 62
 #62     INITED cov: 595 ft: 766 corp: 13/766Kb exec/s: 0 rss: 57Mb
-#64     NEW    cov: 601 ft: 781 corp: 14/826Kb exec/s: 0 rss: 59Mb L: 61644 MS: 2 ChangeASCIIInt-ShuffleBytes-
+#64     NEW    cov: 601 ft: 781 corp: 14/826Kb exec/s: 0 rss: 59Mb L: 61644 MS: 2 ...
 ...
-#199    NEW    cov: 636 ft: 953 corp: 22/1319Kb exec/s: 0 rss: 85Mb L: 63320 MS: 2 ShuffleBytes-ChangeBinInt-
+#199    NEW    cov: 636 ft: 953 corp: 22/1319Kb exec/s: 0 rss: 85Mb L: 63320 MS: 2 ...
 ...
-#346693 NEW    cov: 805 ft: 2325 corp: 378/23Mb exec/s: 1212 rss: 551Mb L: 67104 MS: 1 ChangeBit-
+#346693 NEW    cov: 805 ft: 2325 corp: 378/23Mb exec/s: 1212 rss: 551Mb L: 67104 ...
 ```
 
 As you can see, the initial coverage is much greater than before (`INITED cov: 595`) and it keeps growing.
