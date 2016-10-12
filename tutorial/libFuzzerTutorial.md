@@ -269,7 +269,12 @@ If you keep running this target for some time (at the time of writing: 20-60 min
 you will be
 rewarded by a [nice security bug](https://bugs.chromium.org/p/chromium/issues/detail?id=609042).  
 
-If you are impatient, TODO
+If you are both impatient and curious you may feed a provided crash reproducer to see the bug:
+```
+./woff2-2016-05-06 ../FTS/woff2-2016-05-06/crash-696cb49b6d7f63e153a6605f00aceb0d7738971a
+```
+Do you see the same stack trace as in the
+[original bug report](https://bugs.chromium.org/p/chromium/issues/detail?id=609042)?
 
 See also [Distributed Fuzzing](#distributed-fuzzing)
 
