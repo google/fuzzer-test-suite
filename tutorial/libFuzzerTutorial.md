@@ -120,6 +120,54 @@ To reproduce the crash again w/o fuzzing run
 ./a.out crash-0eb8e4ed029b774d80f2b66408203801cb982a60
 ```
 
+## Heartbleed
+Let us run something real. 
+[Heartbleed](https://en.wikipedia.org/wiki/Heartbleed) (aka CVE-2014-0160)
+was a critical security bug in the [OpenSSL cryptography library](http://www.openssl.org).
+I was been discovered in 2014, probably by code inspection. 
+It was later [demonstrated](https://blog.hboeck.de/archives/868-How-Heartbleed-couldve-been-found.html)
+that this bug can be easily found by fuzzing. 
+
+[This repository](https://github.com/google/fuzzer-test-suite)
+contains read-to-use scripts to build fuzzers for various targets, including openssl-1.0.1f where 
+the 'heartbleed' bug is present. 
+
+To build the fuzzer for openssl-1.0.1f execute the following:
+```
+mkdir -p tmp; rm -rf tmp/*; cd tmp
+~/FTS/openssl-1.0.1f/build.sh
+```
+
+This command will download the openssl sources at the affected revision 
+and build the fuzzer for one specific API that has the bug: [../openssl-1.0.1f/target.cc].
+
+Try running the fuzzer:
+```
+./openssl-1.0.1f
+```
+You whould see something like this in a few seconds:
+```
+==5781==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x629000009748 at pc 0x0000004a9817...
+READ of size 19715 at 0x629000009748 thread T0
+    #0 0x4a9816 in __asan_memcpy (tmp/openssl-1.0.1f+0x4a9816)
+    #1 0x4fd54a in tls1_process_heartbeat tmp/BUILD/ssl/t1_lib.c:2586:3
+    #2 0x58027d in ssl3_read_bytes tmp/BUILD/ssl/s3_pkt.c:1092:4
+    #3 0x585357 in ssl3_get_message tmp/BUILD/ssl/s3_both.c:457:7
+    #4 0x54781a in ssl3_get_client_hello tmp/BUILD/ssl/s3_srvr.c:941:4
+    #5 0x543764 in ssl3_accept tmp/BUILD/ssl/s3_srvr.c:357:9
+    #6 0x4eed3a in LLVMFuzzerTestOneInput FTS/openssl-1.0.1f/target.cc:38:3
+```
+
+Exersice: run the [../c-ares-CVE-2016-5180] fuzzer.
+
+
 ## Seed corpus
 TODO: 
 On importance of a seed corpus... 
+
+## Parallel runs
+## Dictionaries
+## Minimizing a corpus
+## Minimizing a reproducer
+## AFL
+## Continuous fuzzing
