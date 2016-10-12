@@ -1,4 +1,6 @@
-Finds a multi-byte-write-heap-buffer-overflow in [Woff2](https://github.com/google/woff2)
+Finds a multi-byte-write-heap-buffer-overflow
+[bug](https://bugs.chromium.org/p/chromium/issues/detail?id=609042)
+in [Woff2](https://github.com/google/woff2)
 
 Time to find: < 20 minutes.
 
