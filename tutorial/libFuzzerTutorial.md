@@ -139,7 +139,8 @@ mkdir -p tmp; rm -rf tmp/*; cd tmp
 ```
 
 This command will download the openssl sources at the affected revision 
-and build the fuzzer for one specific API that has the bug: [../openssl-1.0.1f/target.cc].
+and build the fuzzer for one specific API that has the bug,
+see  [openssl-1.0.1f/target.cc](../openssl-1.0.1f/target.cc).
 
 Try running the fuzzer:
 ```
@@ -158,8 +159,9 @@ READ of size 19715 at 0x629000009748 thread T0
     #6 0x4eed3a in LLVMFuzzerTestOneInput FTS/openssl-1.0.1f/target.cc:38:3
 ```
 
-Exersice: run the [../c-ares-CVE-2016-5180] fuzzer.
-
+**Exersice**:
+run the [fuzzer that finds CVE-2016-5180](../c-ares-CVE-2016-5180).
+The experience should be very similar to that of heartbleed. 
 
 ## Seed corpus
 TODO: 
