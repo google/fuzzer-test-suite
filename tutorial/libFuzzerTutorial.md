@@ -2,7 +2,7 @@
 
 ## Introduction
 In this tutorial you will learn how to use [libFuzzer](http://libfuzzer.info)
-(a coverage-guided in-process fuzzeing engine)
+(a coverage-guided in-process fuzzing engine)
 and [AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html)
 (dynamic memory error detector for C/C++).
 
@@ -37,13 +37,18 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
 }
 ```
 
-Take a look at an example of such **fuzz target**: [./fuzz_me.cc](fuzz_me.cc)
+Take a look at an example of such **fuzz target**: [./fuzz_me.cc](fuzz_me.cc). Can you see the bug?
 
-Build a fuzzer for this target:
+To build a fuzzer binary for this target you need to compile the source using the recent Clang compiler 
+with the following extra flags:
+* `-fsanitize-coverage=trace-pc-guard` (required): provides in-process coverage information to libFuzzer.
+* `-fsanitize=address` (recommended): enables AddressSanitizer
+* `-g` (recommended): enables debug info, makes the error messages easier to read. 
+Then you need to link the taregt code with `libFuzzer.a` which provides the `main()` function. 
 ```
 clang++ -g -fsanitize=address -fsanitize-coverage=trace-pc-guard FTS/tutorial/fuzz_me.cc libFuzzer.a -o example_fuzzer
 ```
-and try running it:
+Now try running it:
 ```
 ./example_fuzzer
 ```
