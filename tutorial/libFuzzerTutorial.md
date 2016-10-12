@@ -255,7 +255,7 @@ Running 4 workers
 ./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-3.log 2>&1
 ```
 
-At this time is would be convenient to have some terminal multiplexer, e.g. [GNU screen]
+At this time it would be convenient to have some terminal multiplexer, e.g. [GNU screen]
 (https://www.gnu.org/software/screen/manual/screen.html), or to simply open another terminal window. 
 
 Let's look at one of the log files, `fuzz-3.log`. You will see lines like this:
