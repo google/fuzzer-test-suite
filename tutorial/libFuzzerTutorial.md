@@ -124,12 +124,12 @@ To reproduce the crash again w/o fuzzing run
 Let us run something real. 
 [Heartbleed](https://en.wikipedia.org/wiki/Heartbleed) (aka CVE-2014-0160)
 was a critical security bug in the [OpenSSL cryptography library](http://www.openssl.org).
-I was been discovered in 2014, probably by code inspection. 
+I was discovered in 2014, probably by code inspection. 
 It was later [demonstrated](https://blog.hboeck.de/archives/868-How-Heartbleed-couldve-been-found.html)
 that this bug can be easily found by fuzzing. 
 
 [This repository](https://github.com/google/fuzzer-test-suite)
-contains read-to-use scripts to build fuzzers for various targets, including openssl-1.0.1f where 
+contains ready-to-use scripts to build fuzzers for various targets, including openssl-1.0.1f where 
 the 'heartbleed' bug is present. 
 
 To build the fuzzer for openssl-1.0.1f execute the following:
@@ -181,7 +181,7 @@ Most likely you will see that the fuzzer is stuck --
 it is running millions of inputs but can not find many new code paths. 
 ```
 #1      INITED cov: 18 ft: 15 corp: 1/1b exec/s: 0 rss: 27Mb
-#15     NEW    cov: 23 ft: 16 corp: 2/5b exec/s: 0 rss: 27Mb L: 4 MS: 4 InsertByte-CopyPart-ChangeByte-InsertByte-
+#15     NEW    cov: 23 ft: 16 corp: 2/5b exec/s: 0 rss: 27Mb L: 4 MS: 4 InsertByte-...
 #262144 pulse  cov: 23 ft: 16 corp: 2/5b exec/s: 131072 rss: 45Mb
 #524288 pulse  cov: 23 ft: 16 corp: 2/5b exec/s: 131072 rss: 62Mb
 #1048576        pulse  cov: 23 ft: 16 corp: 2/5b exec/s: 116508 rss: 97Mb
@@ -202,7 +202,7 @@ mkdir MY_CORPUS
 ./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/
 ```
 
-When a libFuzzer-based fuzzer is executed with one more more directory as arguments,
+When a libFuzzer-based fuzzer is executed with one more directory as arguments,
 it will first read files from every directory recursively and execute the target function on all of them.
 Then, any input that triggers interesting code path(s) will be written back into the first
 corpus directory (in this case, `MY_CORPUS`).
@@ -216,11 +216,11 @@ Loading corpus dir: SEED_CORPUS/
 INFO: -max_len is not provided, using 168276
 #0      READ units: 62
 #62     INITED cov: 595 ft: 766 corp: 13/766Kb exec/s: 0 rss: 57Mb
-#64     NEW    cov: 601 ft: 781 corp: 14/826Kb exec/s: 0 rss: 59Mb L: 61644 MS: 2 ChangeASCIIInt-ShuffleBytes-
+#64     NEW    cov: 601 ft: 781 corp: 14/826Kb exec/s: 0 rss: 59Mb L: 61644 MS: 2 ...
 ...
-#199    NEW    cov: 636 ft: 953 corp: 22/1319Kb exec/s: 0 rss: 85Mb L: 63320 MS: 2 ShuffleBytes-ChangeBinInt-
+#199    NEW    cov: 636 ft: 953 corp: 22/1319Kb exec/s: 0 rss: 85Mb L: 63320 MS: 2 ...
 ...
-#346693 NEW    cov: 805 ft: 2325 corp: 378/23Mb exec/s: 1212 rss: 551Mb L: 67104 MS: 1 ChangeBit-
+#346693 NEW    cov: 805 ft: 2325 corp: 378/23Mb exec/s: 1212 rss: 551Mb L: 67104 ...
 ```
 
 As you can see, the initial coverage is much greater than before (`INITED cov: 595`) and it keeps growing.
@@ -255,7 +255,7 @@ Running 4 workers
 ./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-3.log 2>&1
 ```
 
-At this time is would be convenient to have some terminal multiplexer, e.g. [GNU screen]
+At this time it would be convenient to have some terminal multiplexer, e.g. [GNU screen]
 (https://www.gnu.org/software/screen/manual/screen.html), or to simply open another terminal window. 
 
 Let's look at one of the log files, `fuzz-3.log`. You will see lines like this:
@@ -269,7 +269,12 @@ If you keep running this target for some time (at the time of writing: 20-60 min
 you will be
 rewarded by a [nice security bug](https://bugs.chromium.org/p/chromium/issues/detail?id=609042).  
 
-If you are impatient, TODO
+If you are both impatient and curious you may feed a provided crash reproducer to see the bug:
+```
+./woff2-2016-05-06 ../FTS/woff2-2016-05-06/crash-696cb49b6d7f63e153a6605f00aceb0d7738971a
+```
+Do you see the same stack trace as in the
+[original bug report](https://bugs.chromium.org/p/chromium/issues/detail?id=609042)?
 
 See also [Distributed Fuzzing](#distributed-fuzzing)
 
