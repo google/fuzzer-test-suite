@@ -25,6 +25,12 @@ get_git_tag() {
   [ ! -e $TO_DIR ] && git clone $GIT_REPO $TO_DIR && (cd $TO_DIR && git checkout $GIT_TAG)
 }
 
+get_svn_revision() {
+  SVN_REPO="$1"
+  SVN_REVISION="$2"
+  TO_DIR="$3"
+  [ ! -e $TO_DIR ] && svn co -r$SVN_REVISION $SVN_REPO $TO_DIR
+}
 
 build_libfuzzer() {
   $LIBFUZZER_SRC/build.sh
