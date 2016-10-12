@@ -159,17 +159,133 @@ READ of size 19715 at 0x629000009748 thread T0
     #6 0x4eed3a in LLVMFuzzerTestOneInput FTS/openssl-1.0.1f/target.cc:38:3
 ```
 
-**Exersice**:
+**Exercise**:
 run the [fuzzer that finds CVE-2016-5180](../c-ares-CVE-2016-5180).
 The experience should be very similar to that of heartbleed. 
 
 ## Seed corpus
-TODO: 
-On importance of a seed corpus... 
+
+So far we have tried several fuzz targets on which a bug can be found w/o much effort.
+
+One important way to increase fuzzing efficiency is to provide an initial set of inputs, aka a *seed corpus*.
+For example, let us try another target: [Woff2](../woff2-2016-05-06). Build it like this:
+```
+cd; mkdir -p woff; cd woff;
+~/FTS/woff2-2016-05-06/build.sh
+```
+Now run it like you did it with the previous fuzz targets: 
+```
+./woff2-2016-05-06 
+```
+Most likely you will see that the fuzzer is stuck --
+it is running millions of inputs but can not find many new code paths. 
+```
+#1      INITED cov: 18 ft: 15 corp: 1/1b exec/s: 0 rss: 27Mb
+#15     NEW    cov: 23 ft: 16 corp: 2/5b exec/s: 0 rss: 27Mb L: 4 MS: 4 InsertByte-CopyPart-ChangeByte-InsertByte-
+#262144 pulse  cov: 23 ft: 16 corp: 2/5b exec/s: 131072 rss: 45Mb
+#524288 pulse  cov: 23 ft: 16 corp: 2/5b exec/s: 131072 rss: 62Mb
+#1048576        pulse  cov: 23 ft: 16 corp: 2/5b exec/s: 116508 rss: 97Mb
+#2097152        pulse  cov: 23 ft: 16 corp: 2/5b exec/s: 110376 rss: 167Mb
+#4194304        pulse  cov: 23 ft: 16 corp: 2/5b exec/s: 107546 rss: 306Mb
+#8388608        pulse  cov: 23 ft: 16 corp: 2/5b exec/s: 106184 rss: 584Mb
+```
+
+The first step you should make in such case is to find some inputs that trigger enough code paths -- the more the better.
+The woff2 fuzz target consumes web fonts in `.woff2` format and so you can just find any such file(s).
+The build script you have just executed has downloaded a project with some `.woff2`
+files and placed it into the directory `./SEED_CORPUS/`.
+Inspect this directory. What do you see? Are there any `.woff2` files?
+
+Now you can use the woff2 fuzzer with a seed corpus. Do it like this:
+```
+mkdir MY_CORPUS
+./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/
+```
+
+When a libFuzzer-based fuzzer is executed with one more more directory as arguments,
+it will first read files from every directory recursively and execute the target function on all of them.
+Then, any input that triggers interesting code path(s) will be written back into the first
+corpus directory (in this case, `MY_CORPUS`).
+
+Let us look at the output:
+```
+INFO: Seed: 3976665814
+INFO: Loaded 1 modules (17592 guards): [0x946de0, 0x9580c0), 
+Loading corpus dir: MY_CORPUS/
+Loading corpus dir: SEED_CORPUS/
+INFO: -max_len is not provided, using 168276
+#0      READ units: 62
+#62     INITED cov: 595 ft: 766 corp: 13/766Kb exec/s: 0 rss: 57Mb
+#64     NEW    cov: 601 ft: 781 corp: 14/826Kb exec/s: 0 rss: 59Mb L: 61644 MS: 2 ChangeASCIIInt-ShuffleBytes-
+...
+#199    NEW    cov: 636 ft: 953 corp: 22/1319Kb exec/s: 0 rss: 85Mb L: 63320 MS: 2 ShuffleBytes-ChangeBinInt-
+...
+#346693 NEW    cov: 805 ft: 2325 corp: 378/23Mb exec/s: 1212 rss: 551Mb L: 67104 MS: 1 ChangeBit-
+```
+
+As you can see, the initial coverage is much greater than before (`INITED cov: 595`) and it keeps growing.
+
+The size of the inputs that libFuzzer tries is now limited by 168276,
+which is the size of the largest file in the seed corpus.
+You may change that with `-max_len=N`.
+
+You may interrupt the fuzzer at any moment and restart it using the same command line.
+It will start from where it stopped.
+
+How long does it take for this fuzzer to slowdown the path discovery
+(i.e. stop finding new coverage every few seconds)?
+Did it find any bugs so far? 
 
 ## Parallel runs
+Another way to increase the fuzzing efficiency is to use more CPUs. 
+If you run the fuzzer with `-jobs=N` it will spawn N independent jobs 
+but no more than half of the number of cores you have;
+use `-workers=M` to set the number of allowed parallel jobs.
+
+```
+cd ~/woff
+./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/ -jobs=8
+```
+On a 8-core machine this will spawn 4 parallel workers. If one of them dies, another one will be created, up to 8.
+```
+Running 4 workers
+./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-0.log 2>&1
+./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-1.log 2>&1
+./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-2.log 2>&1
+./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-3.log 2>&1
+```
+
+At this time is would be convenient to have some terminal multiplexer, e.g. [GNU screen]
+(https://www.gnu.org/software/screen/manual/screen.html), or to simply open another terminal window. 
+
+Let's look at one of the log files, `fuzz-3.log`. You will see lines like this:
+```
+#17634  RELOAD cov: 864 ft: 2555 corp: 340/20Mb exec/s: 979 rss: 408Mb
+```
+Such lines show that this instance of the fuzzer has reloaded the corpus (only the first directory is reloaded)
+and found some new interesting inputs created by other instances. 
+
+If you keep running this target for some time (at the time of writing: 20-60 minutes on 4-8 cores)
+you will be
+rewarded by a [nice security bug](https://bugs.chromium.org/p/chromium/issues/detail?id=609042).  
+
+If you are impatient, TODO
+
+See also [Distributed Fuzzing](#distributed-fuzzing)
+
 ## Dictionaries
 ## Minimizing a corpus
 ## Minimizing a reproducer
+## Competing bugs
 ## AFL
+## Distributed Fuzzing
 ## Continuous fuzzing
+## Problems
+* OOMs
+* Slow inputs
+* Timeouts
+* Leaks
+## Advanced libFuzzer options
+* -print-pcs
+* coverage
+* -use_value_profile
