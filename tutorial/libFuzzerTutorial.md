@@ -129,7 +129,7 @@ It was later [demonstrated](https://blog.hboeck.de/archives/868-How-Heartbleed-c
 that this bug can be easily found by fuzzing. 
 
 [This repository](https://github.com/google/fuzzer-test-suite)
-contains read-to-use scripts to build fuzzers for various targets, including openssl-1.0.1f where 
+contains ready-to-use scripts to build fuzzers for various targets, including openssl-1.0.1f where 
 the 'heartbleed' bug is present. 
 
 To build the fuzzer for openssl-1.0.1f execute the following:
