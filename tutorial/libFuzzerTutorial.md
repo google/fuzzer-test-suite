@@ -314,7 +314,7 @@ How much time will it take to find the bug w/o a dictionary?
 Take a look at the file `afl/dictionaries/xml.dict`
 (distributed with [AFL](http://lcamtuf.coredump.cx/afl/)).
 It is pretty self-explanatory. 
-The [syntax of dictionary files](libfuzzer.info#dictionaries) is shared between
+The [syntax of dictionary files](http://libfuzzer.info#dictionaries) is shared between
 [libFuzzer](http://libfuzzer.info) and [AFL](http://lcamtuf.coredump.cx/afl/).
 
 
