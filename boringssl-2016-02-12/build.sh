@@ -12,4 +12,5 @@ build_lib() {
 get_git_revision https://github.com/google/boringssl.git  894a47df2423f0d2b6be57e6d90f2bea88213382 SRC
 build_lib
 build_libfuzzer
+set -x
 clang++ -I BUILD/include $FUZZ_CXXFLAGS BUILD/fuzz/privkey.cc ./BUILD/ssl/libssl.a ./BUILD/crypto/libcrypto.a libFuzzer.a -o $EXECUTABLE_NAME_BASE
