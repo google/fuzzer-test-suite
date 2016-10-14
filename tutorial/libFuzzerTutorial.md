@@ -321,6 +321,29 @@ The [syntax of dictionary files](http://libfuzzer.info#dictionaries) is shared b
 ## Minimizing a corpus
 ## Minimizing a reproducer
 ## Competing bugs
+
+Sometimes there is one shallow (easy to find) bug in the target that prevents
+you from finding more bugs. The best approach in such cases is to fix the shallow bug(s) 
+and restart fuzzing. However you can move forward a bit by simply re-starting libFuzzer 
+many times. `-jobs=1000` will do this for you. 
+
+```
+mkdir -p pcre2 ; rm -rf pcre2/*; cd pcre2
+~/FTS/pcre2-10.00/build.sh
+```
+
+```
+mkdir CORPUS
+./pcre2-10.00 -jobs=1000 -workers=8 CORPUS
+```
+
+After a minute or two look for the erros in the log files:
+```
+grep ERROR *.log 
+```
+You will see one paticular bug very often (which one?) but occasionally others will occur too. 
+
+
 ## AFL
 ## Distributed Fuzzing
 ## Continuous fuzzing
