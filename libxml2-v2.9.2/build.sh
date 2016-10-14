@@ -12,4 +12,5 @@ build_lib() {
 get_git_tag git://git.gnome.org/libxml2  v2.9.2 SRC
 build_lib
 build_libfuzzer
+set -x
 clang++ -std=c++11  $SCRIPT_DIR/target.cc  $FUZZ_CXXFLAGS  -I BUILD/include BUILD/.libs/libxml2.a libFuzzer.a  -lz -o $EXECUTABLE_NAME_BASE
