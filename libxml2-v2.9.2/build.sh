@@ -10,6 +10,7 @@ build_lib() {
 }
 
 get_git_tag git://git.gnome.org/libxml2  v2.9.2 SRC
+get_git_revision https://github.com/mcarpenter/afl be3e88d639da5350603f6c0fee06970128504342 afl
 build_lib
 build_libfuzzer
 set -x
