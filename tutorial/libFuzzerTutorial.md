@@ -279,6 +279,45 @@ Do you see the same stack trace as in the
 See also [Distributed Fuzzing](#distributed-fuzzing)
 
 ## Dictionaries
+
+Another important way to improve fuzzing efficiency is to use a *dictionary*.
+This works well if the input format being fuzzed consists of tokens or 
+have lots of magic values.
+
+Let's look at an example of such input format: XML.
+
+```shell
+mkdir -p libxml; rm -rf libxml/*; cd libxml
+~/FTS/libxml2-v2.9.2/build.sh
+```
+
+Now, run the newly bult fuzzer for 10-20 seconds with and without a dictionary:
+```
+./libxml2-v2.9.2   # Press Ctrl-C in 10-20 seconds
+```
+```
+./libxml2-v2.9.2 -dict=afl/dictionaries/xml.dict  # Press Ctrl-C in 10-20 seconds
+```
+
+Did you see the differentce? 
+
+Now create a corpus directory and run for real on all CPUs:
+```
+mkdir CORPUS
+./libxml2-v2.9.2 -dict=afl/dictionaries/xml.dict -jobs=8 -workers=8 CORPUS
+```
+
+How much time did it take to find the bug?
+What is the bug?
+How much time will it take to find the bug w/o a dictionary?  
+
+Take a look at the file `afl/dictionaries/xml.dict`
+(distributed with [AFL](http://lcamtuf.coredump.cx/afl/)).
+It is pretty self-explanatory. 
+The [syntax of dictionary files](libfuzzer.info#dictionaries) is shared between
+[libFuzzer](http://libfuzzer.info) and [AFL](http://lcamtuf.coredump.cx/afl/).
+
+
 ## Minimizing a corpus
 ## Minimizing a reproducer
 ## Competing bugs
