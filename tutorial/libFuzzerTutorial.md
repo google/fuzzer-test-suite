@@ -317,9 +317,6 @@ It is pretty self-explanatory.
 The [syntax of dictionary files](http://libfuzzer.info#dictionaries) is shared between
 [libFuzzer](http://libfuzzer.info) and [AFL](http://lcamtuf.coredump.cx/afl/).
 
-
-## Minimizing a corpus
-## Minimizing a reproducer
 ## Competing bugs
 
 Sometimes there is one shallow (easy to find) bug in the target that prevents
@@ -339,9 +336,44 @@ mkdir CORPUS
 
 After a minute or two look for the erros in the log files:
 ```
-grep ERROR *.log 
+grep ERROR *.log | sort -k 3
 ```
 You will see one paticular bug very often (which one?) but occasionally others will occur too. 
+
+
+## Minimizing a corpus
+
+The test corpus may grow to large sizes during fuzzing.
+Or you may be lucky to have a large seed corpus. 
+In either way, you may want to minimize your corpus, 
+that is to create a subset of the corpus that has the same coverage. 
+
+```
+mkdir NEW_CORPPUS
+./your-fuzzer NEW_CORPUS OLD_CORPUS -merge=1
+```
+
+Do this with one of the fuzzers you have tried previosly.
+
+The same flag can be used to merge new items into your existing corpus.
+Only the items that generate new coverage will be added.
+```
+./your-fuzzer EXISTING_CORPUS SOME_MORE_INPUTS -merge=1
+```
+
+## Minimizing a reproducer
+
+Often it is desirable to have a small reproducer (input that causes a crash).
+LibFuzzer has a simple builtin minimizer.
+
+This will try to iteratively minimize your crash reproducer by doing
+10000000 mutations on every iteration.
+
+```
+./your-fuzzer your-crash-reproducer -minimize_crash=1 -runs=10000000
+```
+
+Try this with one of the crashes you have found previously. 
 
 
 ## AFL
