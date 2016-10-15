@@ -393,8 +393,31 @@ cd ~/openssl-1.0.2d
 
 Try this with one of the crashes you have found previously. 
 
+## Visualizing Coverage
+When developing and evaluating a fuzz target it is highly recommended
+to investigate the coverage achieved by the target on a given corpus.
+You may get a very simple coverage report from libFuzzer using
+`-print_coverage=1`:
+```
+cd ~/pcre2/ && ./pcre2-10.00 -runs=0 -print_coverage=1 CORPUS/
+```
+You will see lines like these:
+```
+COVERED: 0x4f626d in compare_opcodes src/pcre2_auto_possess.c:1079:7
+COVERED: 0x4f6abf in compare_opcodes src/pcre2_auto_possess.c:1084:1
+COVERED: 0x4f7047 in pcre2_code_free_8 src/pcre2_compile.c:684:29
+COVERED: 0x4f706e in pcre2_code_free_8 src/pcre2_compile.c:688:7
+COVERED: 0x4f8626 in pcre2_compile_8 src/pcre2_compile.c:7342:26
+COVERED: 0x4f890b in pcre2_compile_8 src/pcre2_compile.c:7411:47
+```
+
+Getting **uncovered** lines in slightly more involved. TODO
+
+There are also tools that provide coverage reports in html:
+[1](http://clang.llvm.org/docs/SourceBasedCodeCoverage.html), [TODO](TODO)
 
 ## AFL
+TODO
 ## Distributed Fuzzing
 What if I want to fuzz one specific target on more CPUs than any single VM has?
 That's easy: you may store the corpus on some cloud storage system and
@@ -441,6 +464,11 @@ fuzzing on many VMs. Even better is to periodically minimize the corpus and
 update it in the cloud.
 
 ## Continuous fuzzing
+
+One-off fuzzing might find you a couple or more bugs,
+but unless you make the fuzzing process **continuous**
+it was a wasted effort.
+
 ## Problems
 * OOMs
 * Leaks
