@@ -364,13 +364,17 @@ Only the items that generate new coverage will be added.
 ## Minimizing a reproducer
 
 Often it is desirable to have a small reproducer (input that causes a crash).
-LibFuzzer has a simple builtin minimizer.
+LibFuzzer has a simple builtin minimizer. Try to minimize the crash
+reproducer provided with the [openssl-1.0.2d benchmark](../openssl-1.0.2d)
 
-This will try to iteratively minimize your crash reproducer by doing
-10000000 mutations on every iteration.
+This will try to iteratively minimize the crash reproducer
+by applying up to 10000 mutations on every iteration.
 
 ```
-./your-fuzzer your-crash-reproducer -minimize_crash=1 -runs=10000000
+cd openssl-1.0.2d
+./openssl-1.0.2d \
+  -minimize_crash=1 -runs=10000 \
+  ~/FTS/openssl-1.0.2d/crash-12ae1af0c82252420b5f780bc9ed48d3ba05109e
 ```
 
 Try this with one of the crashes you have found previously. 
