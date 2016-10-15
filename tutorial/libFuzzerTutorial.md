@@ -385,7 +385,7 @@ This will try to iteratively minimize the crash reproducer
 by applying up to 10000 mutations on every iteration.
 
 ```
-cd openssl-1.0.2d
+cd ~/openssl-1.0.2d
 ./openssl-1.0.2d \
   -minimize_crash=1 -runs=10000 \
   ~/FTS/openssl-1.0.2d/crash-12ae1af0c82252420b5f780bc9ed48d3ba05109e
@@ -396,12 +396,57 @@ Try this with one of the crashes you have found previously.
 
 ## AFL
 ## Distributed Fuzzing
+What if I want to fuzz one specific target on more CPUs than any single VM has?
+That's easy: you may store the corpus on some cloud storage system and
+synchronize it back and forth.
+
+Example (using [GCS](https://cloud.google.com/storage/)):
+* Make sure you've used "Allow full access to all Cloud APIs" when creating
+your [GCE](https://cloud.google.com/compute/) VM. If you didn't, create a new VM.
+* (In the browser) Go to https://console.cloud.google.com/storage and create
+a new bucket (let it's name be `$GCS_BUCKET`)
+* Create a directory in your cloud bucket named `CORPUS`:
+```
+touch EMPTY_FILE; gsutil cp EMPTY_FILE  gs://$GCS_BUCKET/CORPUS/
+```
+* (In the browser), click 'REFRESH', verify that you see the new directory with
+  `EMPTY_FILE` in it.
+* Create a local directory named `CORPUS` and do some fuzzing:
+```
+cd ~/pcre2
+mkdir CORPUS
+./pcre2-10.00 CORPUS/ -runs=10000
+```
+* Now `CORPUS` has some files. Synchronize it with the cloud directory:
+```
+gsutil -m rsync  CORPUS  gs://$GCS_BUCKET/CORPUS/
+```
+* Check that you can see the new files:
+```
+gsutil ls gs://$GCS_BUCKET/CORPUS/
+```
+* Congratulations, you have just saved your corpus to cloud storage. But this is
+  not all the fun.
+  Now you can synchronize it back to the local disk and fuzz again.
+```
+gsutil -m rsync  gs://$GCS_BUCKET/CORPUS/ CORPUS
+```
+* If several VMs do this simultaneously you get **distributed** fuzzing.
+
+In practice this is slightly more complicated than that.
+If you blindly synchronize the corpus between workers the corpus may grow to
+unmanageable sizes. The simplest suggestion is to first fuzz on a single
+machine, then minimize the corpus, uploaded it to cloud, and only then start
+fuzzing on many VMs. Even better is to periodically minimize the corpus and
+update it in the cloud.
+
 ## Continuous fuzzing
 ## Problems
 * OOMs
-* Slow inputs
-* Timeouts
 * Leaks
+* Timeouts
+* Slow inputs
+
 ## Advanced libFuzzer options
 * -print-pcs
 * coverage
