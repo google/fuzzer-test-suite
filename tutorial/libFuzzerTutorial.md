@@ -317,6 +317,20 @@ It is pretty self-explanatory.
 The [syntax of dictionary files](http://libfuzzer.info#dictionaries) is shared between
 [libFuzzer](http://libfuzzer.info) and [AFL](http://lcamtuf.coredump.cx/afl/).
 
+## Cross-checking
+Fuzzing can be used to find bugs other than memory corruption.
+For example, take a look at the [openssl-1.0.2d benchmark](../openssl-1.0.2d).
+The target function feeds the data to two different functions that
+are expected to produce the same result and verifies that.
+
+```shell
+mkdir -p openssl-1.0.2d; rm -rf openssl-1.0.2d/*; cd openssl-1.0.2d
+~/FTS/openssl-1.0.2d/build.sh
+mkdir CORPUS; ./openssl-1.0.2d  -max_len=256 CORPUS -jobs=8 -workers=8
+```
+
+Did it crash? How? 
+
 ## Competing bugs
 
 Sometimes there is one shallow (easy to find) bug in the target that prevents
