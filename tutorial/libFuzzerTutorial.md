@@ -416,8 +416,51 @@ Getting **uncovered** lines in slightly more involved. TODO
 There are also tools that provide coverage reports in html:
 [1](http://clang.llvm.org/docs/SourceBasedCodeCoverage.html), [TODO](TODO)
 
-## AFL
-TODO
+## Other sanitizers
+[AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html) is not the
+only dynamic testing tool that can be combined with fuzzing.
+At the very least try [UBSan](http://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html).
+For example, add `-fsanitize=signed-integer-overflow -fno-sanitize-recover=all` to the build files for
+the [pcre2 benchmark](./pcre2-10.00) and do some more fuzzing. You will see
+reports like this:
+```
+src/pcre2_compile.c:5506:19: runtime error: signed integer overflow: 1111111411 * 10 cannot be represented in type 'int'
+```
+
+In some cases you may want to run fuzzing w/o any additional tool (e.g.
+a sanitizer).
+This will allow you to find only the simplest bugs
+(null dereferences, assertion failures) but will run faster.
+Later you may run a sanitized build on the generated corpus to find more bugs.
+The downside is that you may miss some bugs this way.
+
+## Other fuzzing engines
+Take a look at the fuzz targets that you have experimented with so far:
+[1](../c-ares-CVE-2016-5180/target.cc),
+[2](../openssl-1.0.1f/target.cc),
+[3](../pcre2-10.00/target.cc),
+[4](../woff2-2016-05-06/target.cc),
+[5](../libxml2-v2.9.2/target.cc),
+[6](../openssl-1.0.2d/target.cc),
+[7](../re2-2014-12-09/target.cc).
+
+There is nothing in these fuzz targets that makes them tied to libFuzzer
+-- there is just one
+function that takes an array of bytes as a parameter. And so it is possible,
+and even desirable, to fuzz the same targets with different other fuzzing
+engines.
+
+For example you may fuzz your target with other guided fuzzing engines,
+such as [AFL](http://lcamtuf.coredump.cx/afl/)
+([instructions](https://github.com/llvm-mirror/llvm/blob/master/lib/Fuzzer/afl/afl_driver.cpp))
+or [honggfuzz](https://github.com/google/honggfuzz).
+Or even try other approaches, such as un-guided test mutation (e.g.
+using [Radamsa](https://github.com/aoh/radamsa)).
+
+**When using multiple fuzzing engines make sure to exchange the corpora between
+the engines** -- this way the engines will be helping each other.
+You can do it using the libFuzzer's `-merge=` flag.
+
 ## Distributed Fuzzing
 What if I want to fuzz one specific target on more CPUs than any single VM has?
 That's easy: you may store the corpus on some cloud storage system and
@@ -465,9 +508,21 @@ update it in the cloud.
 
 ## Continuous fuzzing
 
-One-off fuzzing might find you a couple or more bugs,
+One-off fuzzing might find you some bugs,
 but unless you make the fuzzing process **continuous**
-it was a wasted effort.
+it will be a wasted effort.
+
+A simple continuous fuzzing system could be written in < 100 lines of bash code.
+In an infinite loop do the following:
+* Pull the current revision of your code.
+* Build the fuzz target
+* Copy the current corpus from cloud to local disk
+* Fuzz for some time.
+  * With libFuzzer, use the flag `-max_toal_time=N` to set the time in seconds).
+* Synchronize the updated corpus back to the cloud
+* Provide the logs, coverage information, crash reports, and crash reproducers
+  via e-mail, web interface, or cloud storage.
+
 
 ## Problems
 * OOMs
@@ -475,7 +530,17 @@ it was a wasted effort.
 * Timeouts
 * Slow inputs
 
+TODO
+
 ## Advanced libFuzzer options
 * -print-pcs
-* coverage
 * -use_value_profile
+
+TODO
+
+## Related links
+* [Blog post: "Guided in-process fuzzing of Chrome components"](https://security.googleblog.com/2016/08/guided-in-process-fuzzing-of-chrome.html)
+* OSS-FUZZ, a pilot of continuous-fuzzing-as-a-service for open source: https://github.com/google/oss-fuzz
+* libFuzzer documentation: http://libfuzzer.info
+* AFL documentation: http://lcamtuf.coredump.cx/afl/
+* Sanitizers: https://github.com/google/sanitizers
