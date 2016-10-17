@@ -2,11 +2,14 @@
 
 ## Introduction
 In this tutorial you will learn how to use [libFuzzer](http://libfuzzer.info)
-(a coverage-guided in-process fuzzing engine)
-and [AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html)
-(dynamic memory error detector for C/C++).
+ -- a coverage-guided in-process fuzzing engine).
 
-Prerequisites: experience with C/C++ and Unix shell. 
+You will also learn basics of
+[AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html) --
+a dynamic memory error detector for C/C++.
+
+Prerequisites: experience with C/C++ and Unix shell.
+
 
 ## Setup a VM
 * Login into your [GCE](https://cloud.google.com/compute/) account or create one.
@@ -42,7 +45,7 @@ Take a look at an example of such **fuzz target**: [./fuzz_me.cc](fuzz_me.cc). C
 To build a fuzzer binary for this target you need to compile the source using the recent Clang compiler 
 with the following extra flags:
 * `-fsanitize-coverage=trace-pc-guard` (required): provides in-process coverage information to libFuzzer.
-* `-fsanitize=address` (recommended): enables AddressSanitizer
+* `-fsanitize=address` (recommended): enables [AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html)
 * `-g` (recommended): enables debug info, makes the error messages easier to read. 
 
 Then you need to link the target code with `libFuzzer.a` which provides the `main()` function. 
@@ -124,7 +127,7 @@ To reproduce the crash again w/o fuzzing run
 Let us run something real. 
 [Heartbleed](https://en.wikipedia.org/wiki/Heartbleed) (aka CVE-2014-0160)
 was a critical security bug in the [OpenSSL cryptography library](http://www.openssl.org).
-I was discovered in 2014, probably by code inspection. 
+It was discovered in 2014, probably by code inspection.
 It was later [demonstrated](https://blog.hboeck.de/archives/868-How-Heartbleed-couldve-been-found.html)
 that this bug can be easily found by fuzzing. 
 
