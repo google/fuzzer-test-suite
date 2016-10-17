@@ -14,3 +14,4 @@ READ of size 53713 at 0x629000009748 thread T0
 ```
 
 
+Note: the build may sometimes fail, apparently due to a race in the makefiles. If so, just rebuild from scratch.
