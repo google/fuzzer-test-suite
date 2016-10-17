@@ -534,7 +534,7 @@ other bugs from you.
 
 ###OOMs
 
-Out-of-memory (OOM) bugs slowdown fuzzing immensely.
+Out-of-memory (OOM) bugs slowdown in-process fuzzing immensely.
 By default libFuzzer limits the amount of RAM per process by 2Gb.
 
 Try fuzzing the woff benchmark with an empty seed corpus:
@@ -564,7 +564,24 @@ and so you can use `-rss_limit_mb=N` to set another limit.`
 
 ### Leaks
 
+Memory leaks are bugs themselves, but if they go undetected they cause OOMs
+during in-process fuzzing.
+
+When combined with
+[AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html) or
+[LeakSanitizer](http://clang.llvm.org/docs/LeakSanitizer.html) libFuzzer will
+attempt to find leaks right after every executed input. If a leak is found
+libFuzzer will print the warning, save the reproducer on disk and exit.
+
+TODO: find a benchmark with a leak.
+
+However, not all leaks are easily detectable as such and if they evade
+LeakSanitizer libFuzzer will eventually die with OOM (see above).
+
+
 ### Timeouts
+
+TODO
 
 ### Slow inputs
 
