@@ -2,7 +2,7 @@
 
 ## Introduction
 In this tutorial you will learn how to use [libFuzzer](http://libfuzzer.info)
- -- a coverage-guided in-process fuzzing engine).
+ -- a coverage-guided in-process fuzzing engine.
 
 You will also learn basics of
 [AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html) --
@@ -169,6 +169,7 @@ The experience should be very similar to that of heartbleed.
 ## Seed corpus
 
 So far we have tried several fuzz targets on which a bug can be found w/o much effort.
+Not all targets are that easy.
 
 One important way to increase fuzzing efficiency is to provide an initial set of inputs, aka a *seed corpus*.
 For example, let us try another target: [Woff2](../woff2-2016-05-06). Build it like this:
@@ -423,8 +424,8 @@ There are also tools that provide coverage reports in html:
 [AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html) is not the
 only dynamic testing tool that can be combined with fuzzing.
 At the very least try [UBSan](http://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html).
-For example, add `-fsanitize=signed-integer-overflow -fno-sanitize-recover=all` to the build files for
-the [pcre2 benchmark](./pcre2-10.00) and do some more fuzzing. You will see
+For example, add `-fsanitize=signed-integer-overflow -fno-sanitize-recover=all` to the build flags for
+the [pcre2 benchmark](../pcre2-10.00) and do some more fuzzing. You will see
 reports like this:
 ```
 src/pcre2_compile.c:5506:19: runtime error: signed integer overflow: 1111111411 * 10 cannot be represented in type 'int'
