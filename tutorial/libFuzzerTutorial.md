@@ -560,7 +560,7 @@ also contains a reproducer for the OOM bug.
 Find it. Can you reproduce the OOM?
 
 Sometimes using 2Gb per one target invocation is not a bug,
-and so you can using `-rss_limit_mb=N` to set another limit.`
+and so you can use `-rss_limit_mb=N` to set another limit.`
 
 ### Leaks
 
