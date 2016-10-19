@@ -137,7 +137,7 @@ the 'heartbleed' bug is present.
 
 To build the fuzzer for openssl-1.0.1f execute the following:
 ```
-mkdir -p tmp; rm -rf tmp/*; cd tmp
+mkdir -p ~/tmp; rm -rf ~/tmp/*; cd ~/tmp
 ~/FTS/openssl-1.0.1f/build.sh
 ```
 
@@ -291,7 +291,7 @@ have lots of magic values.
 Let's look at an example of such input format: XML.
 
 ```shell
-mkdir -p libxml; rm -rf libxml/*; cd libxml
+mkdir -p ~/libxml; rm -rf ~/libxml/*; cd ~/libxml
 ~/FTS/libxml2-v2.9.2/build.sh
 ```
 
@@ -328,7 +328,7 @@ The target function feeds the data to two different functions that
 are expected to produce the same result and verifies that.
 
 ```shell
-mkdir -p openssl-1.0.2d; rm -rf openssl-1.0.2d/*; cd openssl-1.0.2d
+mkdir -p ~/openssl-1.0.2d; rm -rf ~/openssl-1.0.2d/*; cd ~/openssl-1.0.2d
 ~/FTS/openssl-1.0.2d/build.sh
 mkdir CORPUS; ./openssl-1.0.2d  -max_len=256 CORPUS -jobs=8 -workers=8
 ```
@@ -343,7 +343,7 @@ and restart fuzzing. However you can move forward a bit by simply re-starting li
 many times. `-jobs=1000` will do this for you. 
 
 ```
-mkdir -p pcre2 ; rm -rf pcre2/*; cd pcre2
+mkdir -p ~/pcre2 ; rm -rf ~/pcre2/*; cd ~/pcre2
 ~/FTS/pcre2-10.00/build.sh
 ```
 
@@ -404,7 +404,7 @@ You may get a very simple coverage report from libFuzzer using
 `-print_coverage=1`:
 
 ```
-cd ~/woff2/ && ./woff2-2016-05-06 -runs=1000000 -use_cmp=0 -print_coverage=1
+cd ~/woff/ && ./woff2-2016-05-06 -runs=1000000 -use_cmp=0 -print_coverage=1
 ```
 
 We used some extra flags to cripple libFuzzer and so make this example simpler.
