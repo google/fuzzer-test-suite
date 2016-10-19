@@ -402,23 +402,38 @@ When developing and evaluating a fuzz target it is highly recommended
 to investigate the coverage achieved by the target on a given corpus.
 You may get a very simple coverage report from libFuzzer using
 `-print_coverage=1`:
+
 ```
-cd ~/pcre2/ && ./pcre2-10.00 -runs=0 -print_coverage=1 CORPUS/
+cd ~/woff2/ && ./woff2-2016-05-06 -runs=1000000 -use_cmp=0 -print_coverage=1
 ```
+
+We used some extra flags to cripple libFuzzer and so make this example simpler.
 You will see lines like these:
+
 ```
-COVERED: 0x4f626d in compare_opcodes src/pcre2_auto_possess.c:1079:7
-COVERED: 0x4f6abf in compare_opcodes src/pcre2_auto_possess.c:1084:1
-COVERED: 0x4f7047 in pcre2_code_free_8 src/pcre2_compile.c:684:29
-COVERED: 0x4f706e in pcre2_code_free_8 src/pcre2_compile.c:688:7
-COVERED: 0x4f8626 in pcre2_compile_8 src/pcre2_compile.c:7342:26
-COVERED: 0x4f890b in pcre2_compile_8 src/pcre2_compile.c:7411:47
+COVERED: in woff2::ConvertWOFF2ToTTF src/woff2_dec.cc:1262
+COVERED: in woff2::Buffer::ReadU32 src/buffer.h:127
+COVERED: in woff2::ReadWOFF2Header src/woff2_dec.cc:987
+...
+UNCOVERED_LINE: in woff2::ReadWOFF2Header src/woff2_dec.cc:995
+...
+UNCOVERED_FUNC: in woff2::WOFF2MemoryOut::WOFF2MemoryOut
+...
+UNCOVERED_FILE: src/woff2_common
 ```
 
-Getting **uncovered** lines in slightly more involved. TODO
+Lines starting with `COVERED` describe the covered lines.
+Lines starting with `UNCOVERED_FILE` and `UNCOVERED_FUNC` describe files and
+functions that are completely uncovered. The most interesting lines are
+`UNCOVERED_LINE` -- they represent uncovered source lines inside
+partially covered functions. Look there for clues on why the fuzzer is not
+finding more coverage.
 
-There are also tools that provide coverage reports in html:
-[1](http://clang.llvm.org/docs/SourceBasedCodeCoverage.html), [TODO](TODO)
+Can you see why we can't find more coverage here?
+(Hint: check `src/woff2_dec.cc:995`)
+
+There are also tools that provide coverage reports in html,
+e.g. [Clang Coverage](http://clang.llvm.org/docs/SourceBasedCodeCoverage.html).
 
 ## Other sanitizers
 [AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html) is not the
