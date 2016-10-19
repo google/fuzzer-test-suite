@@ -588,25 +588,25 @@ When combined with
 attempt to find leaks right after every executed input. If a leak is found
 libFuzzer will print the warning, save the reproducer on disk and exit.
 
-TODO: find a benchmark with a leak.
-
 However, not all leaks are easily detectable as such and if they evade
 LeakSanitizer libFuzzer will eventually die with OOM (see above).
 
 
 ### Timeouts
 
-TODO
+Timeouts are equally bad for in-process fuzzing.
+If some intput takes more than 1200 seconds to run libFuzzer will report a
+"timeout" error and exit, dumping the reproducer on disk.
+You may change the default timeout with `-timeout=N`.
+
 
 ### Slow inputs
 
-TODO
-
-## Advanced libFuzzer options
-* -print-pcs
-* -use_value_profile
-
-TODO
+libFuzzer distinguishes between slow and very slow inputs.
+*Very slow* inputs will cause [timeout failures](#timeouts) while *just slow*
+will be reported during the run (with reproducers dumped on disk) but will
+not cause the process to exit. Use `-report_slow_units=N` to set the threshold
+for *just slow* units.
 
 ## Related links
 * [Blog post: "Guided in-process fuzzing of Chrome components"](https://security.googleblog.com/2016/08/guided-in-process-fuzzing-of-chrome.html)
