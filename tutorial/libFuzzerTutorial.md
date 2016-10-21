@@ -116,7 +116,7 @@ On one of the inputs AddressSanitizer has detected a `heap-buffer-overflow` bug 
 artifact_prefix='./'; Test unit written to ./crash-0eb8e4ed029b774d80f2b66408203801cb982a60
 ```
 Before exiting the process libFuzzer has created a file on disc with the bytes that triggered the crash. 
-Take a look at ths file. What do you see? Why did it trigger the crash? 
+Take a look at this file. What do you see? Why did it trigger the crash? 
 
 To reproduce the crash again w/o fuzzing run 
 ```
