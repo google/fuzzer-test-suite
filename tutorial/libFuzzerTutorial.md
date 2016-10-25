@@ -103,7 +103,10 @@ To change that either use `-max_len=N` or run with a non-empty [seed corpus](#se
 ```
 libFuzzer has tried at least 272167 inputs (`#272167`)
 and has discovered 5 inputs of 201 bytes total (`corp: 5/201b`)
-that together cover 7 coverage points (`cov: 7`).
+that together cover 7 *coverage points* (`cov: 7`). 
+You may think of coverage points as of
+[basic blocks](https://en.wikipedia.org/wiki/Basic_block) in the code.
+
 ```
 ==2335==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x602000155c13 at pc 0x0000004ee637...
 READ of size 1 at 0x602000155c13 thread T0
