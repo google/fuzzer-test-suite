@@ -559,7 +559,7 @@ Try fuzzing the woff benchmark with an empty seed corpus:
 ```
 cd ~/woff
 mkdir NEW_CORPUS
-./woff2-2016-05-06 NEW_CORPUS -jobs=8 -workers=8 -use_cmp=1
+./woff2-2016-05-06 NEW_CORPUS -jobs=8 -workers=8
 ```
 Pretty soon you will hit an OOM bug:
 ```
