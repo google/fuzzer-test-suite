@@ -30,7 +30,7 @@ svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer
 Fuzzer/build.sh
 ```
 
-## 'Hellow world' fuzzer
+## 'Hello world' fuzzer
 Definition:
 a **fuzz target** is a function that has the following signature and does something interesting with it's arguments:
 ```
