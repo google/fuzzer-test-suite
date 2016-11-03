@@ -251,7 +251,7 @@ use `-workers=M` to set the number of allowed parallel jobs.
 
 ```
 cd ~/woff
-./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/ -jobs=8
+./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/ -jobs=8 -workers=8
 ```
 On a 8-core machine this will spawn 4 parallel workers. If one of them dies, another one will be created, up to 8.
 ```
