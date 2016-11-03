@@ -433,7 +433,7 @@ partially covered functions. Look there for clues on why the fuzzer is not
 finding more coverage.
 
 Can you see why we can't find more coverage here?
-(Hint: check `src/woff2_dec.cc:995`)
+(Hint: check covered lines in `src/woff2_dec.cc:`)
 
 There are also tools that provide coverage reports in html,
 e.g. [Clang Coverage](http://clang.llvm.org/docs/SourceBasedCodeCoverage.html).
