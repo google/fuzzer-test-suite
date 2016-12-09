@@ -8,4 +8,4 @@ get_git_revision https://github.com/mcarpenter/afl be3e88d639da5350603f6c0fee069
 rm -rf $CORPUS
 mkdir $CORPUS
 [ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS/ -jobs=$JOBS -dict=afl/dictionaries/xml.dict -workers=$JOBS $CORPUS
-grep "AddressSanitizer: heap-buffer-overflow" fuzz-0.log
+grep "AddressSanitizer: heap-buffer-overflow\|ERROR: LeakSanitizer: detected memory leaks" fuzz-0.log
