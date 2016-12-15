@@ -14,6 +14,6 @@ rm -rf $CORPUS-2
 mkdir $CORPUS-2
 [ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE $CORPUS-2 $CORPUS -merge=1 2> log
 grep -v DFA log
-grep "=== Merge: written [1-9][0-9].* units" log || exit 1
+grep "MERGE-OUTER: succesfull in 1 attempt(s)" log || exit 1
 
 
