@@ -19,7 +19,7 @@ Prerequisites: experience with C/C++ and Unix shell.
    * Choose "Access scopes" = "Allow full access to all Cloud APIs"
 * Install dependencies: 
 
-```
+```shell
 # Install git and get this tutorial
 sudo apt-get --yes install git
 git clone https://github.com/google/fuzzer-test-suite.git FTS
@@ -33,9 +33,9 @@ Fuzzer/build.sh
 ## 'Hello world' fuzzer
 Definition:
 a **fuzz target** is a function that has the following signature and does something interesting with it's arguments:
-```
+```c
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
-  DoSomethingWitData(Data, Size);
+  DoSomethingWithData(Data, Size);
   return 0;
 }
 ```
@@ -49,7 +49,7 @@ with the following extra flags:
 * `-g` (recommended): enables debug info, makes the error messages easier to read. 
 
 Then you need to link the target code with `libFuzzer.a` which provides the `main()` function. 
-```
+```shell
 clang++ -g -fsanitize=address -fsanitize-coverage=trace-pc-guard FTS/tutorial/fuzz_me.cc libFuzzer.a
 ```
 Now try running it:
@@ -122,7 +122,7 @@ Before exiting the process libFuzzer has created a file on disc with the bytes t
 Take a look at this file. What do you see? Why did it trigger the crash? 
 
 To reproduce the crash again w/o fuzzing run 
-```
+```shell
 ./a.out crash-0eb8e4ed029b774d80f2b66408203801cb982a60
 ```
 
@@ -139,7 +139,7 @@ contains ready-to-use scripts to build fuzzers for various targets, including op
 the 'heartbleed' bug is present. 
 
 To build the fuzzer for openssl-1.0.1f execute the following:
-```
+```shell
 mkdir -p ~/tmp; rm -rf ~/tmp/*; cd ~/tmp
 ~/FTS/openssl-1.0.1f/build.sh
 ```
@@ -149,7 +149,7 @@ and build the fuzzer for one specific API that has the bug,
 see  [openssl-1.0.1f/target.cc](../openssl-1.0.1f/target.cc).
 
 Try running the fuzzer:
-```
+```shell
 ./openssl-1.0.1f
 ```
 You whould see something like this in a few seconds:
@@ -176,12 +176,12 @@ Not all targets are that easy.
 
 One important way to increase fuzzing efficiency is to provide an initial set of inputs, aka a *seed corpus*.
 For example, let us try another target: [Woff2](../woff2-2016-05-06). Build it like this:
-```
+```shell
 cd; mkdir -p woff; cd woff;
 ~/FTS/woff2-2016-05-06/build.sh
 ```
 Now run it like you did it with the previous fuzz targets: 
-```
+```shell
 ./woff2-2016-05-06 
 ```
 Most likely you will see that the fuzzer is stuck --
@@ -204,7 +204,7 @@ files and placed it into the directory `./SEED_CORPUS/`.
 Inspect this directory. What do you see? Are there any `.woff2` files?
 
 Now you can use the woff2 fuzzer with a seed corpus. Do it like this:
-```
+```shell
 mkdir MY_CORPUS
 ./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/
 ```
@@ -249,7 +249,7 @@ If you run the fuzzer with `-jobs=N` it will spawn N independent jobs
 but no more than half of the number of cores you have;
 use `-workers=M` to set the number of allowed parallel jobs.
 
-```
+```shell
 cd ~/woff
 ./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/ -jobs=8
 ```
@@ -299,17 +299,17 @@ mkdir -p ~/libxml; rm -rf ~/libxml/*; cd ~/libxml
 ```
 
 Now, run the newly bult fuzzer for 10-20 seconds with and without a dictionary:
-```
+```shell
 ./libxml2-v2.9.2   # Press Ctrl-C in 10-20 seconds
 ```
-```
+```shell
 ./libxml2-v2.9.2 -dict=afl/dictionaries/xml.dict  # Press Ctrl-C in 10-20 seconds
 ```
 
 Did you see the differentce? 
 
 Now create a corpus directory and run for real on all CPUs:
-```
+```shell
 mkdir CORPUS
 ./libxml2-v2.9.2 -dict=afl/dictionaries/xml.dict -jobs=8 -workers=8 CORPUS
 ```
@@ -345,18 +345,18 @@ you from finding more bugs. The best approach in such cases is to fix the shallo
 and restart fuzzing. However you can move forward a bit by simply re-starting libFuzzer 
 many times. `-jobs=1000` will do this for you. 
 
-```
+```shell
 mkdir -p ~/pcre2 ; rm -rf ~/pcre2/*; cd ~/pcre2
 ~/FTS/pcre2-10.00/build.sh
 ```
 
-```
+```shell
 mkdir CORPUS
 ./pcre2-10.00 -jobs=1000 -workers=8 CORPUS
 ```
 
 After a minute or two look for the erros in the log files:
-```
+```shell
 grep ERROR *.log | sort -k 3
 ```
 You will see one paticular bug very often (which one?) but occasionally others will occur too. 
@@ -369,7 +369,7 @@ Or you may be lucky to have a large seed corpus.
 In either way, you may want to minimize your corpus, 
 that is to create a subset of the corpus that has the same coverage. 
 
-```
+```shell
 mkdir NEW_CORPPUS
 ./your-fuzzer NEW_CORPUS OLD_CORPUS -merge=1
 ```
@@ -378,7 +378,7 @@ Do this with one of the fuzzers you have tried previosly.
 
 The same flag can be used to merge new items into your existing corpus.
 Only the items that generate new coverage will be added.
-```
+```shell
 ./your-fuzzer EXISTING_CORPUS SOME_MORE_INPUTS -merge=1
 ```
 
@@ -391,7 +391,7 @@ reproducer provided with the [openssl-1.0.2d benchmark](../openssl-1.0.2d)
 This will try to iteratively minimize the crash reproducer
 by applying up to 10000 mutations on every iteration.
 
-```
+```shell
 cd ~/openssl-1.0.2d
 ./openssl-1.0.2d \
   -minimize_crash=1 -runs=10000 \
@@ -406,7 +406,7 @@ to investigate the coverage achieved by the target on a given corpus.
 You may get a very simple coverage report from libFuzzer using
 `-print_coverage=1`:
 
-```
+```shell
 cd ~/woff/ && ./woff2-2016-05-06 -runs=1000000 -use_cmp=0 -print_coverage=1
 ```
 
@@ -494,29 +494,29 @@ your [GCE](https://cloud.google.com/compute/) VM. If you didn't, create a new VM
 * (In the browser) Go to https://console.cloud.google.com/storage and create
 a new bucket (let it's name be `$GCS_BUCKET`)
 * Create a directory in your cloud bucket named `CORPUS`:
-```
+```shell
 touch EMPTY_FILE; gsutil cp EMPTY_FILE  gs://$GCS_BUCKET/CORPUS/
 ```
 * (In the browser), click 'REFRESH', verify that you see the new directory with
   `EMPTY_FILE` in it.
 * Create a local directory named `CORPUS` and do some fuzzing:
-```
+```shell
 cd ~/pcre2
 mkdir CORPUS
 ./pcre2-10.00 CORPUS/ -runs=10000
 ```
 * Now `CORPUS` has some files. Synchronize it with the cloud directory:
-```
+```shell
 gsutil -m rsync  CORPUS  gs://$GCS_BUCKET/CORPUS/
 ```
 * Check that you can see the new files:
-```
+```shell
 gsutil ls gs://$GCS_BUCKET/CORPUS/
 ```
 * Congratulations, you have just saved your corpus to cloud storage. But this is
   not all the fun.
   Now you can synchronize it back to the local disk and fuzz again.
-```
+```shell
 gsutil -m rsync  gs://$GCS_BUCKET/CORPUS/ CORPUS
 ```
 * If several VMs do this simultaneously you get **distributed** fuzzing.
@@ -556,7 +556,7 @@ Out-of-memory (OOM) bugs slowdown in-process fuzzing immensely.
 By default libFuzzer limits the amount of RAM per process by 2Gb.
 
 Try fuzzing the woff benchmark with an empty seed corpus:
-```
+```shell
 cd ~/woff
 mkdir NEW_CORPUS
 ./woff2-2016-05-06 NEW_CORPUS -jobs=8 -workers=8
