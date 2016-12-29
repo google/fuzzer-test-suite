@@ -36,6 +36,7 @@ svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer
 Fuzzer/build.sh
 ```
 ### Docker
+*This option is less tested*
 * [Install Docker](https://docs.docker.com/engine/installation/)
 * Run `docker run -ti libfuzzertutorial/base`
 
