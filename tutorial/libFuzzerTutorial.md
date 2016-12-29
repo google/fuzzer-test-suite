@@ -11,7 +11,12 @@ a dynamic memory error detector for C/C++.
 Prerequisites: experience with C/C++ and Unix shell.
 
 
-## Setup a VM or Docker
+## Setup the environment
+
+First, you should prepare the environment. We recommend to use a VM on [GCE](https://cloud.google.com/compute/).
+A bit simpler solution is to use Docker (you may not be able to complete tasks related to cloud storage).
+You may also use your own Linux machine, but [YMMV](https://en.wiktionary.org/wiki/your_mileage_may_vary).
+
 ### VM on GCE
 * Login into your [GCE](https://cloud.google.com/compute/) account or create one.
 * Create a new VM and ssh to it
