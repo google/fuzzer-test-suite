@@ -11,7 +11,8 @@ a dynamic memory error detector for C/C++.
 Prerequisites: experience with C/C++ and Unix shell.
 
 
-## Setup a VM
+## Setup a VM or Docker
+### VM on GCE
 * Login into your [GCE](https://cloud.google.com/compute/) account or create one.
 * Create a new VM and ssh to it
    * Ubuntu 14.04 LTS is recommended, other VMs may or may not work
@@ -29,6 +30,9 @@ git clone https://github.com/google/fuzzer-test-suite.git FTS
 svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer
 Fuzzer/build.sh
 ```
+### Docker
+* [Install Docker](https://docs.docker.com/engine/installation/)
+* Run `docker run -ti libfuzzertutorial/base`
 
 ## 'Hello world' fuzzer
 Definition:
