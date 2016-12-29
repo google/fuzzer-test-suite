@@ -3,4 +3,4 @@
 FROM ubuntu:16.04
 MAINTAINER kcc@google.com
 RUN apt-get update && apt-get upgrade -y && apt-get autoremove -y
-RUN apt-get install git sudo
+RUN apt-get install -y git sudo
