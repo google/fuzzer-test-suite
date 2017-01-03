@@ -38,7 +38,7 @@ Fuzzer/build.sh
 ### Docker
 *This option is less tested*
 * [Install Docker](https://docs.docker.com/engine/installation/)
-* Run `docker run -ti libfuzzertutorial/base`
+* Run `docker run --cap-add SYS_PTRACE -ti libfuzzertutorial/base`
 
 ## 'Hello world' fuzzer
 Definition:
