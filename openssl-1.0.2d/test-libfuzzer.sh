@@ -15,4 +15,4 @@ grep 'Assertion `strcmp(openssl_results.exptmod, gcrypt_results.exptmod)==0. fai
 # but we will learn something new.
 [ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE $SCRIPT_DIR/crash-12ae1af0c82252420b5f780bc9ed48d3ba05109e  -minimize_crash=1 -runs=1000000 2> min.log
 grep CRASH_MIN min.log
-grep "CRASH_MIN: failed to minimize beyond minimized-from-.* (1.. bytes), exiting" min.log || exit 1
+grep "CRASH_MIN: failed to minimize beyond ./minimized-from-.* (1.. bytes), exiting" min.log || exit 1
