@@ -1,0 +1,19 @@
+Finds
+[CVE-2017-3732](https://www.openssl.org/news/secadv/20170126.txt),
+a carry propagating bug in [OpenSSL](https://www.openssl.org/)'s `BN_mod_exp`.
+This was originally
+[discovered](https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=407)
+by [OSS-Fuzz](https://github.com/google/oss-fuzz)
+using the in-tree
+[bignum fuzz target](https://github.com/openssl/openssl/blob/OpenSSL_1_1_0-stable/fuzz/bignum.c).
+
+This is similar to
+[CVE-2015-3193](https://blog.fuzzing-project.org/31-Fuzzing-Math-miscalculations-in-OpenSSLs-BN_mod_exp-CVE-2015-3193.html)
+but is a different bug.
+
+It took thousands of CPU hours to find this bug for the first time.
+Reproducer provided in this directory.
+
+```
+bignum.c:91: OpenSSL internal error: assertion failed: success
+```
