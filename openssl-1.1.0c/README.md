@@ -6,6 +6,8 @@ This was originally
 by [OSS-Fuzz](https://github.com/google/oss-fuzz)
 using the in-tree
 [bignum fuzz target](https://github.com/openssl/openssl/blob/OpenSSL_1_1_0-stable/fuzz/bignum.c).
+Fixed
+[here](https://github.com/openssl/openssl/commit/3f4bcf5bb664b47ed369a70b99fac4e0ad141bb3).
 
 This is similar to
 [CVE-2015-3193](https://blog.fuzzing-project.org/31-Fuzzing-Math-miscalculations-in-OpenSSLs-BN_mod_exp-CVE-2015-3193.html)
