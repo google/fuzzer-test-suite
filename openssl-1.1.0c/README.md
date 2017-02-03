@@ -15,7 +15,7 @@ This is similar to
 [CVE-2015-3193](https://blog.fuzzing-project.org/31-Fuzzing-Math-miscalculations-in-OpenSSLs-BN_mod_exp-CVE-2015-3193.html)
 but is a different bug.
 
-It took thousands of CPU hours to find this bug for the first time.
+It took at least one CPU year to find this bug for the first time.
 Reproducer provided in this directory.
 
 ```
