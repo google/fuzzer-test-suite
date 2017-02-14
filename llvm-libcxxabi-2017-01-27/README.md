@@ -4,4 +4,5 @@ The crash is caused by a pop-back from an empty std::vector object
 and manifests in different ways (NULL deref, stack overflow, run-time error
 message, etc) depending on the standard C++ library implementation used.
 Reproducer attached. This bug took OSS-Fuzz several weeks to discover.
+Fixed [here](http://llvm.org/viewvc/llvm-project?view=revision&revision=293330).
 
