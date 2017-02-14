@@ -40,6 +40,16 @@ Fuzzer/build.sh
 * [Install Docker](https://docs.docker.com/engine/installation/)
 * Run `docker run --cap-add SYS_PTRACE -ti libfuzzertutorial/base`
 
+### Verify the setup
+Run:
+```shell
+clang++ -g -fsanitize=address -fsanitize-coverage=trace-pc-guard FTS/tutorial/fuzz_me.cc libFuzzer.a && ./a.out 2>&1 | grep ERROR 
+```
+and make sure you see something like 
+```
+==31851==ERROR: AddressSanitizer: heap-buffer-overflow on address...
+```
+
 ## 'Hello world' fuzzer
 Definition:
 a **fuzz target** is a function that has the following signature and does something interesting with it's arguments:

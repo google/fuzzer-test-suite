@@ -6,14 +6,16 @@ This was originally
 by [OSS-Fuzz](https://github.com/google/oss-fuzz)
 using the in-tree
 [bignum fuzz target](https://github.com/openssl/openssl/blob/OpenSSL_1_1_0-stable/fuzz/bignum.c).
-Fixed
-[here](https://github.com/openssl/openssl/commit/3f4bcf5bb664b47ed369a70b99fac4e0ad141bb3).
+Fixed in openssl
+[here](https://github.com/openssl/openssl/commit/3f4bcf5bb664b47ed369a70b99fac4e0ad141bb3)
+and in boringssl
+[here](https://github.com/google/boringssl/commit/d103616db14ca9587f074efaf9f09a48b8ca80cb).
 
 This is similar to
 [CVE-2015-3193](https://blog.fuzzing-project.org/31-Fuzzing-Math-miscalculations-in-OpenSSLs-BN_mod_exp-CVE-2015-3193.html)
 but is a different bug.
 
-It took thousands of CPU hours to find this bug for the first time.
+It took at least one CPU year to find this bug for the first time.
 Reproducer provided in this directory.
 
 ```
