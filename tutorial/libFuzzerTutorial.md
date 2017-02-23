@@ -39,6 +39,7 @@ Fuzzer/build.sh
 *This option is less tested*
 * [Install Docker](https://docs.docker.com/engine/installation/)
 * Run `docker run --cap-add SYS_PTRACE -ti libfuzzertutorial/base`
+  * Alternatively, use the `libfuzzertutorial/prebuilt` image -- it is a bit larger but has the the pre-built fuzzer binaries
 
 ## Verify the setup
 Run:
