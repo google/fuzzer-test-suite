@@ -5,6 +5,7 @@
 set -x
 rm -rf $CORPUS
 mkdir $CORPUS
+cp $SCRIPT_DIR/seed.jpg $CORPUS
 
 rm fuzz-*.log
 
@@ -17,4 +18,5 @@ test_source_location() {
   grep "INFO: found line matching '$SRC_LOC'" fuzz-*.log || exit 1
 }
 
-test_source_location jdmarker.c:317
+test_source_location jdmarker.c:659
+
