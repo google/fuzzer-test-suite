@@ -1,9 +1,6 @@
 #!/bin/bash
 # Copyright 2016 Google Inc. All Rights Reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
-
-FUZZER=${1-"libfuzzer"}
-
 . $(dirname $0)/../common.sh
 
 get_git_revision https://github.com/google/woff2.git  9476664fd6931ea6ec532c94b816d8fbbe3aed90 SRC

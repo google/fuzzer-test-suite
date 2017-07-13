@@ -6,8 +6,9 @@
 [ -e $(basename $0) ] && echo "PLEASE USE THIS SCRIPT FROM ANOTHER DIR" && exit 1
 
 # Ensure that argument, if present, is either "libfuzzer" or "afl"
-[[ ! -z $FUZZER ]] && [[ $FUZZER != "libfuzzer" ]] && [[ $FUZZER != "afl" ]] && echo "USAGE: If present, argument \$1 should be either 'afl' or 'libfuzzer' but it is $FUZZER" && exit 1
-echo "Building with $FUZZER"
+FUZZING_ENGINE=${FUZZING_ENGINE:-"libfuzzer"}
+[[ ! -z $FUZZING_ENGINE ]] && [[ $FUZZING_ENGINE != "libfuzzer" ]] && [[ $FUZZING_ENGINE != "afl" ]] && echo "USAGE: If present, argument \$1 should be either 'afl' or 'libfuzzer' but it is $FUZZING_ENGINE" && exit 1
+echo "Building with $FUZZING_ENGINE"
 
 SCRIPT_DIR=$(dirname $0)
 EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)
@@ -22,7 +23,7 @@ CC=${CC:-"clang"}
 CXX=${CXX:-"clang++"}
 CFLAGS=${CFLAGS:-"$FUZZ_CXXFLAGS"}
 CXXFLAGS=${CXXFLAGS:-"$FUZZ_CXXFLAGS"}
-LIB_FUZZING_ENGINE="libFuzzingEngine_${FUZZER}.a"
+LIB_FUZZING_ENGINE="libFuzzingEngine_${FUZZING_ENGINE}.a"
 
 # Additional build flags (e.g. for libFuzzer) can be passed to build.sh as $UNIQUE_BUILD
 
@@ -53,7 +54,7 @@ build_afl() {
   ar r $LIB_FUZZING_ENGINE *.o
   rm *.o
 
-  BINARY_NAME_EXT="_${FUZZER}"
+  BINARY_NAME_EXT="_${FUZZING_ENGINE}"
 }
 
 build_libfuzzer() {
@@ -64,5 +65,5 @@ build_libfuzzer() {
 }
 
 build_fuzzer() {
-  build_${FUZZER}
+  build_${FUZZING_ENGINE}
 }

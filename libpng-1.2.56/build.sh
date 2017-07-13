@@ -1,9 +1,6 @@
 #!/bin/bash
 # Copyright 2016 Google Inc. All Rights Reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
-
-FUZZER=${1-"libfuzzer"}
-
 . $(dirname $0)/../common.sh
 
 [ ! -e libpng-1.2.56.tar.gz ] && wget ftp://ftp.simplesystems.org/pub/libpng/png/src/libpng12/libpng-1.2.56.tar.gz
