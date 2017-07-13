@@ -14,4 +14,4 @@ get_git_revision https://github.com/mcarpenter/afl be3e88d639da5350603f6c0fee069
 build_lib
 build_libfuzzer
 set -x
-clang++ -std=c++11  $SCRIPT_DIR/target.cc  $FUZZ_CXXFLAGS  -I BUILD/include BUILD/.libs/libxml2.a libFuzzer.a  -lz -o $EXECUTABLE_NAME_BASE
+clang++ -std=c++11  $SCRIPT_DIR/target.cc  $FUZZ_CXXFLAGS  -I BUILD/include BUILD/.libs/libxml2.a $LIB_FUZZING_ENGINE  -lz -o $EXECUTABLE_NAME_BASE

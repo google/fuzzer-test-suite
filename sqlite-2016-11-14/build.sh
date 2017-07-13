@@ -6,4 +6,4 @@
 build_libfuzzer
 clang -c $FUZZ_CXXFLAGS $SCRIPT_DIR/sqlite3.c
 clang -c $FUZZ_CXXFLAGS $SCRIPT_DIR/ossfuzz.c
-clang++ sqlite3.o ossfuzz.o libFuzzer.a $FUZZ_CXXFLAGS -o $EXECUTABLE_NAME_BASE
+clang++ sqlite3.o ossfuzz.o $LIB_FUZZING_ENGINE $FUZZ_CXXFLAGS -o $EXECUTABLE_NAME_BASE

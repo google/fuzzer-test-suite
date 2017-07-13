@@ -15,4 +15,4 @@ build_lib() {
 build_lib
 build_libfuzzer
 set -x
-clang++ -g -std=c++11 $FUZZ_CXXFLAGS $SCRIPT_DIR/target.cc BUILD/.libs/libpng12.a libFuzzer.a  -I BUILD/ -I BUILD -lz -o $EXECUTABLE_NAME_BASE-lf
+clang++ -g -std=c++11 $FUZZ_CXXFLAGS $SCRIPT_DIR/target.cc BUILD/.libs/libpng12.a $LIB_FUZZING_ENGINE -I BUILD/ -I BUILD -lz -o $EXECUTABLE_NAME_BASE-lf

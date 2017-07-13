@@ -15,4 +15,4 @@ build_lib() {
 build_lib
 build_libfuzzer
 set -x
-clang++  -std=c++11 -I BUILD/src/ BUILD/test/fuzzing/hb-fuzzer.cc BUILD/src/.libs/libharfbuzz-fuzzing.a libFuzzer.a  $FUZZ_CXXFLAGS -lglib-2.0 -o $EXECUTABLE_NAME_BASE
+clang++  -std=c++11 -I BUILD/src/ BUILD/test/fuzzing/hb-fuzzer.cc BUILD/src/.libs/libharfbuzz-fuzzing.a $LIB_FUZZING_ENGINE  $FUZZ_CXXFLAGS -lglib-2.0 -o $EXECUTABLE_NAME_BASE

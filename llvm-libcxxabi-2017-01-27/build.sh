@@ -7,4 +7,4 @@ get_svn_revision http://llvm.org/svn/llvm-project/libcxxabi/trunk 293329 SRC
 build_libfuzzer
 
 clang++ -std=c++11 SRC/fuzz/cxa_demangle_fuzzer.cpp SRC/src/cxa_demangle.cpp -I SRC/include \
-  $FUZZ_CXXFLAGS libFuzzer.a -o $EXECUTABLE_NAME_BASE
+  $FUZZ_CXXFLAGS $LIB_FUZZING_ENGINE -o $EXECUTABLE_NAME_BASE

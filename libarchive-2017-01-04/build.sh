@@ -13,4 +13,4 @@ get_git_revision https://github.com/libarchive/libarchive.git 51d7afd3644fdad725
 build_lib
 build_libfuzzer
 set -x
-clang++ -std=c++11  -I BUILD/libarchive $SCRIPT_DIR/libarchive_fuzzer.cc  BUILD/.libs/libarchive.a libFuzzer.a -lz -lxml2 -lcrypto -lssl $FUZZ_CXXFLAGS -o $EXECUTABLE_NAME_BASE
+clang++ -std=c++11  -I BUILD/libarchive $SCRIPT_DIR/libarchive_fuzzer.cc  BUILD/.libs/libarchive.a $LIB_FUZZING_ENGINE -lz -lxml2 -lcrypto -lssl $FUZZ_CXXFLAGS -o $EXECUTABLE_NAME_BASE
