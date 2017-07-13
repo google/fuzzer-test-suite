@@ -7,44 +7,24 @@
 
 # Ensure that argument, if present, is either "libfuzzer" or "afl"
 FUZZER=${1-"libfuzzer"}
-[[ $FUZZER != "libfuzzer" ]] && [[ $FUZZER != "afl" ]] && echo "USAGE: Enter 'afl' as argument \$1 to build using AFL" && exit 1
+[[ $FUZZER != "libfuzzer" ]] && [[ $FUZZER != "afl" ]] && echo "USAGE: If present, argument \$1 should be either 'afl' or 'libfuzzer'" && exit 1
+echo "Building with $FUZZER"
 
 SCRIPT_DIR=$(dirname $0)
 EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)
 LIBFUZZER_SRC=$(dirname $(dirname $SCRIPT_DIR))/Fuzzer
 AFL_DRIVER=$LIBFUZZER_SRC/afl/afl_driver.cpp
-AFL_HOME=$(dirname $(dirname $SCRIPT_DIR))/AFL
+AFL_SRC=$(dirname $(dirname $SCRIPT_DIR))/AFL
 FUZZ_CXXFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div"
 CORPUS=CORPUS-$EXECUTABLE_NAME_BASE
 JOBS=8
 
-target_files
-echo "Building with $FUZZER"
-
 CC="clang"
 CXX="clang++"
-CFLAGS=""
-CXXFLAGS=""
+CFLAGS="$FUZZ_CXXFLAGS"
+CXXFLAGS="$FUZZ_CXXFLAGS"
 
-# Additional build flags e.g. for libFuzzer can be pre-defined with FUZZER_BUILD_FLAGS
-FUZZER_BUILD_FLAGS="$FUZZER_BUILD_FLAGS $TARGET_LIBRARY"
-
-if [[ $FUZZER == "afl" ]]
-then
-  FUZZER_BUILD_FLAGS="$FUZZER_BUILD_FLAGS $AFL_DRIVER afl-llvm-rt.o.o"
-  FINAL_TARGET="${TARGET_NAME}.o ${TARGET_INCLUDE}"
-  BINARY_NAME_EXT="_${FUZZER}"
-fi
-
-if [[ $FUZZER == "libfuzzer" ]]
-then
-  CXXFLAGS=$FUZZ_CXXFLAGS
-  CFLAGS=$CXXFLAGS
-  CC="$CC $CXXFLAGS"
-  CXX="$CXX $CXXFLAGS"
-  FUZZER_BUILD_FLAGS="$FUZZER_BUILD_FLAGS libFuzzer.a"
-  FINAL_TARGET=$TARGET_C
-fi
+# Additional build flags (e.g. for libFuzzer) can be passed to build.sh as $UNIQUE_BUILD
 
 get_git_revision() {
   GIT_REPO="$1"
@@ -68,14 +48,23 @@ get_svn_revision() {
 }
 
 build_afl() {
-  $CC -c -w $AFL_HOME/llvm_mode/afl-llvm-rt.o.c
-  $CXX -g -fsanitize-coverage=trace-pc-guard $TARGET_C -c
+  $CC -c -w $AFL_SRC/llvm_mode/afl-llvm-rt.o.c
+  $CXX -g -fsanitize-coverage=trace-pc-guard $TARGET_FILE $TARGET_INCLUDE -c
+
+  UNIQUE_BUILD="$UNIQUE_BUILD $AFL_DRIVER afl-llvm-rt.o.o ${TARGET_NAME}.o"
+  BINARY_NAME_EXT="_${FUZZER}"
 }
 
 build_libfuzzer() {
   $LIBFUZZER_SRC/build.sh
+
+  UNIQUE_BUILD="$UNIQUE_BUILD libFuzzer.a ${TARGET_FILE}"
 }
 
 build_fuzzer() {
   build_${FUZZER}
+}
+
+build_binary() {
+  $CXX $CXXFLAGS $UNIQUE_BUILD -o ${EXECUTABLE_NAME_BASE}${BINARY_NAME_EXT}
 }
