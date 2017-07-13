@@ -5,9 +5,9 @@
 # Don't allow to call these scripts from their directories.
 [ -e $(basename $0) ] && echo "PLEASE USE THIS SCRIPT FROM ANOTHER DIR" && exit 1
 
-# Ensure that argument, if present, is either "libfuzzer" or "afl"
+# Ensure that fuzzing engine, if defined, is either "libfuzzer" or "afl"
 FUZZING_ENGINE=${FUZZING_ENGINE:-"libfuzzer"}
-[[ ! -z $FUZZING_ENGINE ]] && [[ $FUZZING_ENGINE != "libfuzzer" ]] && [[ $FUZZING_ENGINE != "afl" ]] && echo "USAGE: If present, argument \$1 should be either 'afl' or 'libfuzzer' but it is $FUZZING_ENGINE" && exit 1
+[[ $FUZZING_ENGINE != "libfuzzer" ]] && [[ $FUZZING_ENGINE != "afl" ]] && echo "USAGE: If defined, $FUZZING_ENGINE should be either 'afl' or 'libfuzzer' but it is $FUZZING_ENGINE" && exit 1
 echo "Building with $FUZZING_ENGINE"
 
 SCRIPT_DIR=$(dirname $0)
