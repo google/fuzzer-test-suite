@@ -19,10 +19,11 @@ FUZZ_CXXFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address -fsanitize-cove
 CORPUS=CORPUS-$EXECUTABLE_NAME_BASE
 JOBS=8
 
-CC="clang"
-CXX="clang++"
-CFLAGS="$FUZZ_CXXFLAGS"
-CXXFLAGS="$FUZZ_CXXFLAGS"
+CC=${CC:-"clang"}
+CXX=${CXX:-"clang++"}
+CFLAGS=${CFLAGS:-"$FUZZ_CXXFLAGS"}
+CXXFLAGS=${CXXFLAGS:-"$FUZZ_CXXFLAGS"}
+LIB_FUZZING_ENGINE="libFuzzingEngine.a"
 
 # Additional build flags (e.g. for libFuzzer) can be passed to build.sh as $UNIQUE_BUILD
 
@@ -48,23 +49,22 @@ get_svn_revision() {
 }
 
 build_afl() {
-  $CC -c -w $AFL_SRC/llvm_mode/afl-llvm-rt.o.c
-  $CXX -g -fsanitize-coverage=trace-pc-guard $TARGET_FILE $TARGET_INCLUDE -c
+  $CC $CFLAGS -c -w $AFL_SRC/llvm_mode/afl-llvm-rt.o.c
+  $CXX $CXXFLAGS -std=c++11 -O2 -c $LIBFUZZER_SRC/afl/*.cpp -I$LIBFUZZER_SRC
+  ar r $LIB_FUZZING_ENGINE *.o
+  rm *.o
 
-  UNIQUE_BUILD="$AFL_DRIVER afl-llvm-rt.o.o ${TARGET_NAME}.o $UNIQUE_BUILD"
   BINARY_NAME_EXT="_${FUZZER}"
 }
 
 build_libfuzzer() {
   $LIBFUZZER_SRC/build.sh
-
-  UNIQUE_BUILD="${TARGET_FILE} libFuzzer.a $UNIQUE_BUILD"
+  #mv libFuzzer.a $LIB_FUZZING_ENGINE # more consistent style, breaks backwards compatibility
+  LIB_FUZZING_ENGINE="libFuzzer.a"
+  rm *.o
 }
 
 build_fuzzer() {
+  LIB_FUZZING_ENGINE=${LIB_FUZZING_ENGINE}_${FUZZER}
   build_${FUZZER}
-}
-
-build_binary() {
-  $CXX $CXXFLAGS $UNIQUE_BUILD -o ${EXECUTABLE_NAME_BASE}${BINARY_NAME_EXT}
 }

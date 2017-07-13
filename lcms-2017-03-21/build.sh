@@ -4,11 +4,6 @@
 
 . $(dirname $0)/../common.sh $1
 
-TARGET_NAME="cms_transform_fuzzer"
-TARGET_FILE="${SCRIPT_DIR}/${TARGET_NAME}.c"
-TARGET_INCLUDE="-I BUILD/include/"
-UNIQUE_BUILD="$UNIQUE_BUILD $TARGET_INCLUDE BUILD/src/.libs/liblcms2.a"
-
 build_lib() {
   rm -rf BUILD
   cp -rf SRC BUILD
@@ -19,4 +14,4 @@ get_git_revision https://github.com/mm2/Little-CMS.git f9d75ccef0b54c9f4167d9508
 build_lib
 build_fuzzer
 set -x
-build_binary
+$CXX $CXXFLAGS ${SCRIPT_DIR}/cms_transform_fuzzer.c -I BUILD/include/ BUILD/src/.libs/liblcms2.a $LIB_FUZZING_ENGINE -o ${EXECUTABLE_NAME_BASE}${BINARY_NAME_EXT}

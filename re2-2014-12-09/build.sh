@@ -4,11 +4,6 @@
 
 . $(dirname $0)/../common.sh $1
 
-TARGET_NAME="target"
-TARGET_FILE="${SCRIPT_DIR}/${TARGET_NAME}.cc"
-TARGET_INCLUDE="-I BUILD/"
-UNIQUE_BUILD="$UNIQUE_BUILD $TARGET_INCLUDE BUILD/obj/libre2.a -lpthread"
-
 build_lib() {
   rm -rf BUILD
   cp -rf SRC BUILD
@@ -19,4 +14,4 @@ get_git_revision https://github.com/google/re2.git 499ef7eff7455ce9c9fae86111d4a
 build_lib
 build_fuzzer
 set -x
-build_binary
+$CXX $CXXFLAGS ${SCRIPT_DIR}/target.cc  -I BUILD/ BUILD/obj/libre2.a -lpthread $LIB_FUZZING_ENGINE -o ${EXECUTABLE_NAME_BASE}${BINARY_NAME_EXT}
