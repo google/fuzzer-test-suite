@@ -6,8 +6,7 @@
 [ -e $(basename $0) ] && echo "PLEASE USE THIS SCRIPT FROM ANOTHER DIR" && exit 1
 
 # Ensure that argument, if present, is either "libfuzzer" or "afl"
-FUZZER=${1-"libfuzzer"}
-[[ $FUZZER != "libfuzzer" ]] && [[ $FUZZER != "afl" ]] && echo "USAGE: If present, argument \$1 should be either 'afl' or 'libfuzzer'" && exit 1
+[[ ! -z $FUZZER ]] && [[ $FUZZER != "libfuzzer" ]] && [[ $FUZZER != "afl" ]] && echo "USAGE: If present, argument \$1 should be either 'afl' or 'libfuzzer' but it is $FUZZER" && exit 1
 echo "Building with $FUZZER"
 
 SCRIPT_DIR=$(dirname $0)
@@ -23,7 +22,7 @@ CC=${CC:-"clang"}
 CXX=${CXX:-"clang++"}
 CFLAGS=${CFLAGS:-"$FUZZ_CXXFLAGS"}
 CXXFLAGS=${CXXFLAGS:-"$FUZZ_CXXFLAGS"}
-LIB_FUZZING_ENGINE="libFuzzingEngine.a"
+LIB_FUZZING_ENGINE="libFuzzingEngine_${FUZZER}.a"
 
 # Additional build flags (e.g. for libFuzzer) can be passed to build.sh as $UNIQUE_BUILD
 
@@ -59,12 +58,11 @@ build_afl() {
 
 build_libfuzzer() {
   $LIBFUZZER_SRC/build.sh
-  #mv libFuzzer.a $LIB_FUZZING_ENGINE # more consistent style, breaks backwards compatibility
-  LIB_FUZZING_ENGINE="libFuzzer.a"
-  rm *.o
+  mv libFuzzer.a $LIB_FUZZING_ENGINE # more consistent style, breaks backwards compatibility
+  #LIB_FUZZING_ENGINE="libFuzzer.a"
+  #rm *.o
 }
 
 build_fuzzer() {
-  LIB_FUZZING_ENGINE=${LIB_FUZZING_ENGINE}_${FUZZER}
   build_${FUZZER}
 }

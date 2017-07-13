@@ -1,6 +1,9 @@
 #!/bin/bash
 # Copyright 2017 Google Inc. All Rights Reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
+
+FUZZER=${1-"libfuzzer"}
+
 . $(dirname $0)/../common.sh
 
 build_lib() {
@@ -14,4 +17,4 @@ build_lib
 build_libfuzzer
 set -x
 clang $FUZZ_CXXFLAGS -DFuzzerTestOneInput=LLVMFuzzerTestOneInput -c -g BUILD/fuzz/bignum.c -I BUILD/include
-clang++ bignum.o $FUZZ_CXXFLAGS BUILD/libssl.a BUILD/libcrypto.a libFuzzer.a -lgcrypt -o $EXECUTABLE_NAME_BASE
+clang++ bignum.o $FUZZ_CXXFLAGS BUILD/libssl.a BUILD/libcrypto.a $LIB_FUZZING_ENGINE -lgcrypt -o $EXECUTABLE_NAME_BASE

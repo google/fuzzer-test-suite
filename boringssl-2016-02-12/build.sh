@@ -1,6 +1,9 @@
 #!/bin/bash
 # Copyright 2016 Google Inc. All Rights Reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
+
+FUZZER=${1-"libfuzzer"}
+
 . $(dirname $0)/../common.sh
 
 build_lib() {
@@ -13,4 +16,4 @@ get_git_revision https://github.com/google/boringssl.git  894a47df2423f0d2b6be57
 build_lib
 build_libfuzzer
 set -x
-clang++ -I BUILD/include $FUZZ_CXXFLAGS BUILD/fuzz/privkey.cc ./BUILD/ssl/libssl.a ./BUILD/crypto/libcrypto.a libFuzzer.a -o $EXECUTABLE_NAME_BASE
+clang++ -I BUILD/include $FUZZ_CXXFLAGS BUILD/fuzz/privkey.cc ./BUILD/ssl/libssl.a ./BUILD/crypto/libcrypto.a $LIB_FUZZING_ENGINE -o $EXECUTABLE_NAME_BASE

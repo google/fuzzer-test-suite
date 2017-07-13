@@ -2,7 +2,9 @@
 # Copyright 2017 Google Inc. All Rights Reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
 
-. $(dirname $0)/../common.sh $1
+FUZZER=${1-"libfuzzer"}
+
+. $(dirname $0)/../common.sh
 
 build_lib() {
   rm -rf BUILD
