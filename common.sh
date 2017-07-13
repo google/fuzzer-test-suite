@@ -51,14 +51,14 @@ build_afl() {
   $CC -c -w $AFL_SRC/llvm_mode/afl-llvm-rt.o.c
   $CXX -g -fsanitize-coverage=trace-pc-guard $TARGET_FILE $TARGET_INCLUDE -c
 
-  UNIQUE_BUILD="$UNIQUE_BUILD $AFL_DRIVER afl-llvm-rt.o.o ${TARGET_NAME}.o"
+  UNIQUE_BUILD="$AFL_DRIVER afl-llvm-rt.o.o ${TARGET_NAME}.o $UNIQUE_BUILD"
   BINARY_NAME_EXT="_${FUZZER}"
 }
 
 build_libfuzzer() {
   $LIBFUZZER_SRC/build.sh
 
-  UNIQUE_BUILD="$UNIQUE_BUILD libFuzzer.a ${TARGET_FILE}"
+  UNIQUE_BUILD="${TARGET_FILE} libFuzzer.a $UNIQUE_BUILD"
 }
 
 build_fuzzer() {
