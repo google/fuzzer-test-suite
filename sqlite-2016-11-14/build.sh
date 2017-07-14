@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 . $(dirname $0)/../common.sh
 
+set -x
 build_libfuzzer
 clang -c $FUZZ_CXXFLAGS $SCRIPT_DIR/sqlite3.c
 clang -c $FUZZ_CXXFLAGS $SCRIPT_DIR/ossfuzz.c

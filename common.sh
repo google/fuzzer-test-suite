@@ -19,11 +19,11 @@ FUZZ_CXXFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address -fsanitize-cove
 CORPUS=CORPUS-$EXECUTABLE_NAME_BASE
 JOBS=8
 
-CC=${CC:-"clang"}
-CXX=${CXX:-"clang++"}
-CFLAGS=${CFLAGS:-"$FUZZ_CXXFLAGS"}
-CXXFLAGS=${CXXFLAGS:-"$FUZZ_CXXFLAGS"}
-LIB_FUZZING_ENGINE="libFuzzingEngine_${FUZZING_ENGINE}.a"
+export CC=${CC:-"clang"}
+export CXX=${CXX:-"clang++"}
+export CFLAGS=${CFLAGS:-"$FUZZ_CXXFLAGS"}
+export CXXFLAGS=${CXXFLAGS:-"$FUZZ_CXXFLAGS"}
+export LIB_FUZZING_ENGINE="libFuzzingEngine_${FUZZING_ENGINE}.a"
 
 # Additional build flags (e.g. for libFuzzer) can be passed to build.sh as $UNIQUE_BUILD
 
