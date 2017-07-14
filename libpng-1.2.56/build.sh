@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 . $(dirname $0)/../common.sh
 
-[ ! -e libpng-1.2.56.tar.gz ] && wget ftp://ftp.simplesystems.org/pub/libpng/png/src/libpng12/libpng-1.2.56.tar.gz
+[ ! -e libpng-1.2.56.tar.gz ] && wget https://downloads.sourceforge.net/project/libpng/libpng12/1.2.56/libpng-1.2.56.tar.gz
 [ ! -e libpng-1.2.56 ] && tar xf libpng-1.2.56.tar.gz
 
 build_lib() {

@@ -8,7 +8,6 @@
 # Ensure that fuzzing engine, if defined, is either "libfuzzer" or "afl"
 FUZZING_ENGINE=${FUZZING_ENGINE:-"libfuzzer"}
 [[ $FUZZING_ENGINE != "libfuzzer" ]] && [[ $FUZZING_ENGINE != "afl" ]] && echo "USAGE: If defined, $FUZZING_ENGINE should be either 'afl' or 'libfuzzer' but it is $FUZZING_ENGINE" && exit 1
-echo "Building with $FUZZING_ENGINE"
 
 SCRIPT_DIR=$(dirname $0)
 EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)
@@ -63,5 +62,6 @@ build_libfuzzer() {
 }
 
 build_fuzzer() {
+  echo "Building with $FUZZING_ENGINE"
   build_${FUZZING_ENGINE}
 }
