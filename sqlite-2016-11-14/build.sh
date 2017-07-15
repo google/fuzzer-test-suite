@@ -4,7 +4,7 @@
 . $(dirname $0)/../common.sh
 
 set -x
-build_libfuzzer
-clang -c $FUZZ_CXXFLAGS $SCRIPT_DIR/sqlite3.c
-clang -c $FUZZ_CXXFLAGS $SCRIPT_DIR/ossfuzz.c
-clang++ sqlite3.o ossfuzz.o $LIB_FUZZING_ENGINE $FUZZ_CXXFLAGS -o $EXECUTABLE_NAME_BASE
+build_fuzzer
+$CC $CFLAGS -c $SCRIPT_DIR/sqlite3.c
+$CC $CFLAGS -c $SCRIPT_DIR/ossfuzz.c
+$CXX $CXXFLAGS sqlite3.o ossfuzz.o $LIB_FUZZING_ENGINE -o ${EXECUTABLE_NAME_BASE}${BINARY_NAME_EXT}

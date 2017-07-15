@@ -9,10 +9,10 @@
 build_lib() {
   rm -rf BUILD
   cp -rf libpng-1.2.56 BUILD
-  (cd BUILD && ./configure CC="clang" CFLAGS="$FUZZ_CXXFLAGS" &&  make -j)
+  (cd BUILD && ./configure &&  make -j)
 }
 
 build_lib
-build_libfuzzer
+build_fuzzer
 set -x
-clang++ -g -std=c++11 $FUZZ_CXXFLAGS $SCRIPT_DIR/target.cc BUILD/.libs/libpng12.a $LIB_FUZZING_ENGINE -I BUILD/ -I BUILD -lz -o $EXECUTABLE_NAME_BASE-lf
+$CXX $CXXFLAGS -std=c++11 $SCRIPT_DIR/target.cc BUILD/.libs/libpng12.a $LIB_FUZZING_ENGINE -I BUILD/ -I BUILD -lz -o ${EXECUTABLE_NAME_BASE}${BINARY_NAME_EXT}-lf

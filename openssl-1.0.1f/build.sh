@@ -6,10 +6,10 @@
 build_lib() {
   rm -rf BUILD
   cp -rf SRC BUILD
-  (cd BUILD && ./config && make clean && make CC="clang $FUZZ_CXXFLAGS"  -j $JOBS)
+  (cd BUILD && ./config && make clean && make -j $JOBS)
 }
 
 get_git_tag https://github.com/openssl/openssl.git OpenSSL_1_0_1f SRC
 build_lib
-build_libfuzzer
-clang++ -g $SCRIPT_DIR/target.cc -DCERT_PATH=\"$SCRIPT_DIR/\"  $FUZZ_CXXFLAGS BUILD/libssl.a BUILD/libcrypto.a $LIB_FUZZING_ENGINE -o $EXECUTABLE_NAME_BASE -I BUILD/include
+build_fuzzer
+$CXX $CXXFLAGS $SCRIPT_DIR/target.cc -DCERT_PATH=\"$SCRIPT_DIR/\"  BUILD/libssl.a BUILD/libcrypto.a $LIB_FUZZING_ENGINE -I BUILD/include -o ${EXECUTABLE_NAME_BASE}${BINARY_NAME_EXT}
