@@ -6,7 +6,7 @@
 build_lib() {
   rm -rf BUILD
   cp -rf SRC BUILD
-  (cd BUILD && ./config && make clean && make -j $JOBS)
+  (cd BUILD && CC="$CC $CFLAGS" ./config && make clean && make -j $JOBS)
 }
 
 get_git_tag https://github.com/openssl/openssl.git OpenSSL_1_1_0c SRC
