@@ -25,17 +25,19 @@ The tool should support execution on
 * local machine
 * GCE
 
+
+### Runners and Dispattcher 
+The tool spawns `K*B*N` **runner** VMs with `J` cores each and a single (multi-core) **dispatcher** VM. 
+
+* Dispatcher builds `K*B` fuzzer binaries and spawns runners.
+* Runners run a benchmark and periodically syncs the resulting corpus to a shared disk.
+* Dispatcher periodically syncs all corpora and stats from runners and updates the report
+* The top-level script periodically syncs the report from the dispatcher to local disk.
+
 ### GCE
-TODO
+A GCS bucket is used as a shared disk (rsync to copy files)
 ### Local
-TODO
+A local disk is used
 
-## Comparing different fuzzing engines
-* libFuzzer vs other guided engines: AFL, honggfuzz, etc
-* libFuzzer vs mutation engines, e.g. Radamsa 
-
-## Comparing different modes of libFuzzer
-* -use_counters=1 vs =0
-* -use_value_profile=1 vs =0
-* -shrink=1 vs =0
-* edge coverage vs bb coverage instrumentation
+### Docker
+We'll likely need to use docker for both runner and dispatcher.
