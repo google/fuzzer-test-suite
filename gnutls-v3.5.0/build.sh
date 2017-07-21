@@ -34,9 +34,9 @@ build_lib() {
   )
 }
 
-# wget_gnutls
-# build_lib
-# build_fuzzer
+wget_gnutls
+build_lib
+build_fuzzer
 set -x
 GNUTLS=`pwd`/BUILD
 INC_GNUTLS=`pkg-config ${GNUTLS}/lib/pkgconfig/gnutls.pc --cflags --libs`
