@@ -9,6 +9,7 @@
 FUZZING_ENGINE=${FUZZING_ENGINE:-"libfuzzer"}
 [[ $FUZZING_ENGINE != "libfuzzer" ]] && [[ $FUZZING_ENGINE != "afl" ]] && echo "USAGE: If defined, $FUZZING_ENGINE should be either 'afl' or 'libfuzzer' but it is $FUZZING_ENGINE" && exit 1
 
+BINARY_NAME_EXT="_${FUZZING_ENGINE}"
 SCRIPT_DIR=$(dirname $0)
 EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)
 LIBFUZZER_SRC=$(dirname $(dirname $SCRIPT_DIR))/Fuzzer
@@ -52,13 +53,11 @@ build_afl() {
   $CXX $CXXFLAGS -std=c++11 -O2 -c $LIBFUZZER_SRC/afl/*.cpp -I$LIBFUZZER_SRC
   ar r $LIB_FUZZING_ENGINE *.o
   rm *.o
-
-  BINARY_NAME_EXT="_${FUZZING_ENGINE}"
 }
 
 build_libfuzzer() {
   $LIBFUZZER_SRC/build.sh
-  mv libFuzzer.a $LIB_FUZZING_ENGINE 
+  mv libFuzzer.a $LIB_FUZZING_ENGINE
 }
 
 build_fuzzer() {

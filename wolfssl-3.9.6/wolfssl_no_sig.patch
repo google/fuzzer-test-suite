@@ -1,0 +1,24 @@
+diff -ruN wolfssl/src/ssl.c wolfssl_no_sig/src/ssl.c
+--- wolfssl/src/ssl.c    2016-07-06 14:45:45.779013492 -0400
++++ wolfssl_no_sig/src/ssl.c    2016-07-06 14:55:33.282467041 -0400
+@@ -2778,6 +2778,9 @@
+     /* subject key id or subject hash has been compared when searching
+        tpTable for the cert from function GetTrustedPeer */
+
++#ifdef FUZZER_DISABLE_SIGNCHECK
++    return SSL_SUCCESS;
++#endif
+     /* compare signatures */
+     if (tp->sigLen == cert->sigLength) {
+         if (XMEMCMP(tp->sig, cert->signature, cert->sigLength)) {
+@@ -16810,7 +16813,9 @@
+     int check_sign = 0;
+
+     WOLFSSL_ENTER("wolfSSL_ECDSA_do_verify");
+-
++#ifdef FUZZER_DISABLE_SIGNCHECK
++    return SSL_SUCCESS;
++#endif
+     if (d == NULL || sig == NULL || key == NULL || key->internal == NULL) {
+         WOLFSSL_MSG("wolfSSL_ECDSA_do_verify Bad arguments");
+         return SSL_FATAL_ERROR
