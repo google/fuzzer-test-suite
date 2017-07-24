@@ -36,7 +36,7 @@ mkdir ${SCRIPT_DIR}/tmp-configs
 for FENGINE in $FENGINE_CONFIGS; do
   cp $FENGINE tmp-configs/
 done
-gcloud compute scp --recurse ${SCRIPT_DIR}/tmp-configs ${INSTANCE_NAME}:{FENGINE_CONFIGS_DIR}/
+gcloud compute scp --recurse ${SCRIPT_DIR}/tmp-configs ${INSTANCE_NAME}:${FENGINE_CONFIGS_DIR}/
 rm -rf ${SCRIPT_DIR}/tmp-configs
 
 # Send the entire local FTS repository to the dispatcher;
