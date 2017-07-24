@@ -14,11 +14,14 @@ Currently, these scripts only run on Google Cloud, but support for alternatives 
 From one's local computer, call ` ${FTS}/engine_comparison/begin_experiment.sh
 <list of benchmarks> <fuzz engine config1> <fuzz engine config2>...`
 
-The first arugment, the list of benchmarks, should be a comma-separated list of names,
+### Specify Benchmarks
+
+The first argument, the list of benchmarks, should be a comma-separated list of names,
 or an alias such as `all`. Specifically, the name of an individual benchmark is the name of
 the directory which contains that benchmark's build script (in the root of this repo).
 
-All of the succeeding arguments specify unique fuzzing engines. In particular,
+### Specify Fuzzing Engines
+All arguments succeeding the first specify unique fuzzing engines. In particular,
 each of these arguments should be the path to a bash script; the script then
 configures a particular fuzzing engine exclusively by defining environment variables.
 
