@@ -12,7 +12,7 @@ Currently, these scripts only run on Google Cloud, but support for alternatives 
 ## Usage
 
 From one's local computer, call ` ${FTS}/engine_comparison/begin_experiment.sh
-<list of benchmarks> <fuzz engine config1> <fuzz engine config2>...`
+<list of benchmarks> <fuzz-engine-1 config> <fuzz-engine-2 config>...<fuzz-engine-K config>`
 
 ### Specify Benchmarks
 
