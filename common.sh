@@ -58,7 +58,7 @@ build_afl() {
 
 build_libfuzzer() {
   $LIBFUZZER_SRC/build.sh
-  mv libFuzzer.a $LIB_FUZZING_ENGINE 
+  mv libFuzzer.a $LIB_FUZZING_ENGINE
 }
 
 build_fuzzer() {
