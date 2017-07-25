@@ -19,18 +19,16 @@ build_lib() {
   )
 }
 
-get_git_tag https://github.com/wolfSSL/wolfssl.git v3.9.6 SRC
-build_lib
-build_fuzzer
+# get_git_tag https://github.com/wolfSSL/wolfssl.git v3.9.6 SRC
+# build_lib
+# build_fuzzer
 set -x
+CERTPATH=`pwd`
 WOLFSSL=`pwd`/BUILD
-CERTPATH=`pwd`/$SCRIPT_DIR
-$CXX $CXXFLAGS $SCRIPT_DIR/target.cc -DCERT_PATH=\"$CERTPATH/\" \
-    $LIB_FUZZING_ENGINE -I$WOLFSSL/include \
+$CXX $CXXFLAGS $SCRIPT_DIR/target.cc -DCERT_PATH=\"$CERTPATH/\" $LIB_FUZZING_ENGINE -I$WOLFSSL/include \
      -Wl,-rpath,$WOLFSSL/lib -L$WOLFSSL/lib -lwolfssl \
-    -o ${EXECUTABLE_NAME_BASE}${BINARY_NAME_EXT}
+     -o ${EXECUTABLE_NAME_BASE}${BINARY_NAME_EXT}
 
-$CXX $CXXFLAGS $SCRIPT_DIR/wolfssl.cc -DCERT_PATH=\"$CERTPATH/\" \
-    $LIB_FUZZING_ENGINE -I$WOLFSSL/include \
+$CXX $CXXFLAGS $SCRIPT_DIR/target.cc -DCERT_PATH=\"$CERTPATH/\" /home/ubserver/fuzzer-test-suite/Fuzzer/standalone/StandaloneFuzzTargetMain.o -I$WOLFSSL/include \
      -Wl,-rpath,$WOLFSSL/lib -L$WOLFSSL/lib -lwolfssl \
-    -o $SCRIPT_DIR/driver
+     -o ${EXECUTABLE_NAME_BASE}_standalone
