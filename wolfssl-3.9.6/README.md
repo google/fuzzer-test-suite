@@ -18,7 +18,7 @@ SUMMARY: AddressSanitizer: SEGV (lib/libwolfssl.so.3+0x11d9e7)
 ==108387==ABORTING
 ```
 
-#####Analysis
+#### Analysis
 Inside wolfSSL_CertManagerVerifyBuffer (src/ssl.c), a PEM certificate is decoded
 to a DER certificate:
 ```
@@ -88,7 +88,7 @@ READ of size 1 at 0x61a0000005a6 thread T0
     #4 0x510014 in verify_cert_mem(unsigned char const*, unsigned int, unsigned char const*, unsigned int) target.cc:86
 ```
 
-#####Analysis
+#### Analysis
 In PemToDer (src/ssl.c), since no check is performed on the exact distance of
 consumedEnd from bufferEnd, an out-of-bounds read can occur at the end of the
 footer in the certificate.
@@ -136,7 +136,7 @@ READ of size 1 at 0x60300000002b thread T0
     #3 0x7f1996019a98 in ?? ??:0
     #4 0x510014 in verify_cert_mem(unsigned char const*, unsigned int, unsigned char const*, unsigned int) target.cc:86
 ```
-
+#### Analysis
 In PemToDer (src/ssl.c), in the case of invalid headers, no check is performed
 on the lengths. This results in an out-of-bounds read of heap buffer, when the
 end of line in the certificate header is consumed past the allocated buffer
@@ -161,7 +161,7 @@ end of line in the certificate header is consumed past the allocated buffer
 ...
 ```
 
-#### crash-1f39
+## crash-1f39
 Time to find: 2 to 5 minutes.
 
 ```
@@ -178,7 +178,7 @@ READ of size 1 at 0x603000000120 thread T0
     #8 0x510014 in verify_cert_mem(unsigned char const*, unsigned int, unsigned char const*, unsigned int) target.cc:86
 ```
 
-#####Analysis
+#### Analysis
 In PemToDer (src/ssl.c), in the case of a malformed certificate, the der buffer
 might be having a size of 0 but the no SSL_BAD_FILE error is returned.
 ```
