@@ -25,7 +25,7 @@ else
 fi
 
 # Create one gcloud instance for the dispatcher
-gcloud compute instances create $INSTANCE_NAME --image-family=$DISPATCHER_IMAGE_FAMILY --image-project=$PROJECT_NAME
+gcloud compute instances create $INSTANCE_NAME --image-family=$DISPATCHER_IMAGE_FAMILY --image-project=ubuntu-os-cloud
 
 # Send configs for the fuzzing engine
 export FENGINE_CONFIGS_DIR=${FENGINE_CONFIGS_DIR:-"~/fuzzing_engine_configs"}
@@ -44,7 +44,7 @@ rm -rf ${SCRIPT_DIR}/tmp-configs
 gcloud compute scp --recurse $SCRIPT_DIR $INSTANCE_NAME:~/
 
 # Run dispatcher with Docker
-DISPATCHER_COMMAND="docker build -f ~/${SCRIPT_DIR}/engine_comparison/dispatcher/ ."
+DISPATCHER_COMMAND="docker build -f ~/${SCRIPT_DIR}/engine_comparison/ ."
 gcloud compute ssh $INSTANCE_NAME --command=$DISPATCHER_COMMAND
 
 
