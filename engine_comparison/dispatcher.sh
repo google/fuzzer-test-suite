@@ -28,7 +28,7 @@ build_benchmark_using() {
   ~/$FTS/$1/build.sh $FENGINE_NAME $FUZZING_ENGINE
 
   # copy binaries
-
+  # copy Dockerfile
   # TODO Add other items eg ./afl-fuzz, seeds
 }
 
@@ -45,7 +45,7 @@ for FENGINE_CONFIG in $(find ~/$FENGINE_CONFIGS_DIR); do
 
     gcloud compute instances create $INSTANCE_NAME
     gcloud compute scp --recurse $INSTANCE_NAME ./RUN-${THIS_BENCHMARK}/
-    COMMAND="docker build BUILDING-${THIS_BENCHMARK}" # --build-arg dir=/dir
+    COMMAND="docker build RUN-${THIS_BENCHMARK}" # --build-arg dir=/dir
     gcloud compute ssh $INSTANCE_NAME --command=$COMMAND
   done
 done
