@@ -29,8 +29,8 @@ build_benchmark_using() {
   cd $BUILDING_DIR
   echo "Filling $BUILDING_DIR"
 
-  # [[ ! -e ~/$FTS/$1/build.sh ]] && echo "cant build" && exit 1
-  ~/$FTS/$BENCHMARK/build.sh $FUZZING_ENGINE
+  # [[ ! -e ~/FTS/$1/build.sh ]] && echo "cant build" && exit 1
+  ~/FTS/$BENCHMARK/build.sh $FUZZING_ENGINE
 
   # export SEND_DIR=SEND-${THIS_BENCHMARK}
   # cp ${BENCHMARK}-${FUZZING_ENGINE} $SEND_DIR

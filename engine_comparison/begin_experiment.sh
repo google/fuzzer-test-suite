@@ -45,7 +45,7 @@ rm -rf ${SCRIPT_DIR}/tmp-configs
 gcloud compute scp --recurse $SCRIPT_DIR ${INSTANCE_NAME}:/input/FTS
 
 # Run dispatcher with Docker
-DISPATCHER_COMMAND="docker build -f /input/${SCRIPT_DIR}/engine_comparison/ --build-arg run-script=dispatcher.sh /input"
+DISPATCHER_COMMAND="docker build -f /input/FTS/engine_comparison/ --build-arg run-script=dispatcher.sh /input"
 gcloud compute ssh $INSTANCE_NAME --command=$DISPATCHER_COMMAND
 
 
