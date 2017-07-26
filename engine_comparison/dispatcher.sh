@@ -6,17 +6,21 @@
 
 build_engine() {
   # [[ ! -e ~/$FENGINE_CONFIGS_DIR/$1 ]] && echo "cant do" && exit 1
-  echo "Building $FUZZING_ENGINE"
-  # Probably use another script, to easily use env vars
-  #
-  # if libfuzzer
-  # if afl
+  # call new script with . script $1
+  # new script here
+
+  FENGINE_CONFIG=$1
+  . $FENGINE_CONFIG
+  echo "Building $FENGINE_CONFIG"
+  # export ENGINE_DIR=${ENGINE_DIR}
 }
 
 build_benchmark_using() {
   BENCHMARK=$1
   FENGINE_CONFIG=$2
-  # . $FENGINE_CONFIG
+
+  # New script here
+  . $FENGINE_CONFIG
 
   BUILDING_DIR=RUN-${THIS_BENCHMARK}
   rm -rf $BUILDING_DIR
@@ -25,26 +29,27 @@ build_benchmark_using() {
   echo "Filling $BUILDING_DIR"
 
   # [[ ! -e ~/$FTS/$1/build.sh ]] && echo "cant build" && exit 1
-  ~/$FTS/$1/build.sh $FENGINE_NAME $FUZZING_ENGINE
+  ~/$FTS/$BENCHMARK/build.sh $FUZZING_ENGINE
 
-  # copy binaries
-  # copy Dockerfile
-  # TODO Add other items eg ./afl-fuzz, seeds
+  # export SEND_DIR=SEND-${THIS_BENCHMARK}
+  # cp ${BENCHMARK}-${FUZZING_ENGINE} $SEND_DIR
+
+  # copy seeds, afl-fuzz
 }
 
 BASE_INSTANCE_NAME="FTS-RUNNER"
 EXPORT FENGINE_CONFIGS_DIR=${FENGINE_CONFIGS_DIR:-"fuzzing-engine-configs"}
 
 for FENGINE_CONFIG in $(find ~/$FENGINE_CONFIGS_DIR); do
-  build_engine $FUZZING_ENGINE
+  build_engine $FENGINE_CONFIG
   for BENCHMARK in $ALL_BENCHMARKS; do
-    THIS_BENCHMARK=${BENCHMARK}-${FUZZING_ENGINE}
+    THIS_BENCHMARK=${BENCHMARK}-${FENGINE_CONFIG}
     # n.b. this requires each config file to have a different name
     INSTANCE_NAME=${BASE_INSTANCE_NAME}-${THIS_BENCHMARK}
-    build_benchmark_using $BENCHMARK $FUZZING_ENGINE
+    build_benchmark_using $BENCHMARK $FENGINE_CONFIG
 
     gcloud compute instances create $INSTANCE_NAME
-    gcloud compute scp --recurse $INSTANCE_NAME ./RUN-${THIS_BENCHMARK}/
+    gcloud compute scp --recurse $INSTANCE_NAME ./RUN-${THIS_BENCHMARK}/ #SEND-$THIS_BENCHMARK
     COMMAND="docker build RUN-${THIS_BENCHMARK}" # --build-arg dir=/dir
     gcloud compute ssh $INSTANCE_NAME --command=$COMMAND
   done
