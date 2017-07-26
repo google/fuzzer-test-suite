@@ -6,8 +6,8 @@
 
 build_engine() {
   # [[ ! -e ~/$FENGINE_CONFIGS_DIR/$1 ]] && echo "cant do" && exit 1
-  # call new script with . script $1
-  # new script here
+
+  # All of this code will probably be in a separate script
 
   FENGINE_CONFIG=$1
   . $FENGINE_CONFIG
@@ -19,7 +19,8 @@ build_benchmark_using() {
   BENCHMARK=$1
   FENGINE_CONFIG=$2
 
-  # New script here
+  # Write a new script here, probably
+  #
   . $FENGINE_CONFIG
 
   BUILDING_DIR=RUN-${THIS_BENCHMARK}
@@ -38,20 +39,23 @@ build_benchmark_using() {
 }
 
 BASE_INSTANCE_NAME="FTS-RUNNER"
-EXPORT FENGINE_CONFIGS_DIR=${FENGINE_CONFIGS_DIR:-"fuzzing-engine-configs"}
+EXPORT FENGINE_CONFIGS_DIR=${FENGINE_CONFIGS_DIR:-"/fuzzing-engine-configs"}
 
 for FENGINE_CONFIG in $(find ~/$FENGINE_CONFIGS_DIR); do
   build_engine $FENGINE_CONFIG
   for BENCHMARK in $ALL_BENCHMARKS; do
     THIS_BENCHMARK=${BENCHMARK}-${FENGINE_CONFIG}
     # n.b. this requires each config file to have a different name
-    INSTANCE_NAME=${BASE_INSTANCE_NAME}-${THIS_BENCHMARK}
     build_benchmark_using $BENCHMARK $FENGINE_CONFIG
 
+    INSTANCE_NAME=${BASE_INSTANCE_NAME}-${THIS_BENCHMARK}
     gcloud compute instances create $INSTANCE_NAME
-    gcloud compute scp --recurse $INSTANCE_NAME ./RUN-${THIS_BENCHMARK}/ #SEND-$THIS_BENCHMARK
-    COMMAND="docker build RUN-${THIS_BENCHMARK}" # --build-arg dir=/dir
-    gcloud compute ssh $INSTANCE_NAME --command=$COMMAND
+
+    gcloud compute scp --recurse ./RUN-${THIS_BENCHMARK}/ ${INSTANCE_NAME}:/RUN-${THIS_BENCHMARK}
+    # probably want to scp SEND-$THIS_BENCHMARK instead
+
+    RUNNER_COMMAND="docker build --build-arg run-script=runner.sh /RUN-${THIS_BENCHMARK}"
+    gcloud compute ssh $INSTANCE_NAME --command=$RUNNER_COMMAND
   done
 done
 

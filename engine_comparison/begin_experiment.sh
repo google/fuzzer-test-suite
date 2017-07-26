@@ -27,8 +27,10 @@ fi
 # Create one gcloud instance for the dispatcher
 gcloud compute instances create $INSTANCE_NAME --image-family=$DISPATCHER_IMAGE_FAMILY --image-project=ubuntu-os-cloud
 
+gcloud compute ssh $INSTANCE_NAME --command="mkdir /work"
+
 # Send configs for the fuzzing engine
-export FENGINE_CONFIGS_DIR=${FENGINE_CONFIGS_DIR:-"~/fuzzing_engine_configs"}
+export FENGINE_CONFIGS_DIR=${FENGINE_CONFIGS_DIR:-"/fuzzing_engine_configs"}
 FENGINE_CONFIGS=${@:2}
 
 rm -rf ${SCRIPT_DIR}/tmp-configs
@@ -36,17 +38,16 @@ mkdir ${SCRIPT_DIR}/tmp-configs
 for FENGINE in $FENGINE_CONFIGS; do
   cp $FENGINE tmp-configs/
 done
-gcloud compute scp --recurse ${SCRIPT_DIR}/tmp-configs ${INSTANCE_NAME}:${FENGINE_CONFIGS_DIR}/
+gcloud compute scp --recurse ${SCRIPT_DIR}/tmp-configs ${INSTANCE_NAME}:/work/${FENGINE_CONFIGS_DIR}/
 rm -rf ${SCRIPT_DIR}/tmp-configs
 
 # Send the entire local FTS repository to the dispatcher;
 # Local changes to any file will propagate
-gcloud compute scp --recurse $SCRIPT_DIR $INSTANCE_NAME:~/
+gcloud compute scp --recurse $SCRIPT_DIR ${INSTANCE_NAME}:/work/${SCRIPT_DIR}
 
 # Run dispatcher with Docker
-DISPATCHER_COMMAND="docker build -f ~/${SCRIPT_DIR}/engine_comparison/ ."
+DISPATCHER_COMMAND="docker build -f /work/${SCRIPT_DIR}/engine_comparison/ --build-arg run-script=dispatcher.sh /work"
 gcloud compute ssh $INSTANCE_NAME --command=$DISPATCHER_COMMAND
-
 
 
 # TODO appropriately rsync some type of loop e.g.
