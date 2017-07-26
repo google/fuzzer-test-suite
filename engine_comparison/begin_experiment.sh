@@ -7,8 +7,8 @@
 DD=$(date +%d)
 MM=$(date +%m)
 INSTANCE_NAME="dispatcher-${DD}-${MM}"
-DISPATCHER_IMAGE_FAMILY=${DISPATCHER_IMAGE_FAMILY:-"ubuntu-1604-lts"} # Maybe container optimized
-export PROJECT_NAME="google.com:fuzz-comparisons"
+# DISPATCHER_IMAGE_FAMILY=${DISPATCHER_IMAGE_FAMILY:-"ubuntu-1604-lts"} # Maybe container optimized
+# export PROJECT_NAME="google.com:fuzz-comparisons"
 
 # These will frequently/usually be defined by the user
 export JOBS=${JOBS:-8}
@@ -25,7 +25,7 @@ else
 fi
 
 # Create one gcloud instance for the dispatcher
-gcloud compute instances create $INSTANCE_NAME --image-family=$DISPATCHER_IMAGE_FAMILY --image-project=ubuntu-os-cloud
+gcloud compute instances create $INSTANCE_NAME --image-family=ubuntu-1604-lts --image-project=ubuntu-os-cloud
 
 gcloud compute ssh $INSTANCE_NAME --command="mkdir /input"
 
