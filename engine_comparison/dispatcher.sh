@@ -51,10 +51,11 @@ for FENGINE_CONFIG in $(find ~/$FENGINE_CONFIGS_DIR); do
     INSTANCE_NAME=${BASE_INSTANCE_NAME}-${THIS_BENCHMARK}
     gcloud compute instances create $INSTANCE_NAME
 
-    gcloud compute scp --recurse ./RUN-${THIS_BENCHMARK}/ ${INSTANCE_NAME}:/RUN-${THIS_BENCHMARK}
+    gcloud compute ssh $INSTANCE_NAME --command="mkdir /input"
+    gcloud compute scp --recurse ./RUN-${THIS_BENCHMARK}/ ${INSTANCE_NAME}:/input/RUN-${THIS_BENCHMARK}
     # probably want to scp SEND-$THIS_BENCHMARK instead
 
-    RUNNER_COMMAND="docker build --build-arg run-script=runner.sh /RUN-${THIS_BENCHMARK}"
+    RUNNER_COMMAND="docker build -f /RUN-${THIS_BENCHMARK} --build-arg run-script=runner.sh /input"
     gcloud compute ssh $INSTANCE_NAME --command=$RUNNER_COMMAND
   done
 done
