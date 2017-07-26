@@ -15,7 +15,7 @@ From one's local computer, call ` ${FTS}/engine_comparison/begin_experiment.sh
 <list of benchmarks> <fuzz-engine-1 config> <fuzz-engine-2 config>...<fuzz-engine-K config>`
 
 These arguments specify benchmarks and fuzzing engines, and the harness will build
-each benchmark with each fuzzing engine. Therefore, choosing `B` benchmarks 
+each benchmark with each fuzzing engine. Therefore, choosing `B` benchmarks
 and `K` unique fuzzing engines will build `B * K` fuzzing binaries.
 
 ### Specify Benchmarks
@@ -50,10 +50,12 @@ propagate directly to the environments for
 
 ## Parameters
 
-Script behavior can be modified through a variety of environment variables,
-including
+Script behavior can be modified through a variety of environment variables. This
+is a definitive list of options which have default values, but can be altered
+before running `begin_experiment.sh` for advanced users
 
-- `N_ITERATIONS`, the number of times each binary will be run (and measured). 
+- `N_ITERATIONS`, the number of times each binary will be run (and measured).
 Each iteration will be run until the benchmark is completed, except with regards
 to time limits.
 - `JOBS` specifies how many threads to use in running each binary.
+

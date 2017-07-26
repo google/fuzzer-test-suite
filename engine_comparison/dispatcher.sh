@@ -23,7 +23,7 @@ build_benchmark_using() {
   #
   . $FENGINE_CONFIG
 
-  BUILDING_DIR=RUN-${THIS_BENCHMARK}
+  BUILDING_DIR=BUILD-${BENCHMARK}-WITH-${FENGINE_CONFIG}
   rm -rf $BUILDING_DIR
   mkdir $BUILDING_DIR
   cd $BUILDING_DIR
@@ -39,9 +39,8 @@ build_benchmark_using() {
 }
 
 BASE_INSTANCE_NAME="FTS-RUNNER"
-EXPORT FENGINE_CONFIGS_DIR=${FENGINE_CONFIGS_DIR:-"/fuzzing-engine-configs"}
 
-for FENGINE_CONFIG in $(find ~/$FENGINE_CONFIGS_DIR); do
+for FENGINE_CONFIG in $(find ./fengine-configs); do
   build_engine $FENGINE_CONFIG
   for BENCHMARK in $ALL_BENCHMARKS; do
     THIS_BENCHMARK=${BENCHMARK}-${FENGINE_CONFIG}
