@@ -16,7 +16,7 @@ export N_ITERATIONS=${N_ITERATIONS:-5}
 
 # Define $BENCHMARKS
 if [[ $1 == 'all' ]]; then
-  for b in $(find ${SCRIPT_DIR}/*/build.sh -type f); do
+  for b in $(find ${SCRIPT_DIR}/../*/build.sh -type f); do
     BENCHMARKS="$BENCHMARKS $(basename $(dirname $b))"
   done
 #elif [[ $1 == 'other alias' ]]; do
@@ -24,29 +24,35 @@ else
   BENCHMARKS=$(echo $1 | tr ',' ' ')
 fi
 
-# Create one gcloud instance for the dispatcher
-gcloud compute instances create $INSTANCE_NAME --image-family=ubuntu-1604-lts --image-project=ubuntu-os-cloud
+echo "Restarting gcloud instance. Instance should already be created (with gcloud_creator.sh)"
+# Start one gcloud instance for the dispatcher
+gcloud compute instances start $INSTANCE_NAME --zone=$GCLOUD_ZONE
+# Can't ssh immediately
+sleep 20 # Arbitrary choice of time. 10 is too short
 
-gcloud compute ssh $INSTANCE_NAME --command="mkdir /input"
+gcloud compute ssh $INSTANCE_NAME --command="mkdir ~/input" --zone=$GCLOUD_ZONE
 
 # Send configs for the fuzzing engine
 FENGINE_CONFIGS=${@:2}
 
-rm -rf ${SCRIPT_DIR}/tmp-configs
-mkdir ${SCRIPT_DIR}/tmp-configs
+if [[ -d tmp-configs ]]; then
+  rm -r tmp-configs
+fi
+mkdir tmp-configs
 for FENGINE in $FENGINE_CONFIGS; do
-  cp $FENGINE tmp-configs/
+  cp $FENGINE tmp-configs/$FENGINE
 done
-gcloud compute scp --recurse ${SCRIPT_DIR}/tmp-configs ${INSTANCE_NAME}:/input/fengine-configs
-rm -rf ${SCRIPT_DIR}/tmp-configs
+gcloud compute scp tmp-configs/ ${INSTANCE_NAME}:~/input --recurse --zone=$GCLOUD_ZONE
+rm -r tmp-configs
 
 # Send the entire local FTS repository to the dispatcher;
 # Local changes to any file will propagate
-gcloud compute scp --recurse $SCRIPT_DIR ${INSTANCE_NAME}:/input/FTS
+gcloud compute scp $(dirname $SCRIPT_DIR) ${INSTANCE_NAME}:~/input --recurse --zone=$GCLOUD_ZONE
+gcloud compute ssh $INSTANCE_NAME --command="mv ~/input/$(basename $(dirname ${SCRIPT_DIR})) ~/input/FTS" --zone="$GCLOUD_ZONE"
 
 # Run dispatcher with Docker
-DISPATCHER_COMMAND="docker build -f /input/FTS/engine_comparison/ --build-arg run-script=dispatcher.sh /input"
-gcloud compute ssh $INSTANCE_NAME --command=$DISPATCHER_COMMAND
+DISPATCHER_COMMAND="sudo docker build -f ~/input/FTS/engine_comparison/ --build-arg run-script=dispatcher.sh ~/input"
+gcloud compute ssh $INSTANCE_NAME --command="$DISPATCHER_COMMAND" --zone=$GCLOUD_ZONE
 
 
 # TODO appropriately rsync some type of loop e.g.
@@ -55,5 +61,5 @@ gcloud compute ssh $INSTANCE_NAME --command=$DISPATCHER_COMMAND
 #  gsutil rsync ${GSE_BUCKET_NAME}:${DIRECTORY}
 # done
 #
-#
-# gcloud compute instances stop/delete $INSTANCE_NAME
+# TODO end script properly
+# gcloud compute instances stop $INSTANCE_NAME

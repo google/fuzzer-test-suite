@@ -2,14 +2,37 @@
 
 This is a set of scripts to run A/B testing among different fuzzing engines.
 
-## gcloud
+## Gcloud
+
+Currently, these scripts only run on Google Cloud, but support for alternatives will be incorporated.
+
+### Gcloud Usage
+
+Before running experiments, use `gcloud_creator.sh` to create the initial VM.
+This can take 45-60 seconds to spin up, and `begin_experiment.sh` will not work
+until it's ready.
+VM status can be found on [the gcloud
+console](https://pantheon.corp.google.com/compute/instances?project=fuzzer-test-suite)
+
+VM naming is automatic, so only one argument is used. First call as:
+
+```
+${FTS}/engine_comparison/gcloud_creator.sh create
+```
+
+Similarly, when done for the day, call
+
+```
+${FTS}/engine_comparison/gcloud_creator.sh delete
+```
+
+### Installation
 
 The `gcloud` CLI is a part of the [Google Cloud SDK](https://cloud.google.com/sdk/gcloud/),
 which can be installed [here](https://cloud.google.com/sdk/downloads).
 
-Currently, these scripts only run on Google Cloud, but support for alternatives will be incorporated.
 
-## Usage
+## Script usage
 
 From one's local computer, call ` ${FTS}/engine_comparison/begin_experiment.sh
 <list of benchmarks> <fuzz-engine-1 config> <fuzz-engine-2 config>...<fuzz-engine-K config>`
