@@ -9,9 +9,14 @@ Currently, these scripts only run on Google Cloud, but support for alternatives 
 ### Gcloud Usage
 
 Before running experiments, use `gcloud_creator.sh` to create the initial VM.
-This can take 45-60 seconds to spin up, and `begin_experiment.sh` will not work
-until it's ready.
-VM status can be found on [the gcloud
+This can take 45-60 seconds, but `gcloud_creator.sh` doesn't exit until google
+cloud is ready for `begin_experiment.sh` to run; one needs only to wait for the
+"Instance Created" output message.
+
+In general, `gcloud` commands don't complete until the task is fully finished,
+but there is sometimes a small latency.
+
+VM status can also be found on [the gcloud
 console](https://pantheon.corp.google.com/compute/instances?project=fuzzer-test-suite)
 
 VM naming is automatic, so only one argument is used. First call as:

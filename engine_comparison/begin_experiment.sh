@@ -24,11 +24,17 @@ else
   BENCHMARKS=$(echo $1 | tr ',' ' ')
 fi
 
+
 echo "Restarting gcloud instance. Instance should already be created (with gcloud_creator.sh)"
 # Start one gcloud instance for the dispatcher
 gcloud compute instances start $INSTANCE_NAME --zone=$GCLOUD_ZONE
+
 # Can't ssh immediately
-sleep 20 # Arbitrary choice of time. 10 is too short
+sleep 12 # Arbitrary choice of time, generally works
+
+# If gcloud describe was more chronologically precise,
+# the follow code could be looped over:
+# gcloud compute instances describe $INSTANCE_NAME --zone=$GCLOUD_ZONE | grep "status: RUNNING" && break
 
 gcloud compute ssh $INSTANCE_NAME --command="mkdir ~/input" --zone=$GCLOUD_ZONE
 
