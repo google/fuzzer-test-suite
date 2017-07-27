@@ -1,6 +1,7 @@
 #!/bin/bash
 
 . $(dirname $0)/../common.sh
+. ${SCRIPT_DIR}/common-harness.sh
 
 # Create provided gcloud vm instance
 gcloud_create() {

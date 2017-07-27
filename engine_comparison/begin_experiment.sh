@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 
 . $(dirname $0)/../common.sh
+. ${SCRIPT_DIR}/common-harness.sh
 
 DD=$(date +%d)
 MM=$(date +%m)
