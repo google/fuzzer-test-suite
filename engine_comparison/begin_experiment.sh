@@ -34,7 +34,8 @@ while :
 do
   sleep 6 # arbitrary
   ! (gcloud compute ssh $INSTANCE_NAME --command="mkdir ~/input" --zone=$GCLOUD_ZONE \
-    | grep "ERROR") && break # Break loop as soon as there is no error
+    2>&1 | grep "ERROR") && break # Break loop as soon as there is no error
+  echo "GCloud VM isn't ready yet. Rerunning SSH momentarily"
 done
 
 # Send configs for the fuzzing engine
