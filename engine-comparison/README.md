@@ -8,9 +8,9 @@ Currently, these scripts only run on Google Cloud, but support for alternatives 
 
 ### Gcloud Usage
 
-Before running experiments, use `gcloud_creator.sh` to create the initial VM.
-This can take 45-60 seconds, but `gcloud_creator.sh` doesn't exit until google
-cloud is ready for `begin_experiment.sh` to run; one needs only to wait for the
+Before running experiments, use `gcloud-creator.sh` to create the initial VM.
+This can take 45-60 seconds, but `gcloud-creator.sh` doesn't exit until google
+cloud is ready for `begin-experiment.sh` to run; one needs only to wait for the
 "Instance Created" output message.
 
 In general, `gcloud` commands don't complete until the task is fully finished,
@@ -22,13 +22,13 @@ console](https://pantheon.corp.google.com/compute/instances?project=fuzzer-test-
 VM naming is automatic, so only one argument is used. First call as:
 
 ```
-${FTS}/engine_comparison/gcloud_creator.sh create
+${FTS}/engine-comparison/gcloud-creator.sh create
 ```
 
 Similarly, when done for the day, call
 
 ```
-${FTS}/engine_comparison/gcloud_creator.sh delete
+${FTS}/engine-comparison/gcloud-creator.sh delete
 ```
 
 ### Installation
@@ -39,7 +39,7 @@ which can be installed [here](https://cloud.google.com/sdk/downloads).
 
 ## Script usage
 
-From one's local computer, call ` ${FTS}/engine_comparison/begin_experiment.sh
+From one's local computer, call ` ${FTS}/engine-comparison/begin-experiment.sh
 <list of benchmarks> <fuzz-engine-1 config> <fuzz-engine-2 config>...<fuzz-engine-K config>`
 
 These arguments specify benchmarks and fuzzing engines, and the harness will build
@@ -80,7 +80,7 @@ propagate directly to the environments for
 
 Script behavior can be modified through a variety of environment variables. This
 is a definitive list of options which have default values, but can be altered
-before running `begin_experiment.sh` for advanced users
+before running `begin-experiment.sh` for advanced users
 
 - `N_ITERATIONS`, the number of times each binary will be run (and measured).
 Each iteration will be run until the benchmark is completed, except with regards
