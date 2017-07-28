@@ -25,7 +25,7 @@ build_benchmark_using() {
   FENGINE_CONFIG=$2
   THIS_BENCHMARK=$3
 
-  BUILDING_DIR=$WORK/BUILD-${THIS_BENCHMARK}}
+  BUILDING_DIR=$WORK/BUILD-${THIS_BENCHMARK}
   echo "Filling $BUILDING_DIR"
   rm -rf $BUILDING_DIR
   mkdir $BUILDING_DIR
@@ -64,11 +64,26 @@ handle_benchmark() {
 mv $WORK/tmp-configs $WORK/fengine-configs
 mkdir $WORK/fuzz-engines
 
+# Define $BENCHMARKS
+bash $WORK/FTS/engine-comparison/dispatcher.config
+
+if [[ $BMARKS == 'all' ]]; then
+  for b in $(find ${SCRIPT_DIR}/../*/build.sh -type f); do
+    BENCHMARKS="$BENCHMARKS $(basename $(dirname $b))"
+  done
+elif [[ $BMARKS == 'small' ]]; then
+  $BENCHMARKS="c-ares-CVE-2016-5180 re2-2014-12-09"
+#elif [[ $BMARKS == 'other alias' ]]; do
+else
+  BENCHMARKS=$(echo $1 | tr ',' ' ')
+fi
+
+# Main working loops
 for FENGINE_CONFIG in $(find $WORK/fengine-configs/*); do
   # this requires each config file to have a different name
   build_engine $FENGINE_CONFIG
 
-  for BENCHMARK in $ALL_BENCHMARKS; do
+  for BENCHMARK in $BENCHMARKS; do
     handle_benchmark $BENCHMARK $FENGINE_CONFIG &
   done
 done
