@@ -2,20 +2,48 @@
 
 This is a set of scripts to run A/B testing among different fuzzing engines.
 
-## gcloud
+## Gcloud
+
+Currently, these scripts only run on Google Cloud, but support for alternatives will be incorporated.
+
+### Gcloud Usage
+
+Before running experiments, use `gcloud_creator.sh` to create the initial VM.
+This can take 45-60 seconds, but `gcloud_creator.sh` doesn't exit until google
+cloud is ready for `begin_experiment.sh` to run; one needs only to wait for the
+"Instance Created" output message.
+
+In general, `gcloud` commands don't complete until the task is fully finished,
+but there is sometimes a small latency.
+
+VM status can also be found on [the gcloud
+console](https://pantheon.corp.google.com/compute/instances?project=fuzzer-test-suite)
+
+VM naming is automatic, so only one argument is used. First call as:
+
+```
+${FTS}/engine_comparison/gcloud_creator.sh create
+```
+
+Similarly, when done for the day, call
+
+```
+${FTS}/engine_comparison/gcloud_creator.sh delete
+```
+
+### Installation
 
 The `gcloud` CLI is a part of the [Google Cloud SDK](https://cloud.google.com/sdk/gcloud/),
 which can be installed [here](https://cloud.google.com/sdk/downloads).
 
-Currently, these scripts only run on Google Cloud, but support for alternatives will be incorporated.
 
-## Usage
+## Script usage
 
 From one's local computer, call ` ${FTS}/engine_comparison/begin_experiment.sh
 <list of benchmarks> <fuzz-engine-1 config> <fuzz-engine-2 config>...<fuzz-engine-K config>`
 
 These arguments specify benchmarks and fuzzing engines, and the harness will build
-each benchmark with each fuzzing engine. Therefore, choosing `B` benchmarks 
+each benchmark with each fuzzing engine. Therefore, choosing `B` benchmarks
 and `K` unique fuzzing engines will build `B * K` fuzzing binaries.
 
 ### Specify Benchmarks
@@ -50,10 +78,12 @@ propagate directly to the environments for
 
 ## Parameters
 
-Script behavior can be modified through a variety of environment variables,
-including
+Script behavior can be modified through a variety of environment variables. This
+is a definitive list of options which have default values, but can be altered
+before running `begin_experiment.sh` for advanced users
 
-- `N_ITERATIONS`, the number of times each binary will be run (and measured). 
+- `N_ITERATIONS`, the number of times each binary will be run (and measured).
 Each iteration will be run until the benchmark is completed, except with regards
 to time limits.
 - `JOBS` specifies how many threads to use in running each binary.
+
