@@ -37,6 +37,7 @@ do
     2>&1 | grep "ERROR") && break # Break loop as soon as there is no error
   echo "GCloud VM isn't ready yet. Rerunning SSH momentarily"
 done
+# TODO write function gcloud_robust_ssh
 
 # Send configs for the fuzzing engine
 FENGINE_CONFIGS=${@:2}
@@ -54,10 +55,14 @@ rm -r tmp-configs
 # Send the entire local FTS repository to the dispatcher;
 # Local changes to any file will propagate
 gcloud compute scp $(dirname $SCRIPT_DIR) ${INSTANCE_NAME}:~/input --recurse --zone=$GCLOUD_ZONE
-gcloud compute ssh $INSTANCE_NAME --command="mv ~/input/$(basename $(dirname ${SCRIPT_DIR})) ~/input/FTS" --zone="$GCLOUD_ZONE"
+
+
+# ! [[ -d ~/input/FTS ]] &&
+gcloud compute ssh $INSTANCE_NAME --command="rm -rf ~/input/FTS && \
+  mv ~/input/$(basename $(dirname ${SCRIPT_DIR})) ~/input/FTS " --zone=$GCLOUD_ZONE
 
 # Run dispatcher with Docker
-DISPATCHER_COMMAND="sudo docker build -f ~/input/FTS/engine_comparison/ --build-arg run-script=dispatcher.sh ~/input"
+DISPATCHER_COMMAND="~/input/FTS/engine-comparison/run.sh /~/work/FTS/engine-comparison/dispatcher.sh"
 gcloud compute ssh $INSTANCE_NAME --command="$DISPATCHER_COMMAND" --zone=$GCLOUD_ZONE
 
 
