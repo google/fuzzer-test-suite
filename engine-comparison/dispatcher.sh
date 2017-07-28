@@ -25,8 +25,8 @@ build_benchmark_using() {
   FENGINE_CONFIG=$2
   THIS_BENCHMARK=$3
 
-  echo "Filling $BUILDING_DIR"
   BUILDING_DIR=$WORK/BUILD-${THIS_BENCHMARK}}
+  echo "Filling $BUILDING_DIR"
   rm -rf $BUILDING_DIR
   mkdir $BUILDING_DIR
 
