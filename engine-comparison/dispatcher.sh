@@ -23,10 +23,10 @@ build_engine() {
 build_benchmark_using() {
   BENCHMARK=$1
   FENGINE_CONFIG=$2
-  FENGINE_NAME=$(basename $FENGINE_CONFG)
+  THIS_BENCHMARK=$3
 
   echo "Filling $BUILDING_DIR"
-  BUILDING_DIR=$WORK/BUILD-${BENCHMARK}-WITH-${FENGINE_NAME}
+  BUILDING_DIR=$WORK/BUILD-${THIS_BENCHMARK}}
   rm -rf $BUILDING_DIR
   mkdir $BUILDING_DIR
 
@@ -34,7 +34,7 @@ build_benchmark_using() {
   # [[ ! -e ~/FTS/$BENCHMARK/build.sh ]] && echo "cant build" && exit 1
   # $WORK/FTS/$BENCHMARK/build.sh $FUZZING_ENGINE
 
-  export SEND_DIR=$WORK/SEND-${BENCHMARK}-WITH-${FENGINE_NAME}
+  export SEND_DIR=$WORK/SEND-${THIS_BENCHMARK}
   rm -rf $SEND_DIR
   mkdir $SEND_DIR
   echo "Test file" > $SEND_DIR/example.txt
@@ -48,8 +48,8 @@ build_benchmark_using() {
 handle_benchmark() {
   BENCHMARK=$1
   FENGINE_CONFIG=$2
-  THIS_BENCHMARK=${BENCHMARK}-WITH-$(basename {FENGINE_NAME}) # Just for convenience
-  build_benchmark_using $BENCHMARK $FENGINE_CONFIG
+  THIS_BENCHMARK=${BENCHMARK}-WITH-$(basename {FENGINE_CONFIG}) # Just for convenience
+  build_benchmark_using $BENCHMARK $FENGINE_CONFIG $THIS_BENCHMARK
 
   INSTANCE_NAME=FTS-RUNNER-${THIS_BENCHMARK}
   gcloud compute instances create $INSTANCE_NAME --zone=$GCLOUD_ZONE
