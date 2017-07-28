@@ -11,20 +11,6 @@ INSTANCE_NAME="dispatcher-${DD}-${MM}"
 # DISPATCHER_IMAGE_FAMILY=${DISPATCHER_IMAGE_FAMILY:-"ubuntu-1604-lts"} # Maybe container optimized
 # export PROJECT_NAME="google.com:fuzz-comparisons"
 
-# These will frequently/usually be defined by the user
-export JOBS=${JOBS:-8}
-export N_ITERATIONS=${N_ITERATIONS:-5}
-
-# Define $BENCHMARKS
-if [[ $1 == 'all' ]]; then
-  for b in $(find ${SCRIPT_DIR}/../*/build.sh -type f); do
-    BENCHMARKS="$BENCHMARKS $(basename $(dirname $b))"
-  done
-#elif [[ $1 == 'other alias' ]]; do
-else
-  BENCHMARKS=$(echo $1 | tr ',' ' ')
-fi
-
 echo "Restarting gcloud instance. Instance should already be created (with gcloud_creator.sh)"
 # Start one gcloud instance for the dispatcher
 gcloud compute instances start $INSTANCE_NAME --zone=$GCLOUD_ZONE
@@ -37,6 +23,7 @@ do
     2>&1 | grep "ERROR") && break # Break loop as soon as there is no error
   echo "GCloud VM isn't ready yet. Rerunning SSH momentarily"
 done
+# TODO write function gcloud_robust_ssh
 
 # Send configs for the fuzzing engine
 FENGINE_CONFIGS=${@:2}
@@ -48,16 +35,27 @@ mkdir tmp-configs
 for FENGINE in $FENGINE_CONFIGS; do
   cp $FENGINE tmp-configs/$FENGINE
 done
+
 gcloud compute scp tmp-configs/ ${INSTANCE_NAME}:~/input --recurse --zone=$GCLOUD_ZONE
 rm -r tmp-configs
+
+# These will frequently/usually be defined by the user
+JOBS=${JOBS:-8}
+N_ITERATIONS=${N_ITERATIONS:-5}
+# Send configs
+echo 'BMARKS=$1' > ${SCRIPT_DIR}/dispatcher.config
+echo $'N_ITERATIONS=$N_ITERATIONS\nJOBS=$JOBS' > ${SCRIPT_DIR}/worker.config
 
 # Send the entire local FTS repository to the dispatcher;
 # Local changes to any file will propagate
 gcloud compute scp $(dirname $SCRIPT_DIR) ${INSTANCE_NAME}:~/input --recurse --zone=$GCLOUD_ZONE
-gcloud compute ssh $INSTANCE_NAME --command="mv ~/input/$(basename $(dirname ${SCRIPT_DIR})) ~/input/FTS" --zone="$GCLOUD_ZONE"
+
+# ! [[ -d ~/input/FTS ]] &&
+gcloud compute ssh $INSTANCE_NAME --command="rm -rf ~/input/FTS && \
+  mv ~/input/$(basename $(dirname ${SCRIPT_DIR})) ~/input/FTS " --zone=$GCLOUD_ZONE
 
 # Run dispatcher with Docker
-DISPATCHER_COMMAND="sudo docker build -f ~/input/FTS/engine_comparison/ --build-arg run-script=dispatcher.sh ~/input"
+DISPATCHER_COMMAND="~/input/FTS/engine-comparison/run.sh /~/work/FTS/engine-comparison/dispatcher.sh"
 gcloud compute ssh $INSTANCE_NAME --command="$DISPATCHER_COMMAND" --zone=$GCLOUD_ZONE
 
 
