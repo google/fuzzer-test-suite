@@ -1,4 +1,4 @@
-FROM gcr.io/fuzzer-test-suite/clang-deps-image
+FROM gcr.io/fuzzer-test-suite/gcloud-clang-deps
 
 RUN apt-get update
 
@@ -11,7 +11,5 @@ COPY . .
 # Set env var
 ENV WORK /~/work
 
-# Tell Docker to recognize that run-script is an argument
-ARG run_cmd
-
-CMD ${run_cmd}
+# ARG run_cmd
+# RUN ${run_cmd}
