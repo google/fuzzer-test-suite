@@ -5,7 +5,8 @@
 . $(dirname $0)/../common.sh
 . ${SCRIPT_DIR}/common-harness.sh
 
-[[ -z $2 ]] && echo "Warning: Usage: Please specify benchmarks, as well as at least one fuzzing engine"
+[[ -z $2 ]] && echo "Usage: Must specify benchmarks,\
+ as well as at least one fuzzing engine config" && exit 1
 
 DD=$(date +%d)
 MM=$(date +%m)
