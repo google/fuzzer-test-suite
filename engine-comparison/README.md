@@ -27,7 +27,7 @@ manually, first call as follows:
 ```
 ${FTS}/engine-comparison/gcloud-creator.sh create
 ```
-Again, this step is optional, and `begin-experiment` will cam this automatically.
+Again, this step is optional, and `begin-experiment` will call this automatically.
 
 Similarly, when done for the day, one should call
 
