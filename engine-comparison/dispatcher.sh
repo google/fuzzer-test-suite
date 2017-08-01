@@ -52,8 +52,10 @@ handle_benchmark() {
 
   build_benchmark_using $BENCHMARK $FENGINE_CONFIG $THIS_BENCHMARK
   gsutil rsync -r $SEND_DIR ${GSUTIL_BUCKET}/binary-folders/
-  # GCloud instance names have lowercase restrictions
-  INSTANCE_NAME=$(echo "fts-runner-${THIS_BENCHMARK}" | tr '[:upper:]' '[:lower:]')
+  # GCloud instance names must match the following regular expression:
+  # '[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?'
+  INSTANCE_NAME=$(echo "fts-runner-${THIS_BENCHMARK}" | \
+    tr '[:upper:]' '[:lower:]' | tr -d '.')
   create_or_start $INSTANCE_NAME ./FTS/engine-comparison/runner-startup-script.sh
 }
 
