@@ -2,8 +2,9 @@
 # Copyright 2017 Google Inc. All Rights Reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
 
-# Every "gcloud compute ssh/scp/etc" needs --zone, otherwise throws warning
+# Define zone to avoid prompt
 GCLOUD_ZONE="us-west1-b"
+export CLOUDSDK_COMPUTE_ZONE=$GCLOUD_ZONE
 
 # Almost definitely fine to be in the public domain
 SERVICE_ACCOUNT="373628893752-compute@developer.gserviceaccount.com"
@@ -17,7 +18,7 @@ robust_begin_gcloud_ssh () {
   while :
   do
     ! (gcloud compute ssh $INSTANCE_NAME --command="echo ping"\
-      --zone=$GCLOUD_ZONE 2>&1 | grep "ERROR") && break
+      2>&1 | grep "ERROR") && break
     echo "GCloud VM isn't ready yet. Rerunning SSH momentarily."
     sleep 5 # arbitrary choice of time
   done
@@ -27,11 +28,11 @@ create_or_start() {
   INSTANCE_NAME=$1
   STARTUP_SCRIPT=$2
 
-  if gcloud compute instances describe $INSTANCE_NAME --zone=$GCLOUD_ZONE 2>&1 | grep "ERROR"; then
+  if gcloud compute instances describe $INSTANCE_NAME 2>&1 | grep "ERROR"; then
     echo "$INSTANCE_NAME doesn't exist yet. Now creating VM."
     gcloud_create $INSTANCE_NAME $STARTUP_SCRIPT
   else
-    gcloud compute instances start $INSTANCE_NAME --zone=$GCLOUD_ZONE
+    gcloud compute instances start $INSTANCE_NAME
   fi
 
 }
@@ -43,11 +44,11 @@ gcloud_create() {
   fi
   IMAGE_FAMILY="docker-ubuntu"
   gcloud compute instances create $INSTANCE_NAME --image-family=$IMAGE_FAMILY\
-    --zone=$GCLOUD_ZONE --service-account=$SERVICE_ACCOUNT\
+    --service-account=$SERVICE_ACCOUNT\
     --scopes=compute-rw,storage-rw,default $STARTUP_SCRIPT_CMD
 }
 
 gcloud_delete() {
   INSTANCE_NAME=$1
-  gcloud compute instances delete $INSTANCE_NAME --zone=$GCLOUD_ZONE
+  gcloud compute instances delete $INSTANCE_NAME
 }

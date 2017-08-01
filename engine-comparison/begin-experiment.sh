@@ -18,7 +18,7 @@ INSTANCE_NAME="dispatcher-${DD}-${MM}"
 # echo "Restarting gcloud instance. Instance should already be created (with gcloud_creator.sh)"
 create_or_start $INSTANCE_NAME
 robust_begin_gcloud_ssh $INSTANCE_NAME
-gcloud compute ssh $INSTANCE_NAME --command="mkdir ~/input" --zone=$GCLOUD_ZONE
+gcloud compute ssh $INSTANCE_NAME --command="mkdir ~/input"
 
 # Send configs for the fuzzing engine
 FENGINE_CONFIGS=${@:2}
@@ -31,7 +31,7 @@ for FENGINE in $FENGINE_CONFIGS; do
   cp $FENGINE fengine-configs/$FENGINE
 done
 
-gcloud compute scp fengine-configs/ ${INSTANCE_NAME}:~/input --recurse --zone=$GCLOUD_ZONE
+gcloud compute scp fengine-configs/ ${INSTANCE_NAME}:~/input --recurse
 rm -r fengine-configs
 
 # These will frequently/usually be defined by the user
@@ -61,15 +61,15 @@ fi
 
 # Send the entire local FTS repository to the dispatcher;
 # Local changes to any file will propagate
-gcloud compute scp $(dirname $SCRIPT_DIR) ${INSTANCE_NAME}:~/input --recurse --zone=$GCLOUD_ZONE
+gcloud compute scp $(dirname $SCRIPT_DIR) ${INSTANCE_NAME}:~/input --recurse
 
 # Could use "! [[ -d ~/input/FTS ]] &&" to prevent deletion
 gcloud compute ssh $INSTANCE_NAME --command="rm -rf ~/input/FTS && \
-  mv ~/input/$(basename $(dirname ${SCRIPT_DIR})) ~/input/FTS " --zone=$GCLOUD_ZONE
+  mv ~/input/$(basename $(dirname ${SCRIPT_DIR})) ~/input/FTS"
 
 # Run dispatcher with Docker
 DISPATCHER_COMMAND="~/input/FTS/engine-comparison/run.sh /work/FTS/engine-comparison/dispatcher.sh"
-gcloud compute ssh $INSTANCE_NAME --command="$DISPATCHER_COMMAND" --zone=$GCLOUD_ZONE
+gcloud compute ssh $INSTANCE_NAME --command="$DISPATCHER_COMMAND"
 
 
 # TODO appropriately rsync some type of loop e.g.
