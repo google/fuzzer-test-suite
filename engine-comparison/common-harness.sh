@@ -8,6 +8,8 @@ GCLOUD_ZONE="us-west1-b"
 # Almost definitely fine to be in the public domain
 SERVICE_ACCOUNT="373628893752-compute@developer.gserviceaccount.com"
 
+GSUTIL_BUCKET="gs://fuzzer-test-suite"
+
 # Sometimes, gcloud compute instances create returns before a VM is ready to be
 # SSH'ed into. Use this function after "instances create" to prevent skipped calls
 robust_begin_gcloud_ssh () {

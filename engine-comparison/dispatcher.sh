@@ -51,7 +51,7 @@ handle_benchmark() {
   THIS_BENCHMARK=${BENCHMARK}-with-$(basename ${FENGINE_CONFIG}) # Just for convenience
 
   build_benchmark_using $BENCHMARK $FENGINE_CONFIG $THIS_BENCHMARK # & # ?
-  gsutil rsync -r $SEND_DIR gs://fuzzer-test-suite/binary-folders/
+  gsutil rsync -r $SEND_DIR ${GSUTIL_BUCKET}/binary-folders/
   # GCloud instance names have lowercase restrictions
   INSTANCE_NAME=$(echo "fts-runner-${THIS_BENCHMARK}" | tr '[:upper:]' '[:lower:]')
   create_or_start $INSTANCE_NAME ./FTS/engine-comparison/runner-startup-script.sh
