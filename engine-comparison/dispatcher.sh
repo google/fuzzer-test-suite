@@ -86,7 +86,7 @@ fi
 for FENGINE_CONFIG in $(find ${WORK}/fengine-configs/*); do
   build_engine $FENGINE_CONFIG
   for BENCHMARK in $BENCHMARKS; do
-    handle_benchmark $BENCHMARK $FENGINE_CONFIG &
+    handle_benchmark $BENCHMARK $FENGINE_CONFIG
   done
 done
 
