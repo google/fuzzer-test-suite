@@ -54,19 +54,19 @@ handle_benchmark() {
   gsutil rsync -r $SEND_DIR gs://fuzzer-test-suite/binary-folders/
   # GCloud instance names have lowercase restrictions
   INSTANCE_NAME=$(echo "fts-runner-${THIS_BENCHMARK}" | tr '[:upper:]' '[:lower:]')
-  create_or_start $INSTANCE_NAME ${SCRIPT_DIR}/runner_startup_script.sh
+  create_or_start $INSTANCE_NAME ./FTS/engine-comparison/runner-startup-script.sh
 }
 
 mkdir $WORK/fuzz-engines
 
 # Stripped down equivalent of "gcloud init"
 gcloud auth activate-service-account $SERVICE_ACCOUNT \
-  --key-file="$WORK/FTS/engine-comparison/tmp/dispatcher-key.json"
+  --key-file="$WORK/FTS/engine-comparison/autogen/dispatcher-key.json"
 gcloud config set project fuzzer-test-suite
 
 
 # This config file defines $BMARKS
-. $WORK/FTS/engine-comparison/tmp/dispatcher.config
+. $WORK/FTS/engine-comparison/autogen/dispatcher.config
 # Now define $BENCHMARKS
 if [[ $BMARKS == 'all' ]]; then
   for b in $(find ${SCRIPT_DIR}/../*/build.sh -type f); do
