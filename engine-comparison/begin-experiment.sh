@@ -40,12 +40,18 @@ N_ITERATIONS=${N_ITERATIONS:-5}
 # Send configs
 AUTOGEN=${SCRIPT_DIR}/autogen
 
-mkdir $AUTOGEN
-echo "BMARKS=$1" > ${AUTOGEN}/dispatcher.config
+if [[ ! -d $AUTOGEN ]]; then
+  mkdir $AUTOGEN
+fi
 
-echo "N_ITERATIONS=$N_ITERATIONS" > ${AUTOGEN}/worker.config
-echo "JOBS=$JOBS" >> ${AUTOGEN}/worker.config
+if [[ ! -e ${AUTOGEN}/dispatcher.config ]]; then
+  echo "BMARKS=$1" > ${AUTOGEN}/dispatcher.config
+fi
 
+if [[ ! -e ${AUTOGEN}/worker.config ]]; then
+  echo "N_ITERATIONS=$N_ITERATIONS" > ${AUTOGEN}/worker.config
+  echo "JOBS=$JOBS" >> ${AUTOGEN}/worker.config
+fi
 # Pass service account auth key
 if [[ ! -e ${AUTOGEN}/dispatcher-key.json ]]; then
   gcloud iam service-accounts keys create ${AUTOGEN}/dispatcher-key.json \
