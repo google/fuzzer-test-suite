@@ -13,7 +13,7 @@ build_engine() {
 
   echo "Building $FENGINE_CONFIG"
   FENGINE_NAME=$(basename $FENGINE_CONFIG)
-  export ENGINE_DIR=$WORK/fuzz-engines/${FENGINE_NAME}
+  ENGINE_DIR=$WORK/fuzz-engines/${FENGINE_NAME}
   rm -rf $ENGINE_DIR
   mkdir $ENGINE_DIR
 
@@ -50,7 +50,7 @@ handle_benchmark() {
   FENGINE_CONFIG=$2
   THIS_BENCHMARK=${BENCHMARK}-with-$(basename ${FENGINE_CONFIG}) # Just for convenience
 
-  build_benchmark_using $BENCHMARK $FENGINE_CONFIG $THIS_BENCHMARK # & # ?
+  build_benchmark_using $BENCHMARK $FENGINE_CONFIG $THIS_BENCHMARK
   gsutil rsync -r $SEND_DIR ${GSUTIL_BUCKET}/binary-folders/
   # GCloud instance names have lowercase restrictions
   INSTANCE_NAME=$(echo "fts-runner-${THIS_BENCHMARK}" | tr '[:upper:]' '[:lower:]')
@@ -84,7 +84,7 @@ fi
 for FENGINE_CONFIG in $(find ${WORK}/fengine-configs/*); do
   build_engine $FENGINE_CONFIG
   for BENCHMARK in $BENCHMARKS; do
-    handle_benchmark $BENCHMARK $FENGINE_CONFIG # &
+    handle_benchmark $BENCHMARK $FENGINE_CONFIG &
   done
 done
 
