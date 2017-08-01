@@ -68,7 +68,7 @@ gcloud compute ssh $INSTANCE_NAME --command="rm -rf ~/input/FTS && \
   mv ~/input/$(basename $(dirname ${SCRIPT_DIR})) ~/input/FTS " --zone=$GCLOUD_ZONE
 
 # Run dispatcher with Docker
-DISPATCHER_COMMAND="~/input/FTS/engine-comparison/run.sh /~/work/FTS/engine-comparison/dispatcher.sh"
+DISPATCHER_COMMAND="~/input/FTS/engine-comparison/run.sh /work/FTS/engine-comparison/dispatcher.sh"
 gcloud compute ssh $INSTANCE_NAME --command="$DISPATCHER_COMMAND" --zone=$GCLOUD_ZONE
 
 
