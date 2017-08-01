@@ -25,7 +25,7 @@ build_benchmark_using() {
   FENGINE_CONFIG=$2
   THIS_BENCHMARK=$3
 
-  BUILDING_DIR=${WORK}/BUILD-${THIS_BENCHMARK}
+  BUILDING_DIR=$WORK/BUILD-${THIS_BENCHMARK}
   echo "Filling $BUILDING_DIR"
   rm -rf $BUILDING_DIR
   mkdir $BUILDING_DIR
@@ -51,18 +51,10 @@ handle_benchmark() {
   THIS_BENCHMARK=${BENCHMARK}-with-$(basename ${FENGINE_CONFIG}) # Just for convenience
 
   build_benchmark_using $BENCHMARK $FENGINE_CONFIG $THIS_BENCHMARK # & # ?
-
-  # GCloud instance names have tight restrictions
+  gsutil rsync -r $SEND_DIR gs://fuzzer-test-suite/binary-folders/
+  # GCloud instance names have lowercase restrictions
   INSTANCE_NAME=$(echo "fts-runner-${THIS_BENCHMARK}" | tr '[:upper:]' '[:lower:]')
-  create_or_start $INSTANCE_NAME
-  robust_begin_gcloud_ssh $INSTANCE_NAME
-
-  gcloud compute scp $WORK/${SEND_DIR}/ ${INSTANCE_NAME}:~/input --recurse --zone=$GCLOUD_ZONE
-
-  RUNNER_COMMAND="mv ~/input/${SEND_DIR} ~/input && ~/input/run.sh"
-  # TODO This call run.sh will need an argument, the workers script
-
-  gcloud compute ssh $INSTANCE_NAME --command="$RUNNER_COMMAND" --zone=$GCLOUD_ZONE
+  create_or_start $INSTANCE_NAME ${SCRIPT_DIR}/runner_startup_script.sh
 }
 
 mkdir $WORK/fuzz-engines
@@ -72,9 +64,10 @@ gcloud auth activate-service-account $SERVICE_ACCOUNT \
   --key-file="$WORK/FTS/engine-comparison/tmp/dispatcher-key.json"
 gcloud config set project fuzzer-test-suite
 
-# Define $BENCHMARKS
-. $WORK/FTS/engine-comparison/tmp/dispatcher.config
 
+# This config file defines $BMARKS
+. $WORK/FTS/engine-comparison/tmp/dispatcher.config
+# Now define $BENCHMARKS
 if [[ $BMARKS == 'all' ]]; then
   for b in $(find ${SCRIPT_DIR}/../*/build.sh -type f); do
     BENCHMARKS="$BENCHMARKS $(basename $(dirname $b))"
@@ -86,12 +79,12 @@ else
   BENCHMARKS=$(echo $1 | tr ',' ' ')
 fi
 
+
 # Main working loops
 for FENGINE_CONFIG in $(find ${WORK}/fengine-configs/*); do
-  # this requires each config file to have a different name
   build_engine $FENGINE_CONFIG
   for BENCHMARK in $BENCHMARKS; do
-    handle_benchmark $BENCHMARK $FENGINE_CONFIG
+    handle_benchmark $BENCHMARK $FENGINE_CONFIG # &
   done
 done
 

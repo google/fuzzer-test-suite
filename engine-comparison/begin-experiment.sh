@@ -5,6 +5,8 @@
 . $(dirname $0)/../common.sh
 . ${SCRIPT_DIR}/common-harness.sh
 
+[[ -z $2 ]] && echo "Warning: Usage: Please specify benchmarks, as well as at least one fuzzing engine"
+
 DD=$(date +%d)
 MM=$(date +%m)
 INSTANCE_NAME="dispatcher-${DD}-${MM}"
@@ -37,9 +39,10 @@ N_ITERATIONS=${N_ITERATIONS:-5}
 
 # Send configs
 TMP=${SCRIPT_DIR}/tmp
-# if [[ -d $TMP ]]; then
-#   rm -r $TMP
-# fi
+
+if [[ -d $TMP ]]; then
+  rm -r $TMP
+fi
 mkdir $TMP
 echo "BMARKS=$1" > ${TMP}/dispatcher.config
 
@@ -55,7 +58,6 @@ fi
 # Send the entire local FTS repository to the dispatcher;
 # Local changes to any file will propagate
 gcloud compute scp $(dirname $SCRIPT_DIR) ${INSTANCE_NAME}:~/input --recurse --zone=$GCLOUD_ZONE
-#rm -r $TMP
 
 # Could use "! [[ -d ~/input/FTS ]] &&" to prevent deletion
 gcloud compute ssh $INSTANCE_NAME --command="rm -rf ~/input/FTS && \
