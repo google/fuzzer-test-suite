@@ -13,4 +13,4 @@ get_git_revision https://github.com/mm2/Little-CMS.git f9d75ccef0b54c9f4167d9508
 build_lib
 build_fuzzer
 set -x
-$CXX $CXXFLAGS ${SCRIPT_DIR}/cms_transform_fuzzer.c -I BUILD/include/ BUILD/src/.libs/liblcms2.a $LIB_FUZZING_ENGINE -o ${EXECUTABLE_NAME_BASE}${BINARY_NAME_EXT}
+$CXX $CXXFLAGS ${SCRIPT_DIR}/cms_transform_fuzzer.c -I BUILD/include/ BUILD/src/.libs/liblcms2.a $LIB_FUZZING_ENGINE -o $EXECUTABLE_NAME_BASE

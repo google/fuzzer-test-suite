@@ -7,4 +7,4 @@ set -x
 build_fuzzer
 $CC $CFLAGS -c $SCRIPT_DIR/sqlite3.c
 $CC $CFLAGS -c $SCRIPT_DIR/ossfuzz.c
-$CXX $CXXFLAGS sqlite3.o ossfuzz.o $LIB_FUZZING_ENGINE -o ${EXECUTABLE_NAME_BASE}${BINARY_NAME_EXT}
+$CXX $CXXFLAGS sqlite3.o ossfuzz.o $LIB_FUZZING_ENGINE -o $EXECUTABLE_NAME_BASE

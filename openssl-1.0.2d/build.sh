@@ -13,4 +13,4 @@ get_git_tag https://github.com/openssl/openssl.git OpenSSL_1_0_2d SRC
 build_lib
 build_fuzzer
 set -x
-$CXX $CXXFLAGS $SCRIPT_DIR/target.cc -DCERT_PATH=\"$SCRIPT_DIR/\"  BUILD/libssl.a BUILD/libcrypto.a $LIB_FUZZING_ENGINE -lgcrypt -I BUILD/include -o ${EXECUTABLE_NAME_BASE}${BINARY_NAME_EXT}
+$CXX $CXXFLAGS $SCRIPT_DIR/target.cc -DCERT_PATH=\"$SCRIPT_DIR/\"  BUILD/libssl.a BUILD/libcrypto.a $LIB_FUZZING_ENGINE -lgcrypt -I BUILD/include -o $EXECUTABLE_NAME_BASE

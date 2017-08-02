@@ -13,7 +13,7 @@ FUZZING_ENGINE=${FUZZING_ENGINE:-"libfuzzer"}
   should be either 'afl', 'libfuzzer', or 'coverage', but it is $FUZZING_ENGINE" && exit 1
 
 SCRIPT_DIR=$(dirname $0)
-EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)
+EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)-${FUZZING_ENGINE}
 LIBFUZZER_SRC=$(dirname $(dirname $SCRIPT_DIR))/Fuzzer
 AFL_DRIVER=$LIBFUZZER_SRC/afl/afl_driver.cpp
 AFL_SRC=$(dirname $(dirname $SCRIPT_DIR))/AFL
@@ -25,7 +25,7 @@ export CC=${CC:-"clang"}
 export CXX=${CXX:-"clang++"}
 export CFLAGS=${CFLAGS:-"$FUZZ_CXXFLAGS"}
 export CXXFLAGS=${CXXFLAGS:-"$FUZZ_CXXFLAGS"}
-export LIB_FUZZING_ENGINE="libFuzzingEngine_${FUZZING_ENGINE}.a"
+export LIB_FUZZING_ENGINE="libFuzzingEngine-${FUZZING_ENGINE}.a"
 
 # Additional build flags (e.g. for libFuzzer) can be passed to build.sh as $UNIQUE_BUILD
 
@@ -55,8 +55,6 @@ build_afl() {
   $CXX $CXXFLAGS -std=c++11 -O2 -c $LIBFUZZER_SRC/afl/*.cpp -I$LIBFUZZER_SRC
   ar r $LIB_FUZZING_ENGINE *.o
   rm *.o
-
-  BINARY_NAME_EXT="_${FUZZING_ENGINE}"
 }
 
 build_libfuzzer() {
