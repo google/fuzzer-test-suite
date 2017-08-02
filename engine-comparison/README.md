@@ -8,8 +8,10 @@ Currently, these scripts only run on Google Cloud, but support for alternatives 
 
 ### Gcloud Usage
 
-Before running experiments, use `gcloud-creator.sh` to create the initial VM.
-This can take 45-60 seconds, but `gcloud-creator.sh` doesn't exit until google
+Before running experiments, an initial VM has to be made. You can use
+`gcloud-creator.sh` to create the initial VM, or `begin-experiment` can
+automatically create this VM.
+Creating a VM can take 45-60 seconds, but `gcloud-creator.sh` doesn't exit until google
 cloud is ready for `begin-experiment.sh` to run; one needs only to wait for the
 "Instance Created" output message.
 
@@ -19,18 +21,21 @@ but there is sometimes a small latency.
 VM status can also be found on [the gcloud
 console](https://pantheon.corp.google.com/compute/instances?project=fuzzer-test-suite)
 
-VM naming is automatic, so only one argument is used. First call as:
+VM naming is automatic, so only one argument is used. To create the initial VM
+manually, first call as follows:
 
 ```
 ${FTS}/engine-comparison/gcloud-creator.sh create
 ```
+Again, this step is optional, and `begin-experiment` will call this automatically.
 
-Similarly, when done for the day, call
+Similarly, when done for the day, one should call
 
 ```
 ${FTS}/engine-comparison/gcloud-creator.sh delete
 ```
 
+Deleting is not optional, and should be done to avoid excessive charges
 ### Installation
 
 The `gcloud` CLI is a part of the [Google Cloud SDK](https://cloud.google.com/sdk/gcloud/),
@@ -57,6 +62,10 @@ the directory which contains that benchmark's build script (in the root of this 
 All arguments succeeding the first specify unique fuzzing engines. In particular,
 each of these arguments should be the path to a bash script; the script then
 configures a particular fuzzing engine exclusively by defining environment variables.
+
+The name of each file is used in naming VMs which run the fuzzing engine, so to
+follow gcloud naming conventions, please restrict these filenames to numbers,
+letters, and dashes only.
 
 The following environment variables are "magic", so they have special meaning in
 the comparison harness:

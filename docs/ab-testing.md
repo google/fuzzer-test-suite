@@ -3,11 +3,6 @@
 This work-in-progress document collects ideas about
 [A/B testing](https://en.wikipedia.org/wiki/A/B_testing) for fuzzing engines
 
-## Tool Name
-(propose names)
-* fuzz-comparator? 
-* fuzzab? 
-
 ## A/B Report
 
 The end goal of the tool is to produce an html report that compares `K` fuzzing engines on `B` different benchmarks executed independently `N` times each on `J` cores. 
@@ -35,9 +30,9 @@ The tool spawns `K*B*N` **runner** VMs with `J` cores each and a single (multi-c
 * The top-level script periodically syncs the report from the dispatcher to local disk.
 
 ### GCE
-A GCS bucket is used as a shared disk (rsync to copy files)
+A GCS bucket is used as a shared disk, located at `gs://fuzzer-test-suite`. This will be used by the service account to send files between multiple VMs, specifically the dispatcher VM and all runners.
 ### Local
 A local disk is used
 
 ### Docker
-We'll likely need to use docker for both runner and dispatcher.
+Docker is used to provide the required dependencies in both the runners and the dispatcher. The startup scripts for VMs will do no more than first `gcloud pull docker image` and then `docker run`.
