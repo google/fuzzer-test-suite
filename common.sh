@@ -5,9 +5,12 @@
 # Don't allow to call these scripts from their directories.
 [ -e $(basename $0) ] && echo "PLEASE USE THIS SCRIPT FROM ANOTHER DIR" && exit 1
 
-# Ensure that fuzzing engine, if defined, is either "libfuzzer" or "afl"
+# Ensure that fuzzing engine, if defined, is either "libfuzzer", "afl", or "coverage"
 FUZZING_ENGINE=${FUZZING_ENGINE:-"libfuzzer"}
-[[ $FUZZING_ENGINE != "libfuzzer" ]] && [[ $FUZZING_ENGINE != "afl" ]] && echo "USAGE: If defined, $FUZZING_ENGINE should be either 'afl' or 'libfuzzer' but it is $FUZZING_ENGINE" && exit 1
+
+[[ $FUZZING_ENGINE != "libfuzzer" ]] && [[ $FUZZING_ENGINE != "afl" ]] &&\
+  [[ $FUZZING_ENGINE != "coverage" ]] && echo "USAGE: If defined, FUZZING_ENGINE\
+  should be either 'afl', 'libfuzzer', or 'coverage', but it is $FUZZING_ENGINE" && exit 1
 
 SCRIPT_DIR=$(dirname $0)
 EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)
@@ -58,7 +61,13 @@ build_afl() {
 
 build_libfuzzer() {
   $LIBFUZZER_SRC/build.sh
-  mv libFuzzer.a $LIB_FUZZING_ENGINE 
+  mv libFuzzer.a $LIB_FUZZING_ENGINE
+}
+
+# This provides a build with no fuzzing engine, just to measure coverage
+build_coverage () {
+  $CC $CFLAGS -c $LIBFUZZER_SRC/standalone/StandaloneFuzzTargetMain.c
+  ar rc $LIB_FUZZING_ENGINE StandaloneFuzzTargetMain.o
 }
 
 build_fuzzer() {
