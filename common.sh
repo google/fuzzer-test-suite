@@ -13,7 +13,7 @@ FUZZING_ENGINE=${FUZZING_ENGINE:-"libfuzzer"}
   should be either 'afl', 'libfuzzer', or 'coverage', but it is $FUZZING_ENGINE" && exit 1
 
 SCRIPT_DIR=$(dirname $0)
-EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)
+EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)_${FUZZING_ENGINE}
 LIBFUZZER_SRC=$(dirname $(dirname $SCRIPT_DIR))/Fuzzer
 AFL_DRIVER=$LIBFUZZER_SRC/afl/afl_driver.cpp
 AFL_SRC=$(dirname $(dirname $SCRIPT_DIR))/AFL
