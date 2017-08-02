@@ -13,4 +13,4 @@ get_git_tag https://github.com/google/guetzli.git 9afd0bbb7db0bd3a50226845f0f6c3
 build_lib
 build_fuzzer
 set -x
-$CXX $CXXFLAGS -std=c++11 BUILD/fuzz_target.cc -I BUILD/ BUILD/bin/Release/libguetzli_static.a $LIB_FUZZING_ENGINE -o ${EXECUTABLE_NAME_BASE}${BINARY_NAME_EXT}
+$CXX $CXXFLAGS -std=c++11 BUILD/fuzz_target.cc -I BUILD/ BUILD/bin/Release/libguetzli_static.a $LIB_FUZZING_ENGINE -o $EXECUTABLE_NAME_BASE

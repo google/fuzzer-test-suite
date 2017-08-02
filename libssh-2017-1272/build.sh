@@ -13,5 +13,5 @@ get_git_revision git://git.libssh.org/projects/libssh.git 7c79b5c154ce2788cf5254
 build_lib
 build_fuzzer
 set -x
-$CXX $CXXFLAGS -std=c++11 "$SCRIPT_DIR/libssh_server_fuzzer.cc" -I BUILD/include/ BUILD/build/src/libssh.a $LIB_FUZZING_ENGINE -lcrypto -lgss -lz -o ${EXECUTABLE_NAME_BASE}${BINARY_NAME_EXT}
+$CXX $CXXFLAGS -std=c++11 "$SCRIPT_DIR/libssh_server_fuzzer.cc" -I BUILD/include/ BUILD/build/src/libssh.a $LIB_FUZZING_ENGINE -lcrypto -lgss -lz -o $EXECUTABLE_NAME_BASE
 

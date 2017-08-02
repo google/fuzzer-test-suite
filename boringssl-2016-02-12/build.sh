@@ -13,4 +13,4 @@ get_git_revision https://github.com/google/boringssl.git  894a47df2423f0d2b6be57
 build_lib
 build_fuzzer
 set -x
-$CXX $CXXFLAGS -I BUILD/include BUILD/fuzz/privkey.cc ./BUILD/ssl/libssl.a ./BUILD/crypto/libcrypto.a $LIB_FUZZING_ENGINE -o ${EXECUTABLE_NAME_BASE}${BINARY_NAME_EXT}
+$CXX $CXXFLAGS -I BUILD/include BUILD/fuzz/privkey.cc ./BUILD/ssl/libssl.a ./BUILD/crypto/libcrypto.a $LIB_FUZZING_ENGINE -o $EXECUTABLE_NAME_BASE
