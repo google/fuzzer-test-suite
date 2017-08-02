@@ -34,28 +34,9 @@ done
 gcloud compute scp fengine-configs/ ${INSTANCE_NAME}:~/input --recurse
 rm -r fengine-configs
 
-# These will frequently/usually be defined by the user
-JOBS=${JOBS:-8}
-N_ITERATIONS=${N_ITERATIONS:-5}
-
-# Send configs
-AUTOGEN=${SCRIPT_DIR}/autogen
-
-if [[ ! -d $AUTOGEN ]]; then
-  mkdir $AUTOGEN
-fi
-
-if [[ ! -e ${AUTOGEN}/dispatcher.config ]]; then
-  echo "BMARKS=$1" > ${AUTOGEN}/dispatcher.config
-fi
-
-if [[ ! -e ${AUTOGEN}/worker.config ]]; then
-  echo "N_ITERATIONS=$N_ITERATIONS" > ${AUTOGEN}/worker.config
-  echo "JOBS=$JOBS" >> ${AUTOGEN}/worker.config
-fi
 # Pass service account auth key
-if [[ ! -e ${AUTOGEN}/dispatcher-key.json ]]; then
-  gcloud iam service-accounts keys create ${AUTOGEN}/dispatcher-key.json \
+if [[ ! -e ${SCRIPT_DIR}/autogen-PRIVATE-key.json ]]; then
+  gcloud iam service-accounts keys create ${SCRIPT_DIR}/autogen-PRIVATE-key.json \
     --iam-account=$SERVICE_ACCOUNT --key-file-type=json
 fi
 
