@@ -87,9 +87,9 @@ propagate directly to the environments for
 
 ## Parameters
 
-Script behavior can be modified through a variety of environment variables. This
-is a definitive list of options which have default values, but can be altered
-before running `begin-experiment.sh` for advanced users
+Script behavior can be modified through a set of parameters which are defined in
+`parameters.cfg`. They are assigned with default values, but they can be changed
+by the user before running `begin-experiment.sh`. These parameters are:
 
 - `N_ITERATIONS`, the number of times each binary will be run (and measured).
 Each iteration will be run until the benchmark is completed, except with regards
