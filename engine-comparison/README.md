@@ -87,8 +87,8 @@ propagate directly to the environments for
 
 ## Parameters
 
-Script behavior can be modified through a set of parameters which are defined in 
-`parameters.cfg`. They're are assigned with default values, but they can be changed 
+Script behavior can be modified through a set of parameters which are defined in
+`parameters.cfg`. They are assigned with default values, but they can be changed
 by the user before running `begin-experiment.sh`. These parameters are:
 
 - `N_ITERATIONS`, the number of times each binary will be run (and measured).

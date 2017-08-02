@@ -63,12 +63,12 @@ mkdir $WORK/fuzz-engines
 
 # Stripped down equivalent of "gcloud init"
 gcloud auth activate-service-account $SERVICE_ACCOUNT \
-  --key-file="$WORK/FTS/engine-comparison/autogen-PRIVATE-key.json"
+  --key-file="$WORK/FTS/engine-comparison/config/autogen-PRIVATE-key.json"
 gcloud config set project fuzzer-test-suite
 
 
 # This config file defines $BMARKS
-. $WORK/FTS/engine-comparison/parameters.cfg
+. $WORK/FTS/engine-comparison/config/bmarks.cfg
 # Now define $BENCHMARKS
 if [[ $BMARKS == 'all' ]]; then
   for b in $(find ${SCRIPT_DIR}/../*/build.sh -type f); do

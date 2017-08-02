@@ -34,9 +34,12 @@ done
 gcloud compute scp fengine-configs/ ${INSTANCE_NAME}:~/input --recurse
 rm -r fengine-configs
 
+CONFIG=${SCRIPT_DIR}/config
+echo "BMARKS=$1" > ${CONFIG}/bmarks.cfg
+
 # Pass service account auth key
-if [[ ! -e ${SCRIPT_DIR}/autogen-PRIVATE-key.json ]]; then
-  gcloud iam service-accounts keys create ${SCRIPT_DIR}/autogen-PRIVATE-key.json \
+if [[ ! -e ${CONFIG}/autogen-PRIVATE-key.json ]]; then
+  gcloud iam service-accounts keys create ${CONFIG}/autogen-PRIVATE-key.json \
     --iam-account=$SERVICE_ACCOUNT --key-file-type=json
 fi
 
