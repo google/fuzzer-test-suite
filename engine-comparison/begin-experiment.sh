@@ -35,6 +35,7 @@ gcloud compute scp fengine-configs/ ${INSTANCE_NAME}:~/input --recurse
 rm -r fengine-configs
 
 CONFIG=${SCRIPT_DIR}/config
+[[ -e ${CONFIG}/bmarks.cfg ]] && rm ${CONFIG}/bmarks.cfg
 echo "BMARKS=$1" > ${CONFIG}/bmarks.cfg
 
 # Pass service account auth key
