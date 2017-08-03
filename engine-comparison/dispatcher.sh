@@ -18,27 +18,23 @@ build_engine() {
   mkdir $FENGINE_DIR
 
   . $FENGINE_CONFIG
-
   # Build either engine
 
   if [[ $FUZZING_ENGINE == "libfuzzer" ]]; then
+    echo "Making a version of libfuzzer"
     svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer $FENGINE_DIR
-    $FENGINE_DIR/build.sh
     export LIBFUZZER_SRC=$FENGINE_DIR
   fi
 
   if [[ $FUZZING_ENGINE == "afl" ]]; then
-    if [[ -d $WORK/fengine-builds/AFL ]]; then
-      ln -s $WORK/fengine-builds/AFL $WORK/fengine-builds/$FENGINE_NAME
-    else
-      cd $WORK/fengine-builds
-      wget http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz
-      mkdir AFL
-      tar -xvf afl-latest.tgz -C AFL --strip-components=1
-      rm afl-latest.tgz
-      cd
-      export AFL_SRC=$WORK/fengine-builds/AFL
-    fi
+    echo "Making a version of afl"
+    cd $WORK/fengine-builds
+    wget http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz
+    mkdir $FENGINE_DIR
+    tar -xvf afl-latest.tgz -C $FENGINE_DIR --strip-components=1
+    (cd $FENGINE_DIR && make)
+    rm afl-latest.tgz
+    cd
   fi
 }
 
@@ -66,7 +62,7 @@ build_benchmark_using() {
     cp seed $SEND_DIR
   fi
 
-  if [[ $FUZZING_ENGINE="afl" ]]; then
+  if [[ $FUZZING_ENGINE == "afl" ]]; then
     cp ${AFL_SRC}/afl-fuzz $SEND_DIR
   fi
 
@@ -80,7 +76,7 @@ handle_benchmark() {
   THIS_BENCHMARK=${BENCHMARK}-with-$(basename ${FENGINE_CONFIG}) # Just for convenience
 
   build_benchmark_using $BENCHMARK $FENGINE_CONFIG $THIS_BENCHMARK
-  gsutil rsync -r $SEND_DIR ${GSUTIL_BUCKET}/binary-folders/
+  gsutil rsync -r $SEND_DIR ${GSUTIL_BUCKET}/binary-folders/$THIS_BENCHMARK
   # GCloud instance names must match the following regular expression:
   # '[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?'
   INSTANCE_NAME=$(echo "fts-runner-${THIS_BENCHMARK}" | \
@@ -108,8 +104,10 @@ if [[ $BMARKS == 'all' ]]; then
     BENCHMARKS="$BENCHMARKS $(basename $(dirname $b))"
   done
 elif [[ $BMARKS == 'small' ]]; then
-  BENCHMARKS="c-ares-CVE-2016-5180 re2-2014-12-09"
-#elif [[ $BMARKS == 'other alias' ]]; do
+  BENCHMARKS="boringssl-2016-02-12 re2-2014-12-09"
+elif [[ $BMARKS == 'none' ]]; then
+  BENCHMARKS=""
+  #elif [[ $BMARKS == 'other alias' ]]; do
 else
   BENCHMARKS="$(echo $BMARKS | tr ',' ' ')"
 fi

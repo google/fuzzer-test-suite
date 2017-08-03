@@ -15,7 +15,6 @@ FUZZING_ENGINE=${FUZZING_ENGINE:-"libfuzzer"}
 SCRIPT_DIR=$(dirname $0)
 EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)-${FUZZING_ENGINE}
 LIBFUZZER_SRC=${LIBFUZZER_SRC:-$(dirname $(dirname $SCRIPT_DIR))/Fuzzer}
-AFL_DRIVER=$LIBFUZZER_SRC/afl/afl_driver.cpp
 AFL_SRC=${AFL_SRC:-$(dirname $(dirname $SCRIPT_DIR))/AFL}
 FUZZ_CXXFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div"
 CORPUS=CORPUS-$EXECUTABLE_NAME_BASE
@@ -52,8 +51,8 @@ get_svn_revision() {
 
 build_afl() {
   $CC $CFLAGS -c -w $AFL_SRC/llvm_mode/afl-llvm-rt.o.c
-  $CXX $CXXFLAGS -std=c++11 -O2 -c $LIBFUZZER_SRC/afl/*.cpp -I$LIBFUZZER_SRC
-  ar r $LIB_FUZZING_ENGINE *.o
+  $CXX $CXXFLAGS -std=c++11 -O2 -c ${LIBFUZZER_SRC}/afl/afl_driver.cpp -I$LIBFUZZER_SRC
+  ar r $LIB_FUZZING_ENGINE afl_driver.o afl-llvm-rt.o.o
   rm *.o
 }
 
