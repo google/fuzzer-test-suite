@@ -40,22 +40,6 @@ Fuzzer/build.sh
 * [Install Docker](https://docs.docker.com/engine/installation/)
 * Run `docker run --cap-add SYS_PTRACE -ti libfuzzertutorial/base`
   * Alternatively, use the `libfuzzertutorial/prebuilt` image -- it is a bit larger but has the the pre-built fuzzer binaries
-* Update dependencies: 
-
-```shell
-# Update repositories
-cd ~/FTS
-git pull
-cd ~/Fuzzer
-svn update
-cd
-# Update packages
-apt-get update
-# Follow the installation and building steps like the previous option
-./FTS/tutorial/install-deps.sh  # Get deps
-./FTS/tutorial/install-clang.sh # Get fresh clang binaries
-Fuzzer/build.sh
-```
 
 ## Verify the setup
 Run:
