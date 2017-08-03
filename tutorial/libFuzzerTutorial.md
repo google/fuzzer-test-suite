@@ -44,7 +44,7 @@ Fuzzer/build.sh
 ## Verify the setup
 Run:
 ```shell
-clang++ -g -fsanitize=address -fsanitize-coverage=trace-pc-guard FTS/tutorial/fuzz_me.cc libFuzzingEngine-libfuzzer.a
+clang++ -g -fsanitize=address -fsanitize-coverage=trace-pc-guard FTS/tutorial/fuzz_me.cc libFuzzer.a
 ./a.out 2>&1 | grep ERROR
 ```
 and make sure you see something like
