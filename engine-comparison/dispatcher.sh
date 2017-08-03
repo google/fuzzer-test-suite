@@ -5,7 +5,6 @@
 . $(dirname $0)/../common.sh
 . ${SCRIPT_DIR}/common-harness.sh
 
-# Each of these functions should be in a separate script
 
 build_engine() {
 
