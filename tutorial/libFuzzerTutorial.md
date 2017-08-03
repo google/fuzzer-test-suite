@@ -40,6 +40,22 @@ Fuzzer/build.sh
 * [Install Docker](https://docs.docker.com/engine/installation/)
 * Run `docker run --cap-add SYS_PTRACE -ti libfuzzertutorial/base`
   * Alternatively, use the `libfuzzertutorial/prebuilt` image -- it is a bit larger but has the the pre-built fuzzer binaries
+* Update dependencies: 
+
+```shell
+# Update repositories
+cd ~/FTS
+git pull
+cd ~/Fuzzer
+svn update
+cd
+# Update packages
+apt-get update
+# Follow the installation and building steps like the previous option
+./FTS/tutorial/install-deps.sh  # Get deps
+./FTS/tutorial/install-clang.sh # Get fresh clang binaries
+Fuzzer/build.sh
+```
 
 ## Verify the setup
 Run:
@@ -278,10 +294,10 @@ cd ~/woff
 On a 8-core machine this will spawn 4 parallel workers. If one of them dies, another one will be created, up to 8.
 ```
 Running 4 workers
-./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-0.log 2>&1
-./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-1.log 2>&1
-./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-2.log 2>&1
-./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-3.log 2>&1
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/  > fuzz-0.log 2>&1
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/  > fuzz-1.log 2>&1
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/  > fuzz-2.log 2>&1
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/  > fuzz-3.log 2>&1
 ```
 
 At this time it would be convenient to have some terminal multiplexer, e.g. [GNU screen]
@@ -562,7 +578,7 @@ In an infinite loop do the following:
 * Build the fuzz target
 * Copy the current corpus from cloud to local disk
 * Fuzz for some time.
-  * With libFuzzer, use the flag `-max_toal_time=N` to set the time in seconds).
+  * With libFuzzer, use the flag `-max_total_time=N` to set the time in seconds).
 * Synchronize the updated corpus back to the cloud
 * Provide the logs, coverage information, crash reports, and crash reproducers
   via e-mail, web interface, or cloud storage.
@@ -572,7 +588,7 @@ In an infinite loop do the following:
 Some features (or bugs) of the target code may complicate fuzzing and hide
 other bugs from you.
 
-###OOMs
+### OOMs
 
 Out-of-memory (OOM) bugs slowdown in-process fuzzing immensely.
 By default libFuzzer limits the amount of RAM per process by 2Gb.
