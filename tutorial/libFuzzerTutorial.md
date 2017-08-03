@@ -70,9 +70,9 @@ with the following extra flags:
 * `-fsanitize=address` (recommended): enables [AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html)
 * `-g` (recommended): enables debug info, makes the error messages easier to read. 
 
-Then you need to link the target code with `libFuzzingEngine-libfuzzer.a` which provides the `main()` function. 
+Then you need to link the target code with `libFuzzer.a` which provides the `main()` function. 
 ```shell
-clang++ -g -fsanitize=address -fsanitize-coverage=trace-pc-guard FTS/tutorial/fuzz_me.cc libFuzzingEngine-libfuzzer.a
+clang++ -g -fsanitize=address -fsanitize-coverage=trace-pc-guard FTS/tutorial/fuzz_me.cc libFuzzer.a
 ```
 Now try running it:
 ```
