@@ -26,6 +26,8 @@ build_engine() {
   fi
 
   if [[ $FUZZING_ENGINE == "afl" ]]; then
+
+    # [[ ! -d $LIBFUZZER_SRC ]] && echo "Can't do AFL before libfuzzer" && break
     echo "Making a version of afl"
     cd $WORK/fengine-builds
     wget http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz
@@ -34,6 +36,7 @@ build_engine() {
     (cd $FENGINE_DIR && make)
     rm afl-latest.tgz
     cd
+    export AFL_SRC=$FENGINE_DIR
   fi
 }
 
