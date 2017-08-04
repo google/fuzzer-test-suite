@@ -23,8 +23,8 @@ build_engine() {
 
   if [[ $FUZZING_ENGINE == "libfuzzer" ]]; then
     echo "Checking out libFuzzer"
-    svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer $FENGINE_DIR
-    export LIBFUZZER_SRC=$FENGINE_DIR
+    svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer
+  fi
 
   elif [[ $FUZZING_ENGINE == "afl" ]]; then
     # [[ ! -d $LIBFUZZER_SRC ]] && echo "Can't do AFL before libfuzzer" && break
