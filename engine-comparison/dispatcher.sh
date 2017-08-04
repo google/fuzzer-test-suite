@@ -9,8 +9,10 @@
 build_engine() {
 
   FENGINE_CONFIG=$1
-  [[ ! -e $FENGINE_CONFIG ]] && echo "File DNE" && exit 1
-  echo "Building $FENGINE_CONFIG"
+  [[ ! -e $FENGINE_CONFIG ]] && echo \
+    "Error: build_engine function called for FENGINE_CONFIG=$FENGINE_CONFIG,\
+    but this file can't be found" && return
+  echo "Creating fuzzing engine: $FENGINE_CONFIG"
   FENGINE_NAME=$(basename $FENGINE_CONFIG)
   FENGINE_DIR=$WORK/fengine-builds/${FENGINE_NAME}
   rm -rf $FENGINE_DIR
@@ -20,19 +22,17 @@ build_engine() {
   # Build either engine
 
   if [[ $FUZZING_ENGINE == "libfuzzer" ]]; then
-    echo "Making a version of libfuzzer"
+    echo "Checking out libFuzzer"
     svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer $FENGINE_DIR
     export LIBFUZZER_SRC=$FENGINE_DIR
-  fi
 
-  if [[ $FUZZING_ENGINE == "afl" ]]; then
-
+  elif [[ $FUZZING_ENGINE == "afl" ]]; then
     # [[ ! -d $LIBFUZZER_SRC ]] && echo "Can't do AFL before libfuzzer" && break
     if [[ ! -d $LIBFUZZER_SRC ]]; then
       mkdir -p ${LIBFUZZER_SRC}/afl
       svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer/afl ${LIBFUZZER_SRC}/afl
     fi
-    echo "Making a version of afl"
+    echo "Building a version of AFL"
     cd $WORK/fengine-builds
     wget http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz
     mkdir $FENGINE_DIR
