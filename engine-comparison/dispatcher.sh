@@ -28,6 +28,10 @@ build_engine() {
   if [[ $FUZZING_ENGINE == "afl" ]]; then
 
     # [[ ! -d $LIBFUZZER_SRC ]] && echo "Can't do AFL before libfuzzer" && break
+    if [[ ! -d $LIBFUZZER_SRC ]]; then
+      mkdir -p ${LIBFUZZER_SRC}/afl
+      svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer/afl ${LIBFUZZER_SRC}/afl
+     fi
     echo "Making a version of afl"
     cd $WORK/fengine-builds
     wget http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz
