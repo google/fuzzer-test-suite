@@ -17,7 +17,7 @@ EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)-${FUZZING_ENGINE}
 LIBFUZZER_SRC=$(dirname $(dirname $SCRIPT_DIR))/Fuzzer
 AFL_DRIVER=$LIBFUZZER_SRC/afl/afl_driver.cpp
 AFL_SRC=$(dirname $(dirname $SCRIPT_DIR))/AFL
-FUZZ_CXXFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div"
+FUZZ_CXXFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div,pc-table"
 CORPUS=CORPUS-$EXECUTABLE_NAME_BASE
 JOBS=8
 
