@@ -28,7 +28,7 @@ build_engine() {
 
   elif [[ $FUZZING_ENGINE == "afl" ]]; then
     # [[ ! -d $LIBFUZZER_SRC ]] && echo "Can't do AFL before libfuzzer" && break
-    if [[ ! -d $LIBFUZZER_SRC ]]; then
+    if [[ ! -d ${LIBFUZZER_SRC}/afl ]]; then
       mkdir -p ${LIBFUZZER_SRC}/afl
       svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer/afl ${LIBFUZZER_SRC}/afl
     fi
