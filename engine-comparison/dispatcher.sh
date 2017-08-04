@@ -110,7 +110,7 @@ if [[ $BMARKS == 'all' ]]; then
     BENCHMARKS="$BENCHMARKS $(basename $(dirname $b))"
   done
 elif [[ $BMARKS == 'small' ]]; then
-  BENCHMARKS="boringssl-2016-02-12 re2-2014-12-09"
+  BENCHMARKS="c-ares-CVE-2016-5180 re2-2014-12-09"
 elif [[ $BMARKS == 'none' ]]; then
   BENCHMARKS=""
   #elif [[ $BMARKS == 'other alias' ]]; do
