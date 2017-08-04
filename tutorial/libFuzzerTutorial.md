@@ -44,7 +44,7 @@ Fuzzer/build.sh
 ## Verify the setup
 Run:
 ```shell
-clang++ -g -fsanitize=address -fsanitize-coverage=trace-pc-guard FTS/tutorial/fuzz_me.cc libFuzzingEngine-libfuzzer.a
+clang++ -g -fsanitize=address -fsanitize-coverage=trace-pc-guard FTS/tutorial/fuzz_me.cc libFuzzer.a
 ./a.out 2>&1 | grep ERROR
 ```
 and make sure you see something like
@@ -70,9 +70,9 @@ with the following extra flags:
 * `-fsanitize=address` (recommended): enables [AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html)
 * `-g` (recommended): enables debug info, makes the error messages easier to read. 
 
-Then you need to link the target code with `libFuzzingEngine-libfuzzer.a` which provides the `main()` function. 
+Then you need to link the target code with `libFuzzer.a` which provides the `main()` function. 
 ```shell
-clang++ -g -fsanitize=address -fsanitize-coverage=trace-pc-guard FTS/tutorial/fuzz_me.cc libFuzzingEngine-libfuzzer.a
+clang++ -g -fsanitize=address -fsanitize-coverage=trace-pc-guard FTS/tutorial/fuzz_me.cc libFuzzer.a
 ```
 Now try running it:
 ```
@@ -278,10 +278,10 @@ cd ~/woff
 On a 8-core machine this will spawn 4 parallel workers. If one of them dies, another one will be created, up to 8.
 ```
 Running 4 workers
-./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-0.log 2>&1
-./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-1.log 2>&1
-./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-2.log 2>&1
-./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-3.log 2>&1
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/  > fuzz-0.log 2>&1
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/  > fuzz-1.log 2>&1
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/  > fuzz-2.log 2>&1
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/  > fuzz-3.log 2>&1
 ```
 
 At this time it would be convenient to have some terminal multiplexer, e.g. [GNU screen]
@@ -562,7 +562,7 @@ In an infinite loop do the following:
 * Build the fuzz target
 * Copy the current corpus from cloud to local disk
 * Fuzz for some time.
-  * With libFuzzer, use the flag `-max_toal_time=N` to set the time in seconds).
+  * With libFuzzer, use the flag `-max_total_time=N` to set the time in seconds).
 * Synchronize the updated corpus back to the cloud
 * Provide the logs, coverage information, crash reports, and crash reproducers
   via e-mail, web interface, or cloud storage.
@@ -572,7 +572,7 @@ In an infinite loop do the following:
 Some features (or bugs) of the target code may complicate fuzzing and hide
 other bugs from you.
 
-###OOMs
+### OOMs
 
 Out-of-memory (OOM) bugs slowdown in-process fuzzing immensely.
 By default libFuzzer limits the amount of RAM per process by 2Gb.
