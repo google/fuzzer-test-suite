@@ -38,13 +38,19 @@ create_or_start() {
 }
 gcloud_create() {
   INSTANCE_NAME=$1
+  
   # If there is a second argument
   if [[ -n $2 ]]; then
     STARTUP_SCRIPT_CMD="--metadata-from-file startup-script=$2"
   fi
+  
+  # The dispatcher should be more powerful
+  MACHINE_TYPE=n1-standard-1
+  echo $INSTANCE_NAME | grep dispatcher && MACHINE_TYPE=n1-standard-4
+
   IMAGE_FAMILY="docker-ubuntu"
-  gcloud compute instances create $INSTANCE_NAME --image-family=$IMAGE_FAMILY\
-    --service-account=$SERVICE_ACCOUNT\
+  gcloud compute instances create $INSTANCE_NAME --image-family=$IMAGE_FAMILY \
+    --service-account=$SERVICE_ACCOUNT --machine-type=$MACHINE_TYPE \
     --scopes=compute-rw,storage-rw,default $STARTUP_SCRIPT_CMD
 }
 
