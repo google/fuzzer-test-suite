@@ -43,8 +43,8 @@ gcloud_create() {
     STARTUP_SCRIPT_CMD="--metadata-from-file startup-script=$2"
   fi
   IMAGE_FAMILY="docker-ubuntu"
-  gcloud compute instances create $INSTANCE_NAME --image-family=$IMAGE_FAMILY\
-    --service-account=$SERVICE_ACCOUNT\
+  gcloud compute instances create $INSTANCE_NAME --image-family=$IMAGE_FAMILY \
+    --service-account=$SERVICE_ACCOUNT --machine-type=n1-standard-4 \
     --scopes=compute-rw,storage-rw,default $STARTUP_SCRIPT_CMD
 }
 
