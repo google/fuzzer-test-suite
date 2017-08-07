@@ -6,11 +6,11 @@
 build_lib() {
   rm -rf BUILD
   cp -rf SRC BUILD
-  (cd BUILD/build && ./autogen.sh && cd .. && CXX="clang++ $FUZZ_CXXFLAGS" CC="clang $FUZZ_CXXFLAGS" CCLD="clang++ $FUZZ_CXXFLAGS"  ./configure && make -j $JOBS)
+  (cd BUILD/build && ./autogen.sh && cd .. && ./configure --without-nettle && make -j $JOBS)
 }
 
 get_git_revision https://github.com/libarchive/libarchive.git 51d7afd3644fdad725dd8faa7606b864fd125f88 SRC
 build_lib
-build_libfuzzer
+build_fuzzer
 set -x
-clang++ -std=c++11  -I BUILD/libarchive $SCRIPT_DIR/libarchive_fuzzer.cc  BUILD/.libs/libarchive.a libFuzzer.a -lz -lxml2 -lcrypto -lssl $FUZZ_CXXFLAGS -o $EXECUTABLE_NAME_BASE
+$CXX $CXXFLAGS -std=c++11 $SCRIPT_DIR/libarchive_fuzzer.cc -I BUILD/libarchive BUILD/.libs/libarchive.a $LIB_FUZZING_ENGINE -lz -lxml2 -lcrypto -lssl -o $EXECUTABLE_NAME_BASE

@@ -172,7 +172,7 @@ see  [openssl-1.0.1f/target.cc](../openssl-1.0.1f/target.cc).
 
 Try running the fuzzer:
 ```shell
-./openssl-1.0.1f
+./openssl-1.0.1f-libfuzzer
 ```
 You whould see something like this in a few seconds:
 ```
@@ -204,7 +204,7 @@ cd; mkdir -p woff; cd woff;
 ```
 Now run it like you did it with the previous fuzz targets: 
 ```shell
-./woff2-2016-05-06 
+./woff2-2016-05-06-libfuzzer
 ```
 Most likely you will see that the fuzzer is stuck --
 it is running millions of inputs but can not find many new code paths. 
@@ -228,7 +228,7 @@ Inspect this directory. What do you see? Are there any `.woff2` files?
 Now you can use the woff2 fuzzer with a seed corpus. Do it like this:
 ```shell
 mkdir MY_CORPUS
-./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/
 ```
 
 When a libFuzzer-based fuzzer is executed with one more directory as arguments,
@@ -273,15 +273,15 @@ use `-workers=M` to set the number of allowed parallel jobs.
 
 ```shell
 cd ~/woff
-./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/ -jobs=8
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/ -jobs=8
 ```
 On a 8-core machine this will spawn 4 parallel workers. If one of them dies, another one will be created, up to 8.
 ```
 Running 4 workers
-./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-0.log 2>&1
-./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-1.log 2>&1
-./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-2.log 2>&1
-./woff2-2016-05-06 MY_CORPUS/ SEED_CORPUS/  > fuzz-3.log 2>&1
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/  > fuzz-0.log 2>&1
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/  > fuzz-1.log 2>&1
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/  > fuzz-2.log 2>&1
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/  > fuzz-3.log 2>&1
 ```
 
 At this time it would be convenient to have some terminal multiplexer, e.g. [GNU screen]
@@ -300,7 +300,7 @@ rewarded by a [nice security bug](https://bugs.chromium.org/p/chromium/issues/de
 
 If you are both impatient and curious you may feed a provided crash reproducer to see the bug:
 ```
-./woff2-2016-05-06 ../FTS/woff2-2016-05-06/crash-696cb49b6d7f63e153a6605f00aceb0d7738971a
+./woff2-2016-05-06-libfuzzer ../FTS/woff2-2016-05-06/crash-696cb49b6d7f63e153a6605f00aceb0d7738971a
 ```
 Do you see the same stack trace as in the
 [original bug report](https://bugs.chromium.org/p/chromium/issues/detail?id=609042)?
@@ -322,10 +322,10 @@ mkdir -p ~/libxml; rm -rf ~/libxml/*; cd ~/libxml
 
 Now, run the newly bult fuzzer for 10-20 seconds with and without a dictionary:
 ```shell
-./libxml2-v2.9.2   # Press Ctrl-C in 10-20 seconds
+./libxml2-v2.9.2-libfuzzer   # Press Ctrl-C in 10-20 seconds
 ```
 ```shell
-./libxml2-v2.9.2 -dict=afl/dictionaries/xml.dict  # Press Ctrl-C in 10-20 seconds
+./libxml2-v2.9.2-libfuzzer -dict=afl/dictionaries/xml.dict  # Press Ctrl-C in 10-20 seconds
 ```
 
 Did you see the differentce? 
@@ -333,7 +333,7 @@ Did you see the differentce?
 Now create a corpus directory and run for real on all CPUs:
 ```shell
 mkdir CORPUS
-./libxml2-v2.9.2 -dict=afl/dictionaries/xml.dict -jobs=8 -workers=8 CORPUS
+./libxml2-v2.9.2-libfuzzer -dict=afl/dictionaries/xml.dict -jobs=8 -workers=8 CORPUS
 ```
 
 How much time did it take to find the bug?
@@ -355,7 +355,7 @@ are expected to produce the same result and verifies that.
 ```shell
 mkdir -p ~/openssl-1.0.2d; rm -rf ~/openssl-1.0.2d/*; cd ~/openssl-1.0.2d
 ~/FTS/openssl-1.0.2d/build.sh
-mkdir CORPUS; ./openssl-1.0.2d  -max_len=256 CORPUS -jobs=8 -workers=8
+mkdir CORPUS; ./openssl-1.0.2d-libfuzzer  -max_len=256 CORPUS -jobs=8 -workers=8
 ```
 
 Did it crash? How? 
@@ -374,7 +374,7 @@ mkdir -p ~/pcre2 ; rm -rf ~/pcre2/*; cd ~/pcre2
 
 ```shell
 mkdir CORPUS
-./pcre2-10.00 -jobs=1000 -workers=8 CORPUS
+./pcre2-10.00-libfuzzer -jobs=1000 -workers=8 CORPUS
 ```
 
 After a minute or two look for the erros in the log files:
@@ -415,7 +415,7 @@ by applying up to 10000 mutations on every iteration.
 
 ```shell
 cd ~/openssl-1.0.2d
-./openssl-1.0.2d \
+./openssl-1.0.2d-libfuzzer \
   -minimize_crash=1 -runs=10000 \
   ~/FTS/openssl-1.0.2d/crash-12ae1af0c82252420b5f780bc9ed48d3ba05109e
 ```
@@ -429,7 +429,7 @@ You may get a very simple coverage report from libFuzzer using
 `-print_coverage=1`:
 
 ```shell
-cd ~/woff/ && ./woff2-2016-05-06 -runs=1000000 -use_cmp=0 -print_coverage=1
+cd ~/woff/ && ./woff2-2016-05-06-libfuzzer -runs=1000000 -use_cmp=0 -print_coverage=1
 ```
 
 We used some extra flags to cripple libFuzzer and so make this example simpler.
@@ -525,7 +525,7 @@ touch EMPTY_FILE; gsutil cp EMPTY_FILE  gs://$GCS_BUCKET/CORPUS/
 ```shell
 cd ~/pcre2
 mkdir CORPUS
-./pcre2-10.00 CORPUS/ -runs=10000
+./pcre2-10.00-libfuzzer CORPUS/ -runs=10000
 ```
 * Now `CORPUS` has some files. Synchronize it with the cloud directory:
 ```shell
@@ -562,7 +562,7 @@ In an infinite loop do the following:
 * Build the fuzz target
 * Copy the current corpus from cloud to local disk
 * Fuzz for some time.
-  * With libFuzzer, use the flag `-max_toal_time=N` to set the time in seconds).
+  * With libFuzzer, use the flag `-max_total_time=N` to set the time in seconds).
 * Synchronize the updated corpus back to the cloud
 * Provide the logs, coverage information, crash reports, and crash reproducers
   via e-mail, web interface, or cloud storage.
@@ -572,7 +572,7 @@ In an infinite loop do the following:
 Some features (or bugs) of the target code may complicate fuzzing and hide
 other bugs from you.
 
-###OOMs
+### OOMs
 
 Out-of-memory (OOM) bugs slowdown in-process fuzzing immensely.
 By default libFuzzer limits the amount of RAM per process by 2Gb.
@@ -581,7 +581,7 @@ Try fuzzing the woff benchmark with an empty seed corpus:
 ```shell
 cd ~/woff
 mkdir NEW_CORPUS
-./woff2-2016-05-06 NEW_CORPUS -jobs=8 -workers=8
+./woff2-2016-05-06-libfuzzer NEW_CORPUS -jobs=8 -workers=8
 ```
 Pretty soon you will hit an OOM bug:
 ```

@@ -6,11 +6,11 @@
 build_lib() {
   rm -rf BUILD
   cp -rf SRC BUILD
-  (cd BUILD && autoreconf -fiv && CXX="clang++ $FUZZ_CXXFLAGS" CC="clang $FUZZ_CXXFLAGS" ./configure && make -j $JOBS)
+  (cd BUILD && autoreconf -fiv && ./configure && make -j $JOBS)
 }
 
 get_git_revision https://github.com/libjpeg-turbo/libjpeg-turbo.git b0971e47d76fdb81270e93bbf11ff5558073350d SRC
 build_lib
-build_libfuzzer
+build_fuzzer
 set -x
-clang++ -std=c++11 $SCRIPT_DIR/libjpeg_turbo_fuzzer.cc  $FUZZ_CXXFLAGS -I BUILD BUILD/.libs/libturbojpeg.a libFuzzer.a -o $EXECUTABLE_NAME_BASE
+$CXX $CXXFLAGS -std=c++11 $SCRIPT_DIR/libjpeg_turbo_fuzzer.cc -I BUILD BUILD/.libs/libturbojpeg.a $LIB_FUZZING_ENGINE -o $EXECUTABLE_NAME_BASE

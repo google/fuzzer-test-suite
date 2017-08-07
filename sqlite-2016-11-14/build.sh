@@ -3,7 +3,8 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 . $(dirname $0)/../common.sh
 
-build_libfuzzer
-clang -c $FUZZ_CXXFLAGS $SCRIPT_DIR/sqlite3.c
-clang -c $FUZZ_CXXFLAGS $SCRIPT_DIR/ossfuzz.c
-clang++ sqlite3.o ossfuzz.o libFuzzer.a $FUZZ_CXXFLAGS -o $EXECUTABLE_NAME_BASE
+set -x
+build_fuzzer
+$CC $CFLAGS -c $SCRIPT_DIR/sqlite3.c
+$CC $CFLAGS -c $SCRIPT_DIR/ossfuzz.c
+$CXX $CXXFLAGS sqlite3.o ossfuzz.o $LIB_FUZZING_ENGINE -o $EXECUTABLE_NAME_BASE

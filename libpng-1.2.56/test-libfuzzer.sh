@@ -14,8 +14,9 @@ test_source_location() {
   SRC_LOC="$1"
   echo "test_source_location: $SRC_LOC"
   rm -f *.log
+  # This target has a 2Gb malloc oom, so we have to use rss_limit_mb=3000
   [ -e $EXECUTABLE_NAME_BASE-lf ] && \
-    ./$EXECUTABLE_NAME_BASE-lf -close_fd_mask=3 -artifact_prefix=$CORPUS/ -exit_on_src_pos=$SRC_LOC  -runs=100000000 -jobs=$JOBS -workers=$JOBS $CORPUS
+    ./$EXECUTABLE_NAME_BASE-lf -close_fd_mask=3 -artifact_prefix=$CORPUS/ -exit_on_src_pos=$SRC_LOC  -runs=100000000 -jobs=$JOBS -workers=$JOBS $CORPUS -rss_limit_mb=3000
   grep "INFO: found line matching '$SRC_LOC'" fuzz-*.log || exit 1
 }
 
