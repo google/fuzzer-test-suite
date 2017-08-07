@@ -5,19 +5,45 @@
 . $(dirname $0)/../common.sh
 . ${SCRIPT_DIR}/common-harness.sh
 
+
 build_engine() {
-  # [[ ! -e ~/$FENGINE_CONFIGS_DIR/$1 ]] && echo "cant do" && exit 1
-  # All of this code will probably be in a separate script
 
   FENGINE_CONFIG=$1
-
-  echo "Building $FENGINE_CONFIG"
+  [[ ! -e $FENGINE_CONFIG ]] && echo \
+    "Error: build_engine function called for FENGINE_CONFIG=$FENGINE_CONFIG,\
+    but this file can't be found" && exit 1
+  echo "Creating fuzzing engine: $FENGINE_CONFIG"
   FENGINE_NAME=$(basename $FENGINE_CONFIG)
-  ENGINE_DIR=$WORK/fuzz-engines/${FENGINE_NAME}
-  rm -rf $ENGINE_DIR
-  mkdir $ENGINE_DIR
+  FENGINE_DIR=$WORK/fengine-builds/${FENGINE_NAME}
+  rm -rf $FENGINE_DIR
+  mkdir $FENGINE_DIR
 
-  # Fuzzing activities go here
+  . $FENGINE_CONFIG
+  # Build either engine
+
+  if [[ $FUZZING_ENGINE == "libfuzzer" ]]; then
+
+    if [[ ! -d ${LIBFUZZER_SRC}/standalone ]]; then
+      echo "Checking out libFuzzer"
+      svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer $WORK/Fuzzer
+      LIBFUZZER_SRC=$WORK/Fuzzer
+    fi
+
+  elif [[ $FUZZING_ENGINE == "afl" ]]; then
+    # [[ ! -d $LIBFUZZER_SRC ]] && echo "Can't do AFL before libfuzzer" && break
+    if [[ ! -d ${LIBFUZZER_SRC}/afl ]]; then
+      mkdir -p ${LIBFUZZER_SRC}/afl
+      svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer/afl ${LIBFUZZER_SRC}/afl
+    fi
+    echo "Building a version of AFL"
+    cd $WORK/fengine-builds
+    wget http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz
+    tar -xvf afl-latest.tgz -C $FENGINE_DIR --strip-components=1
+    (cd $FENGINE_DIR && make)
+    rm afl-latest.tgz
+    cd
+    export AFL_SRC=$FENGINE_DIR
+  fi
 }
 
 build_benchmark_using() {
@@ -25,25 +51,32 @@ build_benchmark_using() {
   FENGINE_CONFIG=$2
   THIS_BENCHMARK=$3
 
-  BUILDING_DIR=$WORK/BUILD-${THIS_BENCHMARK}
+  BUILDING_DIR=$WORK/build/${THIS_BENCHMARK}
   echo "Filling $BUILDING_DIR"
   rm -rf $BUILDING_DIR
   mkdir $BUILDING_DIR
 
-  # Do fuzzing things here
-  # [[ ! -e ~/FTS/$BENCHMARK/build.sh ]] && echo "cant build" && exit 1
-  # $WORK/FTS/$BENCHMARK/build.sh $FUZZING_ENGINE
+  cd $BUILDING_DIR
+  . $FENGINE_CONFIG
+  $WORK/FTS/$BENCHMARK/build.sh
+  cd
 
-  export SEND_DIR=$WORK/SEND-${THIS_BENCHMARK}
+  export SEND_DIR=$WORK/send/${THIS_BENCHMARK}
   rm -rf $SEND_DIR
   mkdir $SEND_DIR
-  echo "Test file" > $SEND_DIR/example.txt
-  # Then construct the directory to send here, e.g.
-  # cp ${BENCHMARK}-${FUZZING_ENGINE} $SEND_DIR
-  # copy seeds, afl-fuzz, etc
+
+  cp ${BUILDING_DIR}/${BENCHMARK}-${FUZZING_ENGINE} $SEND_DIR
+  if [[ -e $WORK/FTS/$BENCHMARK/seed ]]; then
+    cp seed $SEND_DIR
+  fi
+
+  if [[ $FUZZING_ENGINE == "afl" ]]; then
+    cp ${AFL_SRC}/afl-fuzz $SEND_DIR
+  fi
 
   rm -rf $BUILDING_DIR
 }
+
 
 handle_benchmark() {
   BENCHMARK=$1
@@ -51,7 +84,7 @@ handle_benchmark() {
   THIS_BENCHMARK=${BENCHMARK}-with-$(basename ${FENGINE_CONFIG}) # Just for convenience
 
   build_benchmark_using $BENCHMARK $FENGINE_CONFIG $THIS_BENCHMARK
-  gsutil rsync -r $SEND_DIR ${GSUTIL_BUCKET}/binary-folders/
+  gsutil rsync -r $SEND_DIR ${GSUTIL_BUCKET}/binary-folders/$THIS_BENCHMARK
   # GCloud instance names must match the following regular expression:
   # '[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?'
   INSTANCE_NAME=$(echo "fts-runner-${THIS_BENCHMARK}" | \
@@ -59,7 +92,11 @@ handle_benchmark() {
   create_or_start $INSTANCE_NAME ./FTS/engine-comparison/runner-startup-script.sh
 }
 
-mkdir $WORK/fuzz-engines
+cd
+
+mkdir $WORK/fengine-builds
+mkdir $WORK/build
+mkdir $WORK/send
 
 # Stripped down equivalent of "gcloud init"
 gcloud auth activate-service-account $SERVICE_ACCOUNT \
@@ -76,9 +113,11 @@ if [[ $BMARKS == 'all' ]]; then
   done
 elif [[ $BMARKS == 'small' ]]; then
   BENCHMARKS="c-ares-CVE-2016-5180 re2-2014-12-09"
-#elif [[ $BMARKS == 'other alias' ]]; do
+elif [[ $BMARKS == 'none' ]]; then
+  BENCHMARKS=""
+  #elif [[ $BMARKS == 'other alias' ]]; do
 else
-  BENCHMARKS=$(echo $1 | tr ',' ' ')
+  BENCHMARKS="$(echo $BMARKS | tr ',' ' ')"
 fi
 
 
