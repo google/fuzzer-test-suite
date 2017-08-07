@@ -18,7 +18,7 @@ INSTANCE_NAME="dispatcher-${DD}-${MM}"
 # echo "Restarting gcloud instance. Instance should already be created (with gcloud_creator.sh)"
 create_or_start $INSTANCE_NAME
 robust_begin_gcloud_ssh $INSTANCE_NAME
-gcloud compute ssh $INSTANCE_NAME --command="mkdir ~/input"
+gcloud compute ssh $INSTANCE_NAME --command="rm -fr ~/input/fengine-configs && mkdir ~/input"
 
 # Send configs for the fuzzing engine
 FENGINE_CONFIGS=${@:2}

@@ -14,7 +14,7 @@ FUZZING_ENGINE=${FUZZING_ENGINE:-"libfuzzer"}
 
 SCRIPT_DIR=$(dirname $0)
 EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)-${FUZZING_ENGINE}
-LIBFUZZER_SRC=$(dirname $(dirname $SCRIPT_DIR))/Fuzzer
+LIBFUZZER_SRC=${LIBFUZZER_SRC:-$(dirname $(dirname $SCRIPT_DIR))/Fuzzer}
 AFL_SRC=${AFL_SRC:-$(dirname $(dirname $SCRIPT_DIR))/AFL}
 FUZZ_CXXFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div,pc-table"
 CORPUS=CORPUS-$EXECUTABLE_NAME_BASE
