@@ -32,12 +32,13 @@ fi
 
 # -m parallelizes operation; -r sets recursion, -d syncs deletion of files
 gsutil -m rsync -rd fengine-configs ${GSUTIL_BUCKET}/dispatcher-input/fengine-configs
-#r m -r fengine-configs
+rm -r fengine-configs
+
 # Send the entire local FTS repository to the dispatcher;
 # Local changes to any file will propagate
 gsutil -m rsync -rd $(dirname $SCRIPT_DIR) ${GSUTIL_BUCKET}/dispatcher-input/FTS
 
-gsutil -m acl ch -r -u ${SERVICE_ACCOUNT}:O ${GSUTIL_BUCKET}
+#gsutil -m acl ch -r -u ${SERVICE_ACCOUNT}:O ${GSUTIL_BUCKET}
 
 DD=$(date +%d)
 MM=$(date +%m)
@@ -46,12 +47,7 @@ INSTANCE_NAME="dispatcher-${DD}-${MM}"
 create_or_start $INSTANCE_NAME # $SCRIPT_DIR/dispatcher-startup.sh
 robust_begin_gcloud_ssh $INSTANCE_NAME
 
-#rsync -rpd fengine-configs ${INSTANCE_NAME}/home/fengine-configs
-#rm -r fengine-configs
-#rsync -rdp $(dirname $SCRIPT_DIR) ${INSTANCE_NAME}/home/FTS
-
 #gcloud compute ssh $INSTANCE_NAME --command="/home/input/FTS/engine-comparison/dispatcher-startup.sh "
-
 gcloud compute ssh $INSTANCE_NAME \
   --command="mkdir -p ~/input && gsutil -m rsync -rd gs://fuzzer-test-suite/dispatcher-input ~/input \
  && bash ~/input/FTS/engine-comparison/dispatcher-startup.sh"
