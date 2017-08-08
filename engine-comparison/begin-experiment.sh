@@ -8,18 +8,6 @@
 [[ -z $2 ]] && echo "Usage: Must specify benchmarks,\
  as well as at least one fuzzing engine config" && exit 1
 
-DD=$(date +%d)
-MM=$(date +%m)
-INSTANCE_NAME="dispatcher-${DD}-${MM}"
-# DISPATCHER_IMAGE_FAMILY=${DISPATCHER_IMAGE_FAMILY:-"ubuntu-1604-lts"} # Maybe container optimized
-# export PROJECT_NAME="google.com:fuzz-comparisons"
-
-# Start one gcloud instance for the dispatcher
-# echo "Restarting gcloud instance. Instance should already be created (with gcloud_creator.sh)"
-create_or_start $INSTANCE_NAME
-robust_begin_gcloud_ssh $INSTANCE_NAME
-gcloud compute ssh $INSTANCE_NAME --command="rm -fr ~/input/fengine-configs && mkdir ~/input"
-
 # Send configs for the fuzzing engine
 FENGINE_CONFIGS=${@:2}
 
@@ -31,9 +19,6 @@ for FENGINE in $FENGINE_CONFIGS; do
   cp $FENGINE fengine-configs/$FENGINE
 done
 
-gcloud compute scp fengine-configs/ ${INSTANCE_NAME}:~/input --recurse
-rm -r fengine-configs
-
 CONFIG=${SCRIPT_DIR}/config
 [[ -e ${CONFIG}/bmarks.cfg ]] && rm ${CONFIG}/bmarks.cfg
 echo "BMARKS=$1" > ${CONFIG}/bmarks.cfg
@@ -44,18 +29,28 @@ if [[ ! -e ${CONFIG}/autogen-PRIVATE-key.json ]]; then
     --iam-account=$SERVICE_ACCOUNT --key-file-type=json
 fi
 
+
+# -m parallelizes operation; -r sets recursion, -d syncs deletion of files
+gsutil -m rsync -rd fengine-configs ${GSUTIL_BUCKET}/dispatcher-input/fengine-configs
+rm -r fengine-configs
+
 # Send the entire local FTS repository to the dispatcher;
 # Local changes to any file will propagate
-gcloud compute scp $(dirname $SCRIPT_DIR) ${INSTANCE_NAME}:~/input --recurse
+gsutil -m rsync -rd $(dirname $SCRIPT_DIR) ${GSUTIL_BUCKET}/dispatcher-input/FTS
 
-# Could use "! [[ -d ~/input/FTS ]] &&" to prevent deletion
-gcloud compute ssh $INSTANCE_NAME --command="rm -rf ~/input/FTS && \
-  mv ~/input/$(basename $(dirname ${SCRIPT_DIR})) ~/input/FTS"
+#gsutil -m acl ch -r -u ${SERVICE_ACCOUNT}:O ${GSUTIL_BUCKET}
 
-# Run dispatcher with Docker
-DISPATCHER_COMMAND="~/input/FTS/engine-comparison/run.sh /work/FTS/engine-comparison/dispatcher.sh"
-gcloud compute ssh $INSTANCE_NAME --command="$DISPATCHER_COMMAND"
+DD=$(date +%d)
+MM=$(date +%m)
+INSTANCE_NAME="dispatcher-${DD}-${MM}"
 
+create_or_start $INSTANCE_NAME # $SCRIPT_DIR/dispatcher-startup.sh
+robust_begin_gcloud_ssh $INSTANCE_NAME
+
+gcloud compute ssh $INSTANCE_NAME \
+  --command="mkdir -p ~/input && gsutil -m rsync -rd ${GSUTIL_BUCKET}/dispatcher-input ~/input \
+ && bash ~/input/FTS/engine-comparison/dispatcher-startup.sh"
+ # && chown --reference=/home ~/input
 
 # TODO appropriately rsync some type of loop e.g.
 # for time in 1m 5m 10m 30m 1h; do
