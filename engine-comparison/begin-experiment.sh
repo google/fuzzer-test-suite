@@ -48,7 +48,7 @@ create_or_start $INSTANCE_NAME # $SCRIPT_DIR/dispatcher-startup.sh
 robust_begin_gcloud_ssh $INSTANCE_NAME
 
 gcloud compute ssh $INSTANCE_NAME \
-  --command="mkdir -p ~/input && gsutil -m rsync -rd gs://fuzzer-test-suite/dispatcher-input ~/input \
+  --command="mkdir -p ~/input && gsutil -m rsync -rd ${GSUTIL_BUCKET}/dispatcher-input ~/input \
  && bash ~/input/FTS/engine-comparison/dispatcher-startup.sh"
  # && chown --reference=/home ~/input
 
