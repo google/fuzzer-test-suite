@@ -8,7 +8,7 @@
 # Ensure that fuzzing engine, if defined, is valid
 FUZZING_ENGINE=${FUZZING_ENGINE:-"libfuzzer"}
 POSSIBLE_FUZZING_ENGINE="libfuzzer afl coverage fsanitize_fuzzer"
-!(echo "$POSSIBLE_FUZZING_ENGINE" | grep "$FUZZING_ENGINE" > /dev/null) && \
+!(echo "$POSSIBLE_FUZZING_ENGINE" | grep -w "$FUZZING_ENGINE" > /dev/null) && \
   echo "USAGE: Error: If defined, FUZZING_ENGINE should be among $POSSIBLE_FUZZING_ENGINE;\
   on the contrary, it was defined as $FUZZING_ENGINE" && exit 1
 
