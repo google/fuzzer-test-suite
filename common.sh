@@ -62,8 +62,8 @@ build_libfuzzer() {
 
 # Uses the capability for "fsanitize=fuzzer" in the current clang
 build_fsanitize_fuzzer() {
-  CXXFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer $CXXFLAGS"
-  CFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer $CFLAGS"
+  CXXFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer"
+  CFLAGS="$CXXFLAGS"
   LIB_FUZZING_ENGINE=""
 }
 
