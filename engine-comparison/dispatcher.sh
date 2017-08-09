@@ -66,6 +66,18 @@ build_benchmark_using() {
   mkdir $SEND_DIR
 
   cp ${BUILDING_DIR}/${BENCHMARK}-${FUZZING_ENGINE} $SEND_DIR
+
+  #TODO: make these gsutil cp
+  cp $WORK/FTS/engine-comparison/Dockerfile $SEND_DIR
+  cp $WORK/FTS/engine-comparison/runner.sh $SEND_DIR
+  cp $WORK/FTS/engine-comparison/config/parameters.cfg $SEND_DIR
+  # end TODO
+
+  # TODO make this gcloud metadata
+  echo "BENCHMARK=$BENCHMARK" > ${SEND_DIR}/runner.cfg
+  echo "FUZZING_ENGINE=$FUZZING_ENGINE" >> ${SEND_DIR}/runner.cfg
+
+  # TODO: ensure all seeds are in $BENCHMARK/seed
   if [[ -e $WORK/FTS/$BENCHMARK/seed ]]; then
     cp seed $SEND_DIR
   fi
@@ -81,15 +93,18 @@ build_benchmark_using() {
 handle_benchmark() {
   BENCHMARK=$1
   FENGINE_CONFIG=$2
-  THIS_BENCHMARK=${BENCHMARK}-with-$(basename ${FENGINE_CONFIG}) # Just for convenience
+  # Just for convenience
+  FENGINE_NAME=$(basename ${FENGINE_CONFIG})
+  THIS_BENCHMARK=${BENCHMARK}-with-${FENGINE_NAME}
 
   build_benchmark_using $BENCHMARK $FENGINE_CONFIG $THIS_BENCHMARK
-  gsutil rsync -r $SEND_DIR ${GSUTIL_BUCKET}/binary-folders/$THIS_BENCHMARK
+  gsutil -m rsync -rd $SEND_DIR ${GSUTIL_BUCKET}/binary-folders/$THIS_BENCHMARK
   # GCloud instance names must match the following regular expression:
   # '[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?'
   INSTANCE_NAME=$(echo "fts-runner-${THIS_BENCHMARK}" | \
     tr '[:upper:]' '[:lower:]' | tr -d '.')
-  create_or_start $INSTANCE_NAME ./FTS/engine-comparison/runner-startup-script.sh
+  set -x
+  create_or_start $INSTANCE_NAME "benchmark=${BENCHMARK},fengine=${FENGINE_NAME}" "startup-script=$WORK/FTS/engine-comparison/startup-runner.sh"
 }
 
 cd
