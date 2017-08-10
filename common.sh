@@ -20,12 +20,18 @@ FUZZ_CXXFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address -fsanitize-cove
 CORPUS=CORPUS-$EXECUTABLE_NAME_BASE
 JOBS=8
 
+
 export CC=${CC:-"clang"}
 export CXX=${CXX:-"clang++"}
-export CFLAGS=${CFLAGS:-"$FUZZ_CXXFLAGS"}
-export CXXFLAGS=${CXXFLAGS:-"$FUZZ_CXXFLAGS"}
 export LIB_FUZZING_ENGINE="libFuzzingEngine-${FUZZING_ENGINE}.a"
 
+if [[ $FUZZING_ENGINE == "fsanitize_fuzzer" ]]; then
+  export CFLAGS=${CFLAGS:-"-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer"}
+  export CXXFLAGS=${CXXFLAGS:-"-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer"}
+else
+  export CFLAGS=${CFLAGS:-"$FUZZ_CXXFLAGS"}
+  export CXXFLAGS=${CXXFLAGS:-"$FUZZ_CXXFLAGS"}
+fi
 
 get_git_revision() {
   GIT_REPO="$1"
@@ -62,8 +68,6 @@ build_libfuzzer() {
 
 # Uses the capability for "fsanitize=fuzzer" in the current clang
 build_fsanitize_fuzzer() {
-  CXXFLAGS=${CXXFLAGS:-"-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer"}
-  CFLAGS=${CFLAGS:-"-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer"}
   LIB_FUZZING_ENGINE=""
 }
 
