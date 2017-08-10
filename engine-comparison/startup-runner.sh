@@ -6,8 +6,6 @@ mkdir -p ~/input
 BENCHMARK=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/benchmark -H "Metadata-Flavor: Google")
 FENGINE_CONFIG=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/fengine -H "Metadata-Flavor: Google")
 
-echo "bm $BENCHMARK fe $FENGINE_CONFIG" > ~/touchthis.txt
-
 FOLDER_NAME=${BENCHMARK}-with-${FENGINE_CONFIG}
 
 gsutil -m rsync -rd gs://fuzzer-test-suite/binary-folders/${FOLDER_NAME} ~/input
