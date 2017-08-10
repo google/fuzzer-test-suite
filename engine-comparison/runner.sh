@@ -9,6 +9,12 @@
 BINARY=${BENCHMARK}-${FUZZING_ENGINE}
 mkdir -p corpus
 chmod 750 $BINARY
+
+if [[ FUZZING_ENGINE == "afl" ]]; then
+  chmod 750 afl-fuzz
+  BINARY="afl-fuzz $BINARY"
+fi
+
 ./$BINARY $BINARY_RUNTIME_OPTIONS -workers=$JOBS -jobs=$JOBS -artifact_prefix=corpus
 
 mkdir -p results
