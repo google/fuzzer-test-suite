@@ -104,7 +104,6 @@ handle_benchmark() {
   # '[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?'
   INSTANCE_NAME=$(echo "fts-runner-${THIS_BENCHMARK}" | \
     tr '[:upper:]' '[:lower:]' | tr -d '.')
-  set -x
   create_or_start $INSTANCE_NAME "benchmark=${BENCHMARK},fengine=${FENGINE_NAME}" "startup-script=$WORK/FTS/engine-comparison/startup-runner.sh"
 }
 
