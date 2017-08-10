@@ -9,8 +9,8 @@
 FUZZING_ENGINE=${FUZZING_ENGINE:-"libfuzzer"}
 POSSIBLE_FUZZING_ENGINE="libfuzzer afl coverage fsanitize_fuzzer"
 !(echo "$POSSIBLE_FUZZING_ENGINE" | grep -w "$FUZZING_ENGINE" > /dev/null) && \
-  echo "USAGE: Error: If defined, FUZZING_ENGINE should be among $POSSIBLE_FUZZING_ENGINE;\
-  on the contrary, it was defined as $FUZZING_ENGINE" && exit 1
+  echo "USAGE: Error: If defined, FUZZING_ENGINE should be one of the following:
+  $POSSIBLE_FUZZING_ENGINE. However, it was defined as $FUZZING_ENGINE" && exit 1
 
 SCRIPT_DIR=$(dirname $0)
 EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)-${FUZZING_ENGINE}
@@ -62,8 +62,8 @@ build_libfuzzer() {
 
 # Uses the capability for "fsanitize=fuzzer" in the current clang
 build_fsanitize_fuzzer() {
-  CXXFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer"
-  CFLAGS="$CXXFLAGS"
+  CXXFLAGS=${CXXFLAGS:-"-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer"}
+  CFLAGS=${CFLAGS:-"-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer"}
   LIB_FUZZING_ENGINE=""
 }
 
