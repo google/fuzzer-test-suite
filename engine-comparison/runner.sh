@@ -11,8 +11,9 @@ chmod 750 $BINARY
 ./$BINARY $BINARY_RUNTIME_OPTIONS -workers=$JOBS -jobs=$JOBS -use_artifact_prefix=corpus
 
 mkdir -p results
-while [[ ! -e complete.txt ]] : do
+while [[ ! -e results/complete.txt ]] : do
   sleep 12
+  # TODO: copy fuzz-0.log here to reduce file read errors
   go run parser.go
   gsutil rsync results gs://fuzzer-test-suite/experiment-results/${BINARY}-results
 done
