@@ -5,12 +5,12 @@
 # Don't allow to call these scripts from their directories.
 [ -e $(basename $0) ] && echo "PLEASE USE THIS SCRIPT FROM ANOTHER DIR" && exit 1
 
-# Ensure that fuzzing engine, if defined, is either "libfuzzer", "afl", or "coverage"
+# Ensure that fuzzing engine, if defined, is valid
 FUZZING_ENGINE=${FUZZING_ENGINE:-"libfuzzer"}
-
-[[ $FUZZING_ENGINE != "libfuzzer" ]] && [[ $FUZZING_ENGINE != "afl" ]] &&\
-  [[ $FUZZING_ENGINE != "coverage" ]] && echo "USAGE: If defined, FUZZING_ENGINE\
-  should be either 'afl', 'libfuzzer', or 'coverage', but it is $FUZZING_ENGINE" && exit 1
+POSSIBLE_FUZZING_ENGINE="libfuzzer afl coverage fsanitize_fuzzer"
+!(echo "$POSSIBLE_FUZZING_ENGINE" | grep -w "$FUZZING_ENGINE" > /dev/null) && \
+  echo "USAGE: Error: If defined, FUZZING_ENGINE should be one of the following:
+  $POSSIBLE_FUZZING_ENGINE. However, it was defined as $FUZZING_ENGINE" && exit 1
 
 SCRIPT_DIR=$(dirname $0)
 EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)-${FUZZING_ENGINE}
@@ -26,7 +26,6 @@ export CFLAGS=${CFLAGS:-"$FUZZ_CXXFLAGS"}
 export CXXFLAGS=${CXXFLAGS:-"$FUZZ_CXXFLAGS"}
 export LIB_FUZZING_ENGINE="libFuzzingEngine-${FUZZING_ENGINE}.a"
 
-# Additional build flags (e.g. for libFuzzer) can be passed to build.sh as $UNIQUE_BUILD
 
 get_git_revision() {
   GIT_REPO="$1"
@@ -61,6 +60,13 @@ build_libfuzzer() {
   mv libFuzzer.a $LIB_FUZZING_ENGINE
 }
 
+# Uses the capability for "fsanitize=fuzzer" in the current clang
+build_fsanitize_fuzzer() {
+  CXXFLAGS=${CXXFLAGS:-"-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer"}
+  CFLAGS=${CFLAGS:-"-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer"}
+  LIB_FUZZING_ENGINE=""
+}
+
 # This provides a build with no fuzzing engine, just to measure coverage
 build_coverage () {
   $CC $CFLAGS -c $LIBFUZZER_SRC/standalone/StandaloneFuzzTargetMain.c
@@ -71,3 +77,4 @@ build_fuzzer() {
   echo "Building with $FUZZING_ENGINE"
   build_${FUZZING_ENGINE}
 }
+
