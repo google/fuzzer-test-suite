@@ -7,24 +7,30 @@
 . fengine.cfg
 
 BINARY=${BENCHMARK}-${FUZZING_ENGINE}
-mkdir -p corpus
+mkdir ./corpus
+mkdir ./results
 chmod 750 $BINARY
 
 if [[ FUZZING_ENGINE == "afl" ]]; then
   chmod 750 afl-fuzz
-  BINARY="afl-fuzz $BINARY"
+  ./afl-fuzz $BINARY $BINARY_RUNTIME_OPTIONS -o corpus/ &
+elif [[ FUZZING_ENGINE == "libfuzzer" ]]; then
+  ./$BINARY $BINARY_RUNTIME_OPTIONS -workers=1 -jobs=1 corpus/ &
 fi
 
-./$BINARY $BINARY_RUNTIME_OPTIONS # -workers=$JOBS -jobs=$JOBS -artifact_prefix=corpus
-
-mkdir -p results
-while [[ ! -e results/complete.txt ]] : do
+while [[ "infinite loop" ]]; do
   sleep 12
-  ls -l corpus > logfile.txt
-  go run generator.go
-  rm logfile.txt
-  gsutil rsync results gs://fuzzer-test-suite/experiment-results/${BINARY}-results
+  ls -l corpus > results/corpusdata
+  gsutil rsync results gs://fuzzer-test-suite/experiment-folders/${BINARY}/results
+  gsutil rsync corpus gs://fuzzer-test-suite/experiment-folders/${BINARY}/corpus
+
 done
 
-go run parser.go finished
+#mkdir -p results
+#while : do
+#  sleep 12
+#  ls -l corpus > logfile.txt
+#  # rm logfile.txt
+#  gsutil -m rsync -P corpus gs://fuzzer-test-suite/experiment-folders/${BINARY}/corpus
+#done
 
