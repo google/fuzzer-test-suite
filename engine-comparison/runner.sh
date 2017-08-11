@@ -15,12 +15,13 @@ if [[ FUZZING_ENGINE == "afl" ]]; then
   BINARY="afl-fuzz $BINARY"
 fi
 
-./$BINARY $BINARY_RUNTIME_OPTIONS -workers=$JOBS -jobs=$JOBS -artifact_prefix=corpus
+./$BINARY $BINARY_RUNTIME_OPTIONS # -workers=$JOBS -jobs=$JOBS -artifact_prefix=corpus
 
 mkdir -p results
 while [[ ! -e results/complete.txt ]] : do
   sleep 12
-  # TODO: copy fuzz-0.log here to reduce file read errors
+  # TODO: create a copy fuzz-0.log here; the copy can be read to reduce errors
+  # while reading file. Then, delete the file after parser.go
   go run parser.go
   gsutil rsync results gs://fuzzer-test-suite/experiment-results/${BINARY}-results
 done
