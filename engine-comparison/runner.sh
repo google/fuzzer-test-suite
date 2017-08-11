@@ -20,9 +20,9 @@ fi
 mkdir -p results
 while [[ ! -e results/complete.txt ]] : do
   sleep 12
-  # TODO: create a copy fuzz-0.log here; the copy can be read to reduce errors
-  # while reading file. Then, delete the file after parser.go
-  go run parser.go
+  ls -l corpus > logfile.txt
+  go run generator.go
+  rm logfile.txt
   gsutil rsync results gs://fuzzer-test-suite/experiment-results/${BINARY}-results
 done
 
