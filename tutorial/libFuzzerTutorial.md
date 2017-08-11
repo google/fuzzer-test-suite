@@ -436,6 +436,23 @@ echo -n A > CORPUS/A && ./a.out CORPUS/* && \
              llvm-cov show a.out -instr-profile=default.profdata -name=FuzzMe
 ```
 ![cov1](cov1.png)
+```
+echo -n AAA > CORPUS/A && ./a.out CORPUS/* && ... 
+```
+![cov2](cov2.png)
+```
+echo -n FAA > CORPUS/A && ./a.out CORPUS/* && ... 
+```
+![cov3](cov3.png)
+```
+echo -n FUA > CORPUS/A && ./a.out CORPUS/* && ... 
+```
+![cov4](cov4.png)
+```
+echo -n FUZA > CORPUS/A && ./a.out CORPUS/* && ... 
+```
+![cov5](cov5.png)
+
 
 
 ## Other sanitizers
