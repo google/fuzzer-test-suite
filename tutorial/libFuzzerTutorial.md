@@ -423,42 +423,20 @@ cd ~/openssl-1.0.2d
 Try this with one of the crashes you have found previously. 
 
 ## Visualizing Coverage
-When developing and evaluating a fuzz target it is highly recommended
-to investigate the coverage achieved by the target on a given corpus.
-You may get a very simple coverage report from libFuzzer using
-`-print_coverage=1`:
-
-```shell
-cd ~/woff/ && ./woff2-2016-05-06-libfuzzer -runs=1000000 -use_cmp=0 -print_coverage=1
+We recommend [Clang Coverage](http://clang.llvm.org/docs/SourceBasedCodeCoverage.html) to visualize and study your code coverage. A simple example:
 ```
-
-We used some extra flags to cripple libFuzzer and so make this example simpler.
-You will see lines like these:
-
+# Build you code for Clang Coverage; link it against a standalone driver for running fuzz targets.
+clang -fprofile-instr-generate -fcoverage-mapping ~/FTS/tutorial/fuzz_me.cc \
+                                                  ~/Fuzzer/standalone/StandaloneFuzzTargetMain.c
+mkdir CORPUS # Create an empty corpus dir.
 ```
-COVERED: in woff2::ConvertWOFF2ToTTF src/woff2_dec.cc:1262
-COVERED: in woff2::Buffer::ReadU32 src/buffer.h:127
-COVERED: in woff2::ReadWOFF2Header src/woff2_dec.cc:987
-...
-UNCOVERED_LINE: in woff2::ReadWOFF2Header src/woff2_dec.cc:995
-...
-UNCOVERED_FUNC: in woff2::WOFF2MemoryOut::WOFF2MemoryOut
-...
-UNCOVERED_FILE: src/woff2_common
 ```
+echo -n A > CORPUS/A && ./a.out CORPUS/* && \
+             llvm-profdata merge -sparse *.profraw -o default.profdata && \
+             llvm-cov show a.out -instr-profile=default.profdata -name=FuzzMe
+```
+![cov1](cov1.png)
 
-Lines starting with `COVERED` describe the covered lines.
-Lines starting with `UNCOVERED_FILE` and `UNCOVERED_FUNC` describe files and
-functions that are completely uncovered. The most interesting lines are
-`UNCOVERED_LINE` -- they represent uncovered source lines inside
-partially covered functions. Look there for clues on why the fuzzer is not
-finding more coverage.
-
-Can you see why we can't find more coverage here?
-(Hint: check covered lines in `src/woff2_dec.cc:`)
-
-There are also tools that provide coverage reports in html,
-e.g. [Clang Coverage](http://clang.llvm.org/docs/SourceBasedCodeCoverage.html).
 
 ## Other sanitizers
 [AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html) is not the
