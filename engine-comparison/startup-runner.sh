@@ -4,9 +4,9 @@
 
 mkdir -p ~/input
 BENCHMARK=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/benchmark -H "Metadata-Flavor: Google")
-FENGINE_CONFIG=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/fengine -H "Metadata-Flavor: Google")
+FENGINE_NAME=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/fengine -H "Metadata-Flavor: Google")
 
-FOLDER_NAME=${BENCHMARK}-with-${FENGINE_CONFIG}
+FOLDER_NAME=${BENCHMARK}-with-${FENGINE_NAME}
 
 gsutil -m rsync -rd gs://fuzzer-test-suite/binary-folders/${FOLDER_NAME} ~/input
 sudo gcloud docker -- pull gcr.io/fuzzer-test-suite/gcloud-clang-deps
