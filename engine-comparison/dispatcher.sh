@@ -78,7 +78,7 @@ build_benchmark_using() {
 
   # TODO: ensure all seeds are in $BENCHMARK/seed
   if [[ -e $WORK/FTS/$BENCHMARK/seed ]]; then
-    cp seed $SEND_DIR
+    cp -r $WORK/FTS/$BENCHMARK/seed $SEND_DIR
   fi
 
   if [[ $FUZZING_ENGINE == "afl" ]]; then
@@ -88,7 +88,14 @@ build_benchmark_using() {
   rm -rf $BUILDING_DIR
 }
 
-
+# Dispatcher specific create_or_start fields
+dispatcher_cos () {
+  INSTANCE_NAME=$1
+  BENCHMARK=$2
+  FENGINE_NAME=$3
+  create_or_start $INSTANCE_NAME "benchmark=${BENCHMARK},fengine=${FENGINE_NAME}"\
+    "startup-script=$WORK/FTS/engine-comparison/startup-runner.sh"
+}
 handle_benchmark() {
   BENCHMARK=$1
   FENGINE_CONFIG=$2
@@ -102,7 +109,7 @@ handle_benchmark() {
   # '[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?'
   INSTANCE_NAME=$(echo "fts-runner-${THIS_BENCHMARK}" | \
     tr '[:upper:]' '[:lower:]' | tr -d '.')
-  create_or_start $INSTANCE_NAME "benchmark=${BENCHMARK},fengine=${FENGINE_NAME}" "startup-script=$WORK/FTS/engine-comparison/startup-runner.sh"
+  dispatcher_cos $INSTANCE_NAME $BENCHMARK $FENGINE_NAME
 }
 
 cd
