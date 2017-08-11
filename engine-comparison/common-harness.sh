@@ -26,12 +26,12 @@ robust_begin_gcloud_ssh () {
 
 create_or_start() {
   INSTANCE_NAME=$1
-  # METADATA=$2
-  # METADATA_FROM_FILE=$3
+  METADATA=$2
+  METADATA_FROM_FILE=$3
 
   if gcloud compute instances describe $INSTANCE_NAME 2>&1 | grep "ERROR"; then
     echo "$INSTANCE_NAME doesn't exist yet. Now creating VM."
-    gcloud_create $INSTANCE_NAME $2 $3
+    gcloud_create $INSTANCE_NAME $METADATA $METADATA_FROM_FILE
   else
     gcloud compute instances start $INSTANCE_NAME
   fi
@@ -49,7 +49,7 @@ gcloud_create() {
   if [[ -n $3 ]]; then
     METADATA_FF_CMD="--metadata-from-file $3"
   fi
-  #
+  
   # The dispatcher should be more powerful
   MACHINE_TYPE=n1-standard-1
   echo $INSTANCE_NAME | grep dispatcher && MACHINE_TYPE=n1-standard-4
