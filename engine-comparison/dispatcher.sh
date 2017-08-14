@@ -74,9 +74,9 @@ build_benchmark_using() {
   cp $WORK/FTS/engine-comparison/config/bmarks.cfg $SEND_DIR
   cp $FENGINE_CONFIG $SEND_DIR/fengine.cfg
 
-  # TODO: ensure all seeds are in $BENCHMARK/seed
-  if [[ -e $WORK/FTS/$BENCHMARK/seed ]]; then
-    cp -r $WORK/FTS/$BENCHMARK/seed $SEND_DIR
+  # TODO: ensure all seeds are in $BENCHMARK/seeds
+  if [[ -d $WORK/FTS/$BENCHMARK/seeds ]]; then
+    cp -r $WORK/FTS/$BENCHMARK/seeds $SEND_DIR
   fi
 
   if [[ $FUZZING_ENGINE == "afl" ]]; then

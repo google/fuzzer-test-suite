@@ -11,20 +11,28 @@ BINARY=${BENCHMARK}-${FUZZING_ENGINE}
 
 rm -fr corpus
 mkdir corpus
-mkdir seeds
 mkdir results
 chmod 750 $BINARY
+
+# All options which are always called here, rather than being left
+# to $BINARY_RUNTIME_OPTIONS, are effectively mandatory
 
 if [[ $FUZZING_ENGINE == "afl" ]]; then
   chmod 750 afl-fuzz
 
   # AFL requires some starter input
-  if [[ -z $(find ./seeds/* -type f) ]]; then
+  if [[ -d seeds ]]; then
+    mkdir seeds
     echo "Input" >> ./seeds/nil_seed
   fi
 
   ./afl-fuzz $BINARY $BINARY_RUNTIME_OPTIONS -i ./seeds/ -o corpus &
+
 elif [[ $FUZZING_ENGINE == "libfuzzer" ]]; then
+  if [[ -d seeds ]]; then
+    cp -r seeds/* corpus
+  fi
+
   ./$BINARY $BINARY_RUNTIME_OPTIONS -workers=$JOBS -jobs=$JOBS corpus &
 fi
 
