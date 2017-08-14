@@ -7,6 +7,8 @@
 . parameters.cfg
 . fengine.cfg
 
+FENGINE_NAME=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/fengine -H "Metadata-Flavor: Google")
+
 BINARY=${BENCHMARK}-${FUZZING_ENGINE}
 
 rm -fr corpus
@@ -36,16 +38,18 @@ elif [[ $FUZZING_ENGINE == "libfuzzer" ]]; then
   ./$BINARY $BINARY_RUNTIME_OPTIONS -workers=$JOBS -jobs=$JOBS corpus &
 fi
 
+SYNC_TO=${BENCHMARK}-${FENGINE_NAME}
 timing=1
+
 while [[ "infinite loop" ]]; do
   sleep 20 # Should be sufficiently long to copy the whole corpus
 
   # These "corpus-data" files may be unnecessary
   ls -l corpus > results/corpus-data-${timing}
-  gsutil rsync results gs://fuzzer-test-suite/experiment-folders/${BINARY}/results
+  gsutil rsync results gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/results
 
   cp -r corpus corpus-copy
-  gsutil rsync corpus-copy gs://fuzzer-test-suite/experiment-folders/${BINARY}/corpus-${timing}
+  gsutil rsync corpus-copy gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/corpus-${timing}
   rm -r corpus-copy
 
   timing=$(($timing + 1))
