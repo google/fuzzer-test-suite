@@ -14,6 +14,7 @@ BINARY=${BENCHMARK}-${FUZZING_ENGINE}
 rm -fr corpus
 mkdir corpus
 mkdir results
+# seeds comes from dispatcher.sh
 chmod 750 $BINARY
 
 # All options which are always called here, rather than being left
@@ -23,8 +24,7 @@ if [[ $FUZZING_ENGINE == "afl" ]]; then
   chmod 750 afl-fuzz
 
   # AFL requires some starter input
-  if [[ -d seeds ]]; then
-    mkdir seeds
+  if [[ (! -d seeds) || !$(find seeds -type f) ]]; then
     echo "Input" >> ./seeds/nil_seed
   fi
 
