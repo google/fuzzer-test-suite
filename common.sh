@@ -3,10 +3,18 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 
 # Don't allow to call these scripts from their directories.
-[ -e $(basename $0) ] && echo "PLEASE USE THIS SCRIPT FROM ANOTHER DIR" && exit 1
-SCRIPT_DIR=$(dirname $0)
-EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)
-LIBFUZZER_SRC=$(dirname $(dirname $SCRIPT_DIR))/Fuzzer
+#[ -e $(basename $0) ] && echo "PLEASE USE THIS SCRIPT FROM ANOTHER DIR" && exit 1
+
+# call these scripts from their directories.
+if not [ -e $(basename $0) ]; then
+	echo "PLEASE USE THIS SCRIPT FROM sub-directories" && exit 1
+fi
+
+#SCRIPT_DIR=$(dirname $0)
+SCRIPT_DIR=$(pwd)
+EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)'-fuzzer'
+#LIBFUZZER_SRC=$(dirname $(dirname $SCRIPT_DIR))/Fuzzer
+LIBFUZZER_SRC=$(dirname $SCRIPT_DIR)/Fuzzer
 FUZZ_CXXFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div"
 CORPUS=CORPUS-$EXECUTABLE_NAME_BASE
 JOBS=8
