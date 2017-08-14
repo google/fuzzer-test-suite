@@ -41,15 +41,18 @@ fi
 SYNC_TO=${BENCHMARK}-${FENGINE_NAME}
 timing=1
 
+
+# This works for libfuzzer, tbd for AFL:
+# #while [[ ! -e crash* ]]; do
 while [[ "infinite loop" ]]; do
   sleep 20 # Should be sufficiently long to copy the whole corpus
 
   # These "corpus-data" files may be unnecessary
   ls -l corpus > results/corpus-data-${timing}
-  gsutil rsync results gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/results
+  gsutil -m rsync -rd results gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/results
 
   cp -r corpus corpus-copy
-  gsutil rsync corpus-copy gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/corpus-${timing}
+  gsutil -m rsync -rd corpus-copy gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/corpus-${timing}
   rm -r corpus-copy
 
   timing=$(($timing + 1))
