@@ -71,8 +71,9 @@ build_benchmark_using() {
   cp $WORK/FTS/engine-comparison/Dockerfile $SEND_DIR
   cp $WORK/FTS/engine-comparison/runner.sh $SEND_DIR
   cp $WORK/FTS/engine-comparison/config/parameters.cfg $SEND_DIR
-  cp $WORK/FTS/engine-comparison/config/bmarks.cfg $SEND_DIR
   cp $FENGINE_CONFIG $SEND_DIR/fengine.cfg
+
+  echo "BENCHMARK=$BENCHMARK" > $SEND_DIR/benchmark.cfg
 
   # TODO: ensure all seeds are in $BENCHMARK/seeds
   if [[ -d $WORK/FTS/$BENCHMARK/seeds ]]; then
