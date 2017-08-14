@@ -28,7 +28,7 @@ if [[ $FUZZING_ENGINE == "afl" ]]; then
     echo "Input" >> ./seeds/nil_seed
   fi
 
-  ./afl-fuzz $BINARY $BINARY_RUNTIME_OPTIONS -i ./seeds/ -o corpus &
+  ./afl-fuzz $BINARY_RUNTIME_OPTIONS -i ./seeds/ -o corpus -- $BINARY &
 
 elif [[ $FUZZING_ENGINE == "libfuzzer" ]]; then
   if [[ -d seeds ]]; then
