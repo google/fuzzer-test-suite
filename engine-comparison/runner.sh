@@ -50,13 +50,12 @@ while [[ ! -e crash* ]]; do
 # while [[ "infinite loop" ]]; do
   sleep 20 # Should be sufficiently long to handle all latency
 
-  # These "results" files may be unnecessary
-  ls -l corpus > results/corpus-data-${timing}
+  # Some "results" files may be unnecessary
   echo "SECONDS=$SECONDS" > results/seconds-${timing}
-  gsutil -m rsync -rd results gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/results
-
   cp -r corpus corpus-copy
-  gsutil -m rsync -r corpus-copy gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/corpus  # corpus-${timing}
+  ls -l corpus-copy > results/corpus-data-${timing}
+  gsutil -m rsync -rd results gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/results
+  gsutil -m rsync -rd corpus-copy gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/corpus  # corpus-${timing}
   rm -r corpus-copy
 
   timing=$(($timing + 1))
