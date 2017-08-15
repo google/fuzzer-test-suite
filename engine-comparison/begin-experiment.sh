@@ -49,7 +49,7 @@ robust_begin_gcloud_ssh $INSTANCE_NAME
 
 gcloud compute ssh $INSTANCE_NAME \
   --command="mkdir -p ~/input && gsutil -m rsync -rd ${GSUTIL_BUCKET}/dispatcher-input ~/input \
- && bash ~/input/FTS/engine-comparison/dispatcher-startup.sh"
+ && bash ~/input/FTS/engine-comparison/startup-dispatcher.sh"
  # && chown --reference=/home ~/input
 
 # TODO appropriately rsync some type of loop e.g.

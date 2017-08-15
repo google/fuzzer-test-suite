@@ -26,11 +26,12 @@ robust_begin_gcloud_ssh () {
 
 create_or_start() {
   INSTANCE_NAME=$1
-  STARTUP_SCRIPT=$2
+  METADATA=$2
+  METADATA_FROM_FILE=$3
 
   if gcloud compute instances describe $INSTANCE_NAME 2>&1 | grep "ERROR"; then
     echo "$INSTANCE_NAME doesn't exist yet. Now creating VM."
-    gcloud_create $INSTANCE_NAME $STARTUP_SCRIPT
+    gcloud_create $INSTANCE_NAME $METADATA $METADATA_FROM_FILE
   else
     gcloud compute instances start $INSTANCE_NAME
   fi
@@ -38,10 +39,15 @@ create_or_start() {
 }
 gcloud_create() {
   INSTANCE_NAME=$1
-  
+
   # If there is a second argument
   if [[ -n $2 ]]; then
-    STARTUP_SCRIPT_CMD="--metadata-from-file startup-script=$2"
+    METADATA_CMD="--metadata $2"
+  fi
+
+  #  If there is a third argument
+  if [[ -n $3 ]]; then
+    METADATA_FF_CMD="--metadata-from-file $3"
   fi
   
   # The dispatcher should be more powerful
@@ -51,7 +57,7 @@ gcloud_create() {
   IMAGE_FAMILY="docker-ubuntu"
   gcloud compute instances create $INSTANCE_NAME --image-family=$IMAGE_FAMILY \
     --service-account=$SERVICE_ACCOUNT --machine-type=$MACHINE_TYPE \
-    --scopes=compute-rw,storage-rw,default $STARTUP_SCRIPT_CMD
+    --scopes=compute-rw,storage-rw,default $METADATA_CMD $METADATA_FF_CMD
 }
 
 gcloud_delete() {
