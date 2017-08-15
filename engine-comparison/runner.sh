@@ -11,10 +11,10 @@ FENGINE_NAME=$(curl http://metadata.google.internal/computeMetadata/v1/instance/
 
 BINARY=${BENCHMARK}-${FUZZING_ENGINE}
 
-rm -fr corpus
+rm -fr corpus results
 mkdir corpus
 mkdir results
-# seeds comes from dispatcher.sh
+# seeds comes from dispatcher.sh, if it exists
 chmod 750 $BINARY
 
 # All options which are always called here, rather than being left
@@ -24,8 +24,11 @@ if [[ $FUZZING_ENGINE == "afl" ]]; then
   chmod 750 afl-fuzz
 
   # AFL requires some starter input
-  if [[ (! -d seeds) || !$(find seeds -type f) ]]; then
-    echo "Input" >> ./seeds/nil_seed
+  if [[ ! -d seeds ]]; then
+    mkdir seeds
+  fi
+  if [[ !$(find seeds -type f) ]]; then
+    echo "Input" > ./seeds/nil_seed
   fi
 
   ./afl-fuzz $BINARY_RUNTIME_OPTIONS -i ./seeds/ -o corpus -- $BINARY &
@@ -43,16 +46,17 @@ timing=1
 
 
 # This works for libfuzzer, tbd for AFL:
-# #while [[ ! -e crash* ]]; do
-while [[ "infinite loop" ]]; do
-  sleep 20 # Should be sufficiently long to copy the whole corpus
+while [[ ! -e crash* ]]; do
+# while [[ "infinite loop" ]]; do
+  sleep 20 # Should be sufficiently long to handle all latency
 
-  # These "corpus-data" files may be unnecessary
+  # These "results" files may be unnecessary
   ls -l corpus > results/corpus-data-${timing}
+  echo "SECONDS=$SECONDS" > results/seconds-${timing}
   gsutil -m rsync -rd results gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/results
 
   cp -r corpus corpus-copy
-  gsutil -m rsync -rd corpus-copy gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/corpus-${timing}
+  gsutil -m rsync -r corpus-copy gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/corpus  # corpus-${timing}
   rm -r corpus-copy
 
   timing=$(($timing + 1))
