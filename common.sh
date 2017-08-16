@@ -26,8 +26,9 @@ export CXX=${CXX:-"clang++"}
 export LIB_FUZZING_ENGINE="libFuzzingEngine-${FUZZING_ENGINE}.a"
 
 if [[ $FUZZING_ENGINE == "fsanitize_fuzzer" ]]; then
-  export CFLAGS=${CFLAGS:-"-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer"}
-  export CXXFLAGS=${CXXFLAGS:-"-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer"}
+  FSANITIZE_FUZZER_FLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer-no-link"
+  export CFLAGS=${CFLAGS:-$FSANITIZE_FUZZER_FLAGS}
+  export CXXFLAGS=${CXXFLAGS:-$FSANITIZE_FUZZER_FLAGS}
 else
   export CFLAGS=${CFLAGS:-"$FUZZ_CXXFLAGS"}
   export CXXFLAGS=${CXXFLAGS:-"$FUZZ_CXXFLAGS"}
@@ -68,7 +69,7 @@ build_libfuzzer() {
 
 # Uses the capability for "fsanitize=fuzzer" in the current clang
 build_fsanitize_fuzzer() {
-  LIB_FUZZING_ENGINE=""
+  LIB_FUZZING_ENGINE="-fsanitize=fuzzer"
 }
 
 # This provides a build with no fuzzing engine, just to measure coverage
