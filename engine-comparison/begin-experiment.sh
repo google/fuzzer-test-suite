@@ -36,7 +36,7 @@ rm -r fengine-configs
 
 # Send the entire local FTS repository to the dispatcher;
 # Local changes to any file will propagate
-gsutil -m rsync -rd $(dirname $SCRIPT_DIR) ${GSUTIL_BUCKET}/dispatcher-input/FTS
+gsutil -m rsync -rd -x "./.git/*" $(dirname $SCRIPT_DIR) ${GSUTIL_BUCKET}/dispatcher-input/FTS
 
 #gsutil -m acl ch -r -u ${SERVICE_ACCOUNT}:O ${GSUTIL_BUCKET}
 

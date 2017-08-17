@@ -31,33 +31,52 @@ if [[ $FUZZING_ENGINE == "afl" ]]; then
     echo "Input" > ./seeds/nil_seed
   fi
 
-  ./afl-fuzz $BINARY_RUNTIME_OPTIONS -i ./seeds/ -o corpus -- $BINARY &
+  EXEC_CMD="./afl-fuzz $BINARY_RUNTIME_OPTIONS -i ./seeds/ -o corpus -- $BINARY &"
 
 elif [[ $FUZZING_ENGINE == "libfuzzer" ]]; then
   if [[ -d seeds ]]; then
     cp -r seeds/* corpus
   fi
 
-  ./$BINARY $BINARY_RUNTIME_OPTIONS -workers=$JOBS -jobs=$JOBS corpus &
+  EXEC_CMD="./$BINARY $BINARY_RUNTIME_OPTIONS -workers=$JOBS -jobs=$JOBS corpus &"
 fi
 
-SYNC_TO=${BENCHMARK}-${FENGINE_NAME}
-timing=1
+mkdir corpus-archives
 
+# Folder name to sync to (convenient)
+SYNC_TO=${BENCHMARK}-${FENGINE_NAME}
+# WAIT_PERIOD should be longer than the whole loop, otherwise a sync cycle will be missed
+WAIT_PERIOD=20
+CYCLE=1
+
+# Now, begin
+$EXEC_CMD
+NEXT_SYNC=$(($SECONDS + $WAIT_PERIOD)) # =$SECONDS # Make beginning measurement?
 
 # This works for libfuzzer, tbd for AFL:
-while [[ ! -e crash* ]]; do
+while [[ ! -f crash* ]]; do
 # while [[ "infinite loop" ]]; do
-  sleep 20 # Should be sufficiently long to handle all latency
 
-  # Some "results" files may be unnecessary
-  echo "SECONDS=$SECONDS" > results/seconds-${timing}
+  SLEEP_THIS=$(( $NEXT_SYNC - $SECONDS))
+  sleep $SLEEP_THIS
+
+  # Snapshot
   cp -r corpus corpus-copy
-  ls -l corpus-copy > results/corpus-data-${timing}
-  gsutil -m rsync -rd results gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/results
-  gsutil -m rsync -rd corpus-copy gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/corpus  # corpus-${timing}
+
+  echo "SECONDS=$SECONDS" > results/seconds-${CYCLE}
+  ls -l corpus-copy > results/corpus-data-${CYCLE}
+  tar -cvzf corpus-archives/corpus-archive-${CYCLE}.tar.gz corpus-copy
+  gsutil -m rsync -rPd corpus-archives gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/corpus
+  gsutil -m rsync -rPd results gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/results
+
+  # Done with snapshot
   rm -r corpus-copy
 
-  timing=$(($timing + 1))
+  # Skip cycle if need be
+  while [[ $(($NEXT_SYNC < $SECONDS )) == 1 ]]; do
+    NEXT_SYNC=$(($NEXT_SYNC + $WAIT_PERIOD))
+  done
+
+  CYCLE=$(($CYCLE + 1))
 done
 
