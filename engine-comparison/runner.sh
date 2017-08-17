@@ -57,8 +57,9 @@ NEXT_SYNC=$(($SECONDS + $WAIT_PERIOD)) # =$SECONDS # Make beginning measurement?
 while [[ ! -f crash* ]]; do
 # while [[ "infinite loop" ]]; do
 
-  SLEEP_THIS=$(( $NEXT_SYNC - $SECONDS))
-  sleep $SLEEP_THIS
+  # Ensure that measurements happen every $WAIT_PERIOD
+  SLEEP_TIME=$(( $NEXT_SYNC - $SECONDS))
+  sleep $SLEEP_TIME
 
   # Snapshot
   cp -r corpus corpus-copy
