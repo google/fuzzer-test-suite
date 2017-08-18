@@ -9,6 +9,6 @@ mkdir $CORPUS
 
 rm fuzz-*.log
 
-[ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS/ -jobs=$JOBS -workers=$JOBS $CORPUS seeds
+[ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS -jobs=$JOBS -workers=$JOBS $CORPUS seeds
 grep "ERROR: LeakSanitizer" fuzz-0.log || exit 1
 
