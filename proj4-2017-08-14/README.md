@@ -29,6 +29,5 @@ SUMMARY: AddressSanitizer: 672 byte(s) leaked in 2 allocation(s).
 
 These leaks are intertwined, and can be found with the same single reproducer, which is included in this directory.
 
-As of August 18, 2017, this benchmark can be completed in about two minutes when using libFuzzer and the provided seed.
-Interestingly, this benchmark is also flaky, and sometimes takes as long as 10 minutes to reach.
+As of August 18, 2017, this benchmark generally takes anywhere between 2 and 10 minutes to complete when using libFuzzer and the provided seed.
 
