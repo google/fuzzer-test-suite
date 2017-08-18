@@ -17,8 +17,3 @@ mkdir seeds
 cp -r BUILD/nad/* seeds
 
 $CXX $CXXFLAGS -std=c++11 -I BUILD/src  BUILD/test/fuzzers/standard_fuzzer.cpp  BUILD/src/.libs/libproj.a $LIB_FUZZING_ENGINE -lpthread -o $EXECUTABLE_NAME_BASE
-
-#-DSTANDALONE
-
-
-
