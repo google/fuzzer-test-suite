@@ -67,7 +67,7 @@ build_benchmark_using() {
 
   cp ${BUILDING_DIR}/${BENCHMARK}-${FUZZING_ENGINE} $SEND_DIR
 
-  #TODO: make these gsutil cp?
+  # TODO: make these gsutil cp?
   cp $WORK/FTS/engine-comparison/Dockerfile $SEND_DIR
   cp $WORK/FTS/engine-comparison/runner.sh $SEND_DIR
   cp $WORK/FTS/engine-comparison/config/parameters.cfg $SEND_DIR
@@ -148,11 +148,102 @@ for FENGINE_CONFIG in $(find ${WORK}/fengine-configs/*); do
   done
 done
 
-# rm -rf $WORK/SEND*
+# TODO here: reset fengine-config env vars (?)
+############# DONE building
+rm -rf $WORK/send $WORK/build
+############# NOW wait for experiment results
 
-######
-# for time in 30s 1m 5m 10m 30m; do
-  # sleep $time
-  # echo "Information after sleeping $time"
-  # tail fuzz-0.log | echo
-# done
+# Make a coverage build for a benchmark
+make_measurer () {
+  BENCHMARK=$1
+
+  BUILDING_DIR=$WORK/coverage-builds/${BENCHMARK}
+  mkdir -p $BUILDING_DIR
+  cd $BUILDING_DIR
+  FUZZING_ENGINE=coverage $WORK/FTS/${BENCHMARK}/build.sh
+}
+
+# Process a corpus, generate a human readable report, send the report to gsutil
+# Processing includes: decompress, use sancov.py, etc
+measure_coverage () {
+  FENGINE_CONFIG=$1
+  FENGINE_NAME=$(basename $FENGINE_CONFIG)
+  BENCHMARK=$2
+  CYCLE=$3
+
+  CORPUS_DIR=$WORK/measurement-folders/$BENCHMARK/corpus
+  SANCOV_DIR=$WORK/measurement-folders/$BENCHMARK/sancovs
+  REPORT_DIR=$WORK/measurement-folders/$BENCHMARK/reports
+  rm -fr $CORPUS_DIR $SANCOV_DIR
+  mkdir -p $CORPUS_DIR $SANCOV_DIR $REPORT_DIR
+
+  cd $CORPUS_DIR
+  # tar flags specify location to extract contents to (CORPUS_DIR)
+  tar -xvf $WORK/experiment-folders/${BENCHMARK}-${FENGINE_NAME}/corpus/corpus-archive-${CYCLE}.tar.gz -C $CORPUS_DIR --strip-components=1
+
+  # Generate individual sancovs
+  cd $SANCOV_DIR
+  for fl in $(find $CORPUS_DIR -type f); do
+    UBSAN_OPTIONS=coverage=1 $WORK/coverage-builds/${BENCHMARK}/${BENCHMARK}-coverage $fl
+  done
+
+  # Finish generating human readable report
+  cd $REPORT_DIR
+  MERGED_NAME=merged-${CYCLE}.sancov
+  $WORK/coverage-builds/sancov.py merge ${SANCOV_DIR}/* > $MERGED_NAME
+  echo $($WORK/coverage-builds/sancov.py print $MERGED_NAME) > ${REPORT_DIR}/readable-${CYCLE}.txt
+  # "readable.txt" should be more readable. Currently, just a list of PCs
+  # Report generation goes >here<
+  # Could include calls to external scripts in Golang, HTML, etc
+  gsutil -m rsync -rd $REPORT_DIR ${GSUTIL_BUCKET}/reports/${BENCHMARK}
+}
+
+mkdir -p $WORK/coverage-builds
+
+# Choice of preference: sancov.py over sancov CLI
+if [[ ! -f $WORK/coverage-builds/sancov.py ]]; then
+  cd $WORK/coverage-builds
+  wget http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/sanitizer_common/scripts/sancov.py
+  chmod 750 $WORK/coverage-builds/sancov.py
+fi
+
+for BENCHMARK in $BENCHMARKS; do
+  make_measurer $BENCHMARK
+done
+# Set -x for the benefit of the local computer
+set -x
+
+mkdir -p $WORK/experiment-folders
+mkdir -p $WORK/measurement-folders
+
+# WAIT_PERIOD should be the same as in runner.sh. It can be longer, but then there
+# will be a backlog of corpus archives to parse through even after the runner is
+# done. If it is shorter than in runner.sh, code will probably breal
+WAIT_PERIOD=20
+CYCLE=1
+
+NEXT_SYNC=$(($SECONDS + $WAIT_PERIOD))
+
+# TODO: better "while" condition?
+# Maybe not: just end dispatcher VM when done
+while [[ "infinite loop" ]]; do
+  SLEEP_TIME=$(($NEXT_SYNC - $SECONDS))
+  sleep $SLEEP_TIME
+
+  # Prevent calling measure_coverage when before runner VM begins
+  if [[ $(gsutil ls gs://fuzzer-test-suite/ | grep experiment-folders) ]]; then
+    gsutil -m rsync -rd ${GSUTIL_BUCKET}/experiment-folders $WORK/experiment-folders
+    for BENCHMARK in $BENCHMARKS; do
+      for FENGINE_CONFIG in $(find ${WORK}/fengine-configs/*); do
+        measure_coverage $FENGINE_CONFIG $BENCHMARK $CYCLE
+      done
+    done
+    CYCLE=$(($CYCLE + 1))
+  fi
+
+  # Skip cycle if need be
+  while [[ $(($NEXT_SYNC < $SECONDS)) == 1 ]]; do
+    NEXT_SYNC=$(($NEXT_SYNC + $WAIT_PERIOD))
+  done
+done
+
