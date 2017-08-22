@@ -210,7 +210,7 @@ fi
 for BENCHMARK in $BENCHMARKS; do
   make_measurer $BENCHMARK
 done
-# Set -x for the benefit of the local computer
+
 set -x
 
 mkdir -p $WORK/experiment-folders
@@ -230,11 +230,11 @@ while [[ "infinite loop" ]]; do
   SLEEP_TIME=$(($NEXT_SYNC - $SECONDS))
   sleep $SLEEP_TIME
 
-  # Prevent calling measure_coverage when before runner VM begins
-  if [[ $(gsutil ls gs://fuzzer-test-suite/ | grep experiment-folders) ]]; then
+  # Prevent calling measure_coverage before runner VM begins
+  if [[ $(gsutil ls ${GSUTIL_BUCKET} | grep experiment-folders) ]]; then
     gsutil -m rsync -rd ${GSUTIL_BUCKET}/experiment-folders $WORK/experiment-folders
     for BENCHMARK in $BENCHMARKS; do
-      for FENGINE_CONFIG in $(find ${WORK}/fengine-configs/*); do
+      for FENGINE_CONFIG in $(find ${WORK}/fengine-configs -type f); do
         measure_coverage $FENGINE_CONFIG $BENCHMARK $CYCLE
       done
     done
