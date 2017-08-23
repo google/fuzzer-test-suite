@@ -169,32 +169,52 @@ measure_coverage () {
   FENGINE_CONFIG=$1
   FENGINE_NAME=$(basename $FENGINE_CONFIG)
   BENCHMARK=$2
-  CYCLE=$3
 
   CORPUS_DIR=$WORK/measurement-folders/$BENCHMARK/corpus
   SANCOV_DIR=$WORK/measurement-folders/$BENCHMARK/sancovs
   REPORT_DIR=$WORK/measurement-folders/$BENCHMARK/reports
+
+  EXPERIMENT_DIR=$WORK/experiment-folders/${BENCHMARK}-${FENGINE_NAME}
+
+  if [[ -f $REPORT_DIR/latest-report ]]; then
+    . $REPORT_DIR/latest-report
+  else
+    LATEST_REPORT=0
+  fi
+
+  THIS_CYCLE=$(($LATEST_REPORT + 1))
+  if [[ ! -f ${EXPERIMENT_DIR}/corpus/corpus-archive-${THIS_CYCLE}.tar.gz ]]; then
+    echo "On cycle $THIS_CYCLE, no new corpus found for benchmark $BENCHMARK and fengine $FENGINE_NAME"
+    return
+  fi
+
+  while [[ -f ${EXPERIMENT_DIR}/corpus/corpus-archive-$(($THIS_CYCLE+1)).tar.gz ]]; do
+    echo "On cycle $THIS_CYCLE, skipping a corpus snapsho for benchmark $BENCHMARK fengine $FENGINE_NAME"
+    THIS_CYCLE=$(($THIS_CYCLE + 1))
+  done
+
   rm -fr $CORPUS_DIR $SANCOV_DIR
   mkdir -p $CORPUS_DIR $SANCOV_DIR $REPORT_DIR
 
   cd $CORPUS_DIR
   # tar flags specify location to extract contents to (CORPUS_DIR)
-  tar -xvf $WORK/experiment-folders/${BENCHMARK}-${FENGINE_NAME}/corpus/corpus-archive-${CYCLE}.tar.gz -C $CORPUS_DIR --strip-components=1
+  tar -xvf ${EXPERIMENT_DIR}/corpus/corpus-archive-${THIS_CYCLE}.tar.gz --strip-components=1
 
-  # Generate individual sancovs
+  # Generate sancov
   cd $SANCOV_DIR
-  for fl in $(find $CORPUS_DIR -type f); do
-    UBSAN_OPTIONS=coverage=1 $WORK/coverage-builds/${BENCHMARK}/${BENCHMARK}-coverage $fl
-  done
+  UBSAN_OPTIONS=coverage=1 $WORK/coverage-builds/${BENCHMARK}/${BENCHMARK}-coverage $(find $CORPUS_DIR -type f)
 
   # Finish generating human readable report
   cd $REPORT_DIR
-  MERGED_NAME=merged-${CYCLE}.sancov
-  $WORK/coverage-builds/sancov.py merge ${SANCOV_DIR}/* > $MERGED_NAME
-  echo $($WORK/coverage-builds/sancov.py print $MERGED_NAME) > ${REPORT_DIR}/readable-${CYCLE}.txt
-  # "readable.txt" should be more readable. Currently, just a list of PCs
   # Report generation goes >here<
   # Could include calls to external scripts in Golang, HTML, etc
+
+  # declare VM_SECONDS
+  . $EXPERIMENT_DIR/results/seconds-${THIS_CYCLE}
+
+  echo "$VM_SECONDS, $($WORK/coverage-builds/sancov.py print $SANCOV_DIR/* | wc -w)" >> $REPORT_DIR/coverage-graph.csv
+
+  echo "LATEST_REPORT=$THIS_CYCLE" > $REPORT_DIR/latest-report
   gsutil -m rsync -rd $REPORT_DIR ${GSUTIL_BUCKET}/reports/${BENCHMARK}
 }
 
@@ -216,9 +236,10 @@ set -x
 mkdir -p $WORK/experiment-folders
 mkdir -p $WORK/measurement-folders
 
-# WAIT_PERIOD should be the same as in runner.sh. It can be longer, but then there
-# will be a backlog of corpus archives to parse through even after the runner is
-# done. If it is shorter than in runner.sh, code will probably breal
+# WAIT_PERIOD defines how frequently the dispatcher generates new reports for
+# every benchmark with every fengine. For a large number of runner VMs,
+# WAIT_PERIOD in dispatcher.sh can be smaller than it is in runner.sh
+
 WAIT_PERIOD=20
 CYCLE=1
 
@@ -235,7 +256,7 @@ while [[ "infinite loop" ]]; do
     gsutil -m rsync -rd ${GSUTIL_BUCKET}/experiment-folders $WORK/experiment-folders
     for BENCHMARK in $BENCHMARKS; do
       for FENGINE_CONFIG in $(find ${WORK}/fengine-configs -type f); do
-        measure_coverage $FENGINE_CONFIG $BENCHMARK $CYCLE
+        measure_coverage $FENGINE_CONFIG $BENCHMARK
       done
     done
     CYCLE=$(($CYCLE + 1))
