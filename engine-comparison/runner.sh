@@ -64,11 +64,11 @@ while [[ ! -f crash* ]]; do
   # Snapshot
   cp -r corpus corpus-copy
 
-  echo "SECONDS=$SECONDS" > results/seconds-${CYCLE}
+  echo "VM_SECONDS=$SECONDS" > results/seconds-${CYCLE}
   ls -l corpus-copy > results/corpus-data-${CYCLE}
   tar -cvzf corpus-archives/corpus-archive-${CYCLE}.tar.gz corpus-copy
-  gsutil -m rsync -rPd corpus-archives gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/corpus
   gsutil -m rsync -rPd results gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/results
+  gsutil -m rsync -rPd corpus-archives gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/corpus
 
   # Done with snapshot
   rm -r corpus-copy
