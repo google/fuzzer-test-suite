@@ -139,6 +139,8 @@ else
   BENCHMARKS="$(echo $BMARKS | tr ',' ' ')"
 fi
 
+# Reset google cloud results before doing experiments
+gsutil -m rm -r ${GSUTIL_BUCKET}/experiment-folders ${GSUTIL_BUCKET}/reports
 
 # Main working loops
 for FENGINE_CONFIG in $(find ${WORK}/fengine-configs/*); do
@@ -176,6 +178,10 @@ measure_coverage () {
 
   EXPERIMENT_DIR=$WORK/experiment-folders/${BENCHMARK}-${FENGINE_NAME}
 
+  rm -fr $CORPUS_DIR $SANCOV_DIR
+  mkdir -p $CORPUS_DIR $SANCOV_DIR $REPORT_DIR
+
+  # Use the corpus-archive directly succeeding the last one to be processed
   if [[ -f $REPORT_DIR/latest-report ]]; then
     . $REPORT_DIR/latest-report
   else
@@ -187,17 +193,12 @@ measure_coverage () {
     echo "On cycle $THIS_CYCLE, no new corpus found for benchmark $BENCHMARK and fengine $FENGINE_NAME"
     return
   fi
-
   while [[ -f ${EXPERIMENT_DIR}/corpus/corpus-archive-$(($THIS_CYCLE+1)).tar.gz ]]; do
     echo "On cycle $THIS_CYCLE, skipping a corpus snapsho for benchmark $BENCHMARK fengine $FENGINE_NAME"
     THIS_CYCLE=$(($THIS_CYCLE + 1))
   done
 
-  rm -fr $CORPUS_DIR $SANCOV_DIR
-  mkdir -p $CORPUS_DIR $SANCOV_DIR $REPORT_DIR
-
   cd $CORPUS_DIR
-  # tar flags specify location to extract contents to (CORPUS_DIR)
   tar -xvf ${EXPERIMENT_DIR}/corpus/corpus-archive-${THIS_CYCLE}.tar.gz --strip-components=1
 
   # Generate sancov
@@ -241,6 +242,8 @@ mkdir -p $WORK/measurement-folders
 # WAIT_PERIOD in dispatcher.sh can be smaller than it is in runner.sh
 
 WAIT_PERIOD=20
+
+# Is CYCLE necessary in dispatcher? No?
 CYCLE=1
 
 NEXT_SYNC=$(($SECONDS + $WAIT_PERIOD))
