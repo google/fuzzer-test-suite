@@ -214,6 +214,8 @@ measure_coverage () {
   . $EXPERIMENT_DIR/results/seconds-${THIS_CYCLE}
 
   echo "$VM_SECONDS, $($WORK/coverage-builds/sancov.py print $SANCOV_DIR/* | wc -w)" >> $REPORT_DIR/coverage-graph.csv
+  echo "$VM_SECONDS, $(wc -c $(find $CORPUS_DIR -maxdepth 1 -type f) | tail --lines=1 | grep -o [0-9]* )" >> $REPORT_DIR/corpus-size-graph.csv
+  echo "$VM_SECONDS, $(find $CORPUS_DIR -maxdepth 1 -type f | wc -l)" >> $REPORT_DIR/corpus-elems-graph.csv
 
   echo "LATEST_REPORT=$THIS_CYCLE" > $REPORT_DIR/latest-report
   gsutil -m rsync -rd $REPORT_DIR ${GSUTIL_BUCKET}/reports/${BENCHMARK}
