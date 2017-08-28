@@ -31,7 +31,7 @@ if [[ $FUZZING_ENGINE == "afl" ]]; then
     echo "Input" > ./seeds/nil_seed
   fi
 
-  EXEC_CMD="./afl-fuzz $BINARY_RUNTIME_OPTIONS -i ./seeds/ -o corpus -- $BINARY &"
+  EXEC_CMD="AFL_I_DONT_CARE_ABOUT_CRASHES=1 ./afl-fuzz $BINARY_RUNTIME_OPTIONS -i ./seeds/ -o corpus -- $BINARY &"
 
 elif [[ $FUZZING_ENGINE == "libfuzzer" ]]; then
   if [[ -d seeds ]]; then
