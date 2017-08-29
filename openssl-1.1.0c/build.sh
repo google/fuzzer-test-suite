@@ -13,5 +13,7 @@ get_git_tag https://github.com/openssl/openssl.git OpenSSL_1_1_0c SRC
 build_lib
 build_fuzzer
 set -x
-$CC $CFLAGS -DFuzzerTestOneInput=LLVMFuzzerTestOneInput -c -g BUILD/fuzz/bignum.c -I BUILD/include
-$CXX $CXXFLAGS bignum.o BUILD/libssl.a BUILD/libcrypto.a $LIB_FUZZING_ENGINE -lgcrypt -o $EXECUTABLE_NAME_BASE
+for f in bignum x509; do
+  $CC $CFLAGS -DFuzzerTestOneInput=LLVMFuzzerTestOneInput -c -g BUILD/fuzz/$f.c -I BUILD/include
+  $CXX $CXXFLAGS $f.o BUILD/libssl.a BUILD/libcrypto.a $LIB_FUZZING_ENGINE -lgcrypt -o $EXECUTABLE_NAME_BASE-$f
+done
