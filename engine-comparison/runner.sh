@@ -30,8 +30,11 @@ if [[ $FUZZING_ENGINE == "afl" ]]; then
   if [[ !$(find seeds -type f) ]]; then
     echo "Input" > ./seeds/nil_seed
   fi
-  
-  EXEC_CMD="AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 ./afl-fuzz $BINARY_RUNTIME_OPTIONS -i ./seeds/ -o corpus -- $BINARY &"
+  # TODO: edit core_pattern in Docker VM
+  # https://groups.google.com/forum/m/#!msg/afl-users/7arn66RyNfg
+  export AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
+
+  EXEC_CMD="./afl-fuzz $BINARY_RUNTIME_OPTIONS -i ./seeds/ -o corpus -- $BINARY &"
 
 elif [[ $FUZZING_ENGINE == "libfuzzer" ]]; then
   if [[ -d seeds ]]; then
