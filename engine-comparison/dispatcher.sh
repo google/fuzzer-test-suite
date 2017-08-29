@@ -39,7 +39,7 @@ build_engine() {
     cd $WORK/fengine-builds
     wget http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz
     tar -xvf afl-latest.tgz -C $FENGINE_DIR --strip-components=1
-    (cd $FENGINE_DIR && make)
+    (cd $FENGINE_DIR && AFL_USE_ASAN=1 make clean all)
     rm afl-latest.tgz
     cd
     export AFL_SRC=$FENGINE_DIR
@@ -158,6 +158,12 @@ rm -rf $WORK/send $WORK/build
 # Make a coverage build for a benchmark
 make_measurer () {
   BENCHMARK=$1
+
+  if [[ ! -d ${LIBFUZZER_SRC}/standalone ]]; then
+    echo "Checking out libFuzzer"
+    svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer $WORK/Fuzzer
+    LIBFUZZER_SRC=$WORK/Fuzzer
+  fi
 
   BUILDING_DIR=$WORK/coverage-builds/${BENCHMARK}
   mkdir -p $BUILDING_DIR
