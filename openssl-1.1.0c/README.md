@@ -28,7 +28,7 @@ bignum.c:91: OpenSSL internal error: assertion failed: success
 ## x509
 
 Finds [CVE-2017-3735](https://www.openssl.org/news/secadv/20170828.txt), a heap buffer overflow in `X509v3_addr_get_afi`.
-It took OSS-Fuzz ~9 months to discover this bug initially.
+It took OSS-Fuzz ~9 months (and ~5 CPU years) to discover this bug initially.
 Reproducer provided in this directory (`crash-4fce1eeb339d851b72fedba895163ec1daab51f3`).
 
 ```
