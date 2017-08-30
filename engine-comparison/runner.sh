@@ -57,14 +57,13 @@ $EXEC_CMD
 # Setting SECONDS is fine, it still gets ++ on schedule
 SECONDS=0
 NEXT_SYNC=$WAIT_PERIOD
-# This doesn't work for leaks or timeouts, as they have different names:
-# Currently only the individual copies of test-libfuzzer.sh document
-# the particulars of how to identify complete benchmarks
+# This doesn't work for leaks or timeouts, as they have different artifact
+# names. Currently, only the individual copies of test-libfuzzer.sh document
+# the particulars of how to identify when each benchmark finds its goal
 while [[ ! $(ls | grep crash) ]]; do
 
   # Ensure that measurements happen every $WAIT_PERIOD
   SLEEP_TIME=$(($NEXT_SYNC - $SECONDS))
-  # if $NEXT_SYNC
   sleep $SLEEP_TIME
 
   # Snapshot

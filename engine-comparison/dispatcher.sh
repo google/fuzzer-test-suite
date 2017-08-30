@@ -135,8 +135,7 @@ elif [[ $BMARKS == 'small' ]]; then
 elif [[ $BMARKS == 'none' ]]; then
   BENCHMARKS=""
 elif [[ $BMARKS == 'three' ]]; then
-  BENCHMARKS="guetzli-2017-3-30 libssh-2017-1272 re2-2014-12-09"
-#elif [[ $BMARKS == 'other alias' ]]; then
+  BENCHMARKS="guetzli-2017-3-30 libarchive-2017-01-04 openssl-1.0.1f"
 else
   BENCHMARKS="$(echo $BMARKS | tr ',' ' ')"
 fi
@@ -222,15 +221,12 @@ measure_coverage () {
   # Report generation goes >here<
   # Could include calls to external scripts in Golang, HTML, etc
 
-  # declare VM_SECONDS
-  # . $EXPERIMENT_DIR/results/seconds-${THIS_CYCLE}
-
   echo "$THIS_CYCLE,$($WORK/coverage-builds/sancov.py print $SANCOV_DIR/* | wc -w)" >> $REPORT_DIR/coverage-graph.csv
   echo "$THIS_CYCLE,$(wc -c $(find $CORPUS_DIR -maxdepth 1 -type f) | tail --lines=1 | grep -o [0-9]* )" >> $REPORT_DIR/corpus-size-graph.csv
   echo "$THIS_CYCLE,$(find $CORPUS_DIR -maxdepth 1 -type f | wc -l)" >> $REPORT_DIR/corpus-elems-graph.csv
 
   echo "LATEST_REPORT=$THIS_CYCLE" > $REPORT_DIR/latest-report
-  gsutil -m rsync -rd $REPORT_DIR ${GSUTIL_BUCKET}/reports/${BENCHMARK}/${FENGINE_NAME}
+  gsutil -m rsync -rd $REPORT_DIR ${GSUTIL_BUCKET}/reports/${THIS_BENCHMARK}
 }
 
 mkdir -p $WORK/coverage-builds
