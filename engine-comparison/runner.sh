@@ -34,13 +34,14 @@ if [[ $FUZZING_ENGINE == "afl" ]]; then
   export AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
 
   EXEC_CMD="./afl-fuzz $BINARY_RUNTIME_OPTIONS -i ./seeds/ -o corpus -- $BINARY &"
-
+  PROCESS_NAME="afl-fuzz"
 elif [[ $FUZZING_ENGINE == "libfuzzer" ]]; then
   if [[ -d seeds ]]; then
     cp -r seeds/* corpus
   fi
 
   EXEC_CMD="./$BINARY $BINARY_RUNTIME_OPTIONS -workers=$JOBS -jobs=$JOBS corpus &"
+  PROCESS_NAME=$BINARY
 fi
 
 mkdir corpus-archives
@@ -57,10 +58,8 @@ $EXEC_CMD
 # Setting SECONDS is fine, it still gets ++ on schedule
 SECONDS=0
 NEXT_SYNC=$WAIT_PERIOD
-# This doesn't work for leaks or timeouts, as they have different artifact
-# names. Currently, only the individual copies of test-libfuzzer.sh document
-# the particulars of how to identify when each benchmark finds its goal
-while [[ ! $(ls | grep crash) ]]; do
+
+while [[ $(ps -x | grep $PROCESS_NAME) ]]; do
 
   # Ensure that measurements happen every $WAIT_PERIOD
   SLEEP_TIME=$(($NEXT_SYNC - $SECONDS))
