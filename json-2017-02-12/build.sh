@@ -13,4 +13,6 @@ get_git_revision https://github.com/nlohmann/json.git b04543ecc58188a593f8729db3
 build_lib
 build_fuzzer
 
+cp -r $SCRIPT_DIR/seeds .
+
 $CXX $CXXFLAGS -std=c++11 -I BUILD/src BUILD/test/src/fuzzer-parse_json.cpp $LIB_FUZZING_ENGINE -o $EXECUTABLE_NAME_BASE
