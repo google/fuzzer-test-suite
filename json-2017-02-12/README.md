@@ -1,4 +1,4 @@
-This benchmark finds an assertion failure in [json](https://github.com/nlohmann/json).
+This benchmark finds an [assertion failure](https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=641) in [json](https://github.com/nlohmann/json).
 
 It's usually found in about 5 minutes using the provided seed.
 
