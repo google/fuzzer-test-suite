@@ -3,18 +3,23 @@ This benchmark finds an [assertion failure](https://bugs.chromium.org/p/oss-fuzz
 It's usually found in about 5 minutes using the provided seed.
 
 ```
-guetzli/output_image.cc:398: void guetzli::OutputImage::SaveToJpegData(guetzli::JPEGData*) const: Assertion `coeff % quant == 0' failed.
-==34794== ERROR: libFuzzer: deadly signal
-    #0 0x4c4597 in __sanitizer_print_stack_trace
-    #1 0x526741 in fuzzer::Fuzzer::CrashCallback()
-    #2 0x52670d in fuzzer::Fuzzer::StaticCrashSignalCallback()
-    ...
-    #7 0x7f2f8fe71ca1 in __assert_fail
-    #8 0x509909 in guetzli::OutputImage::SaveToJpegData(guetzli::JPEGData*) const
-    #9 0x4f5f65 in guetzli::(anonymous namespace)::Processor::TryQuantMatrix(guetzli::JPEGData const&, float, int (*) [64], guetzli::OutputImage*)
-    #10 0x4f830a in SelectQuantMatrix
-    #11 0x4f830a in guetzli::(anonymous namespace)::Processor::ProcessJpegData(guetzli::Params const&, guetzli::JPEGData const&, guetzli::Comparator*, guetzli::GuetzliOutput*, guetzli::ProcessStats*)
-    #12 0x4fa196 in ProcessJpegData
-    #13 0x4fa196 in guetzli::Process(guetzli::Params const&, guetzli::ProcessStats*, std::string const&, std::string*)
-    #14 0x4ea17a in LLVMFuzzerTestOneInput
+json-2017-02-12-libfuzzer: BUILD/test/src/fuzzer-parse_json.cpp:50: int LLVMFuzzerTestOneInput(const uint8_t *, size_t): Assertion `s1 == s2' failed.
+==3260== ERROR: libFuzzer: deadly signal
+    #0 0x4eafb3  (json-2017-02-12-libfuzzer+0x4eafb3)
+    #1 0x53d291  (json-2017-02-12-libfuzzer+0x53d291)
+    #2 0x53d25d  (json-2017-02-12-libfuzzer+0x53d25d)
+    #3 0x7fe55ab6f38f  (/lib/x86_64-linux-gnu/libpthread.so.0+0x1138f)
+    #4 0x7fe55a1a7427  (/lib/x86_64-linux-gnu/libc.so.6+0x35427)
+    #5 0x7fe55a1a9029  (/lib/x86_64-linux-gnu/libc.so.6+0x37029)
+    #6 0x7fe55a19fbd6  (/lib/x86_64-linux-gnu/libc.so.6+0x2dbd6)
+    #7 0x7fe55a19fc81  (/lib/x86_64-linux-gnu/libc.so.6+0x2dc81)
+    #8 0x519a34  (json-2017-02-12-libfuzzer+0x519a34)
+    #9 0x53e50d  (json-2017-02-12-libfuzzer+0x53e50d)
+    #10 0x53dd28  (json-2017-02-12-libfuzzer+0x53dd28)
+    #11 0x53dbf8  (json-2017-02-12-libfuzzer+0x53dbf8)
+    #12 0x53f72e  (json-2017-02-12-libfuzzer+0x53f72e)
+    #13 0x537508  (json-2017-02-12-libfuzzer+0x537508)
+    #14 0x5329f0  (json-2017-02-12-libfuzzer+0x5329f0)
+    #15 0x7fe55a19282f  (/lib/x86_64-linux-gnu/libc.so.6+0x2082f)
+    #16 0x41cfc8  (json-2017-02-12-libfuzzer+0x41cfc8)
 ```
