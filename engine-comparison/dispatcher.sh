@@ -134,7 +134,8 @@ elif [[ $BMARKS == 'small' ]]; then
   BENCHMARKS="c-ares-CVE-2016-5180 re2-2014-12-09"
 elif [[ $BMARKS == 'none' ]]; then
   BENCHMARKS=""
-  #elif [[ $BMARKS == 'other alias' ]]; do
+elif [[ $BMARKS == 'three' ]]; then
+  BENCHMARKS="guetzli-2017-3-30 libarchive-2017-01-04 openssl-1.0.1f"
 else
   BENCHMARKS="$(echo $BMARKS | tr ',' ' ')"
 fi
@@ -178,9 +179,10 @@ measure_coverage () {
   FENGINE_NAME=$(basename $FENGINE_CONFIG)
   BENCHMARK=$2
 
-  CORPUS_DIR=$WORK/measurement-folders/$BENCHMARK/corpus
-  SANCOV_DIR=$WORK/measurement-folders/$BENCHMARK/sancovs
-  REPORT_DIR=$WORK/measurement-folders/$BENCHMARK/reports
+  THIS_BENCHMARK="${BENCHMARK}/${FENGINE_NAME}"
+  CORPUS_DIR=$WORK/measurement-folders/$THIS_BENCHMARK/corpus
+  SANCOV_DIR=$WORK/measurement-folders/$THIS_BENCHMARK/sancovs
+  REPORT_DIR=$WORK/measurement-folders/$THIS_BENCHMARK/reports
 
   EXPERIMENT_DIR=$WORK/experiment-folders/${BENCHMARK}-${FENGINE_NAME}
 
@@ -195,6 +197,9 @@ measure_coverage () {
   fi
 
   THIS_CYCLE=$(($LATEST_REPORT + 1))
+  while [[ $(grep "^${THIS_CYCLE}$" ${EXPERIMENT_DIR}/results/skipped-cycles) ]]; do
+    THIS_CYCLE=$((THIS_CYCLE + 1))
+  done
   if [[ ! -f ${EXPERIMENT_DIR}/corpus/corpus-archive-${THIS_CYCLE}.tar.gz ]]; then
     echo "On cycle $THIS_CYCLE, no new corpus found for benchmark $BENCHMARK and fengine $FENGINE_NAME"
     return
@@ -216,15 +221,12 @@ measure_coverage () {
   # Report generation goes >here<
   # Could include calls to external scripts in Golang, HTML, etc
 
-  # declare VM_SECONDS
-  . $EXPERIMENT_DIR/results/seconds-${THIS_CYCLE}
-
-  echo "$VM_SECONDS, $($WORK/coverage-builds/sancov.py print $SANCOV_DIR/* | wc -w)" >> $REPORT_DIR/coverage-graph.csv
-  echo "$VM_SECONDS, $(wc -c $(find $CORPUS_DIR -maxdepth 1 -type f) | tail --lines=1 | grep -o [0-9]* )" >> $REPORT_DIR/corpus-size-graph.csv
-  echo "$VM_SECONDS, $(find $CORPUS_DIR -maxdepth 1 -type f | wc -l)" >> $REPORT_DIR/corpus-elems-graph.csv
+  echo "$THIS_CYCLE,$($WORK/coverage-builds/sancov.py print $SANCOV_DIR/* | wc -w)" >> $REPORT_DIR/coverage-graph.csv
+  echo "$THIS_CYCLE,$(wc -c $(find $CORPUS_DIR -maxdepth 1 -type f) | tail --lines=1 | grep -o [0-9]* )" >> $REPORT_DIR/corpus-size-graph.csv
+  echo "$THIS_CYCLE,$(find $CORPUS_DIR -maxdepth 1 -type f | wc -l)" >> $REPORT_DIR/corpus-elems-graph.csv
 
   echo "LATEST_REPORT=$THIS_CYCLE" > $REPORT_DIR/latest-report
-  gsutil -m rsync -rd $REPORT_DIR ${GSUTIL_BUCKET}/reports/${BENCHMARK}
+  gsutil -m rsync -rd $REPORT_DIR ${GSUTIL_BUCKET}/reports/${THIS_BENCHMARK}
 }
 
 mkdir -p $WORK/coverage-builds

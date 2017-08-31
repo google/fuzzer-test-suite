@@ -12,8 +12,7 @@ FENGINE_NAME=$(curl http://metadata.google.internal/computeMetadata/v1/instance/
 BINARY=${BENCHMARK}-${FUZZING_ENGINE}
 
 rm -fr corpus results
-mkdir corpus
-mkdir results
+mkdir corpus results
 # seeds comes from dispatcher.sh, if it exists
 chmod 750 $BINARY
 
@@ -35,13 +34,14 @@ if [[ $FUZZING_ENGINE == "afl" ]]; then
   export AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
 
   EXEC_CMD="./afl-fuzz $BINARY_RUNTIME_OPTIONS -i ./seeds/ -o corpus -- $BINARY &"
-
+  PROCESS_NAME="afl-fuzz"
 elif [[ $FUZZING_ENGINE == "libfuzzer" ]]; then
   if [[ -d seeds ]]; then
     cp -r seeds/* corpus
   fi
 
   EXEC_CMD="./$BINARY $BINARY_RUNTIME_OPTIONS -workers=$JOBS -jobs=$JOBS corpus &"
+  PROCESS_NAME=$BINARY
 fi
 
 mkdir corpus-archives
@@ -50,15 +50,16 @@ mkdir corpus-archives
 SYNC_TO=${BENCHMARK}-${FENGINE_NAME}
 # WAIT_PERIOD should be longer than the whole loop, otherwise a sync cycle will be missed
 WAIT_PERIOD=20
+# "cycle 0" will be "time 0", and for purposes is skipped
 CYCLE=1
 
 # Now, begin
 $EXEC_CMD
-NEXT_SYNC=$(($SECONDS + $WAIT_PERIOD)) # =$SECONDS # Make beginning measurement?
+# Setting SECONDS is fine, it still gets ++ on schedule
+SECONDS=0
+NEXT_SYNC=$WAIT_PERIOD
 
-# This works for libfuzzer, tbd for AFL:
-while [[ ! -f crash* ]]; do
-# while [[ "infinite loop" ]]; do
+while [[ $(ps -x | grep $PROCESS_NAME) ]]; do
 
   # Ensure that measurements happen every $WAIT_PERIOD
   SLEEP_TIME=$(($NEXT_SYNC - $SECONDS))
@@ -68,7 +69,7 @@ while [[ ! -f crash* ]]; do
   cp -r corpus corpus-copy
 
   echo "VM_SECONDS=$SECONDS" > results/seconds-${CYCLE}
-  ls -l corpus-copy > results/corpus-data-${CYCLE}
+  # ls -l corpus-copy > results/corpus-data-${CYCLE}
   tar -cvzf corpus-archives/corpus-archive-${CYCLE}.tar.gz corpus-copy
   gsutil -m rsync -rPd results gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/results
   gsutil -m rsync -rPd corpus-archives gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/corpus
@@ -76,11 +77,14 @@ while [[ ! -f crash* ]]; do
   # Done with snapshot
   rm -r corpus-copy
 
+  CYCLE=$(($CYCLE + 1))
+  NEXT_SYNC=$(($CYCLE * $WAIT_PERIOD))
   # Skip cycle if need be
   while [[ $(($NEXT_SYNC < $SECONDS)) == 1 ]]; do
-    NEXT_SYNC=$(($NEXT_SYNC + $WAIT_PERIOD))
+    echo "$CYCLE" >> results/skipped-cycles
+    CYCLE=$(($CYCLE + 1))
+    NEXT_SYNC=$(($CYCLE * $WAIT_PERIOD))
   done
 
-  CYCLE=$(($CYCLE + 1))
 done
 
