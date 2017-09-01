@@ -76,8 +76,8 @@ conduct_experiment() {
     echo "VM_SECONDS=$SECONDS" > results/seconds-${CYCLE}
     # ls -l corpus-copy > results/corpus-data-${CYCLE}
     tar -cvzf corpus-archives/corpus-archive-${CYCLE}.tar.gz corpus-copy
-    gsutil -m rsync -rPd results gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/results/trial-${TRIAL_NUM}
-    gsutil -m rsync -rPd corpus-archives gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/corpus/trial-${TRIAL_NUM}
+    gsutil -m rsync -rPd results gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/trial-${TRIAL_NUM}/results
+    gsutil -m rsync -rPd corpus-archives gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/trial-${TRIAL_NUM}/corpus
 
     # Done with snapshot
     rm -r corpus-copy
