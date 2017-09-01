@@ -11,8 +11,6 @@ FENGINE_NAME=$(curl http://metadata.google.internal/computeMetadata/v1/instance/
 
 BINARY=${BENCHMARK}-${FUZZING_ENGINE}
 
-rm -fr corpus results
-mkdir corpus results
 # seeds comes from dispatcher.sh, if it exists
 chmod 750 $BINARY
 
@@ -36,55 +34,69 @@ if [[ $FUZZING_ENGINE == "afl" ]]; then
   EXEC_CMD="./afl-fuzz $BINARY_RUNTIME_OPTIONS -i ./seeds/ -o corpus -- $BINARY &"
   PROCESS_NAME="afl-fuzz"
 elif [[ $FUZZING_ENGINE == "libfuzzer" ]]; then
-  if [[ -d seeds ]]; then
-    cp -r seeds/* corpus
-  fi
 
-  EXEC_CMD="./$BINARY $BINARY_RUNTIME_OPTIONS -workers=$JOBS -jobs=$JOBS corpus &"
+  EXEC_CMD="./$BINARY $BINARY_RUNTIME_OPTIONS -workers=$JOBS -jobs=$JOBS corpus"
   PROCESS_NAME=$BINARY
-fi
 
-mkdir corpus-archives
+  if [[ -d seeds ]]; then
+    EXEC_CMD="$EXEC_CMD seeds"
+  fi
+  EXEC_CMD="$EXEC_CMD &"
+
+fi
 
 # Folder name to sync to (convenient)
 SYNC_TO=${BENCHMARK}-${FENGINE_NAME}
 # WAIT_PERIOD should be longer than the whole loop, otherwise a sync cycle will be missed
 WAIT_PERIOD=20
-# "cycle 0" will be "time 0", and for purposes is skipped
-CYCLE=1
 
-# Now, begin
-$EXEC_CMD
-# Setting SECONDS is fine, it still gets ++ on schedule
-SECONDS=0
-NEXT_SYNC=$WAIT_PERIOD
+conduct_experiment() {
+  TRIAL_NUM=$1
 
-while [[ $(ps -x | grep $PROCESS_NAME) ]]; do
+  rm -fr corpus corpus-archives results
+  mkdir -p corpus corpus-archives results
 
-  # Ensure that measurements happen every $WAIT_PERIOD
-  SLEEP_TIME=$(($NEXT_SYNC - $SECONDS))
-  sleep $SLEEP_TIME
+  # "cycle 0" will be "time 0", and for purposes is skipped
+  CYCLE=1
+  # Now, begin
+  $EXEC_CMD
+  # Setting SECONDS is fine, it still gets ++ on schedule
+  SECONDS=0
+  NEXT_SYNC=$WAIT_PERIOD
 
-  # Snapshot
-  cp -r corpus corpus-copy
+  while [[ $(ps -x | grep $PROCESS_NAME) ]]; do
 
-  echo "VM_SECONDS=$SECONDS" > results/seconds-${CYCLE}
-  # ls -l corpus-copy > results/corpus-data-${CYCLE}
-  tar -cvzf corpus-archives/corpus-archive-${CYCLE}.tar.gz corpus-copy
-  gsutil -m rsync -rPd results gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/results
-  gsutil -m rsync -rPd corpus-archives gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/corpus
+    # Ensure that measurements happen every $WAIT_PERIOD
+    SLEEP_TIME=$(($NEXT_SYNC - $SECONDS))
+    sleep $SLEEP_TIME
 
-  # Done with snapshot
-  rm -r corpus-copy
+    # Snapshot
+    cp -r corpus corpus-copy
 
-  CYCLE=$(($CYCLE + 1))
-  NEXT_SYNC=$(($CYCLE * $WAIT_PERIOD))
-  # Skip cycle if need be
-  while [[ $(($NEXT_SYNC < $SECONDS)) == 1 ]]; do
-    echo "$CYCLE" >> results/skipped-cycles
+    echo "VM_SECONDS=$SECONDS" > results/seconds-${CYCLE}
+    # ls -l corpus-copy > results/corpus-data-${CYCLE}
+    tar -cvzf corpus-archives/corpus-archive-${CYCLE}.tar.gz corpus-copy
+    gsutil -m rsync -rPd results gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/results/trial-${TRIAL_NUM}
+    gsutil -m rsync -rPd corpus-archives gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/corpus/trial-${TRIAL_NUM}
+
+    # Done with snapshot
+    rm -r corpus-copy
+
     CYCLE=$(($CYCLE + 1))
     NEXT_SYNC=$(($CYCLE * $WAIT_PERIOD))
-  done
+    # Skip cycle if need be
+    while [[ $(($NEXT_SYNC < $SECONDS)) == 1 ]]; do
+      echo "$CYCLE" >> results/skipped-cycles
+      CYCLE=$(($CYCLE + 1))
+      NEXT_SYNC=$(($CYCLE * $WAIT_PERIOD))
+    done
 
+  done
+}
+
+TRIAL_NUM=0
+while [[ $TRIAL_NUM != $N_ITERATIONS ]]; do
+  conduct_experiment $TRIAL_NUM
+  TRIAL_NUM=$(($TRIAL_NUM + 1))
 done
 
