@@ -225,11 +225,10 @@ measure_coverage () {
     echo "On cycle $THIS_CYCLE, no new corpus found for benchmark $BENCHMARK and fengine $FENGINE_NAME"
     return
   fi
-  # TODO: should we skip these? bottleneck here could be fine with small wait period
-  while [[ -f ${EXPERIMENT_DIR}/corpus/corpus-archive-$(($THIS_CYCLE+1)).tar.gz ]]; do
-    echo "On cycle $THIS_CYCLE, skipping a corpus snapsho for benchmark $BENCHMARK fengine $FENGINE_NAME"
-    THIS_CYCLE=$(($THIS_CYCLE + 1))
-  done
+  #while [[ -f ${EXPERIMENT_DIR}/corpus/corpus-archive-$(($THIS_CYCLE+1)).tar.gz ]]; do
+  #  echo "On cycle $THIS_CYCLE, skipping a corpus snapsho for benchmark $BENCHMARK fengine $FENGINE_NAME"
+  #  THIS_CYCLE=$(($THIS_CYCLE + 1))
+  #done
 
   cd $CORPUS_DIR
   tar -xvf ${EXPERIMENT_DIR}/corpus/corpus-archive-${THIS_CYCLE}.tar.gz --strip-components=1
