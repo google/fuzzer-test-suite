@@ -189,14 +189,35 @@ measure_coverage () {
   rm -fr $CORPUS_DIR $SANCOV_DIR
   mkdir -p $CORPUS_DIR $SANCOV_DIR $REPORT_DIR
 
-  # Use the corpus-archive directly succeeding the last one to be processed
-  if [[ -f $REPORT_DIR/latest-report ]]; then
-    . $REPORT_DIR/latest-report
+  # Recall which trial
+  if [[ -f $REPORT_DIR/latest-trial ]]; then
+    . $REPORT_DIR/latest-trial
   else
-    LATEST_REPORT=0
+    LATEST_TRIAL=0
   fi
 
-  THIS_CYCLE=$(($LATEST_REPORT + 1))
+  # Check for next trial
+  if [[ -d ${EXPERIMENT_DIR}/trial-$(($LATEST_TRIAL + 1)) ]]; then
+    # This round, we finish report for the old trial. But next time continue
+    echo "LATEST_TRIAL=$((LATEST_TRIAL + 1))" > $REPORT_DIR/latest-trial
+  else
+    echo "LATEST_TRIAL=$LATEST_TRIAL" > $REPORT_DIR/latest-trial
+  fi
+
+  # Enter trial directories
+  EXPERIMENT_DIR=${EXPERIMENT_DIR}/trial-${LATEST_TRIAL}
+  REPORT_DIR=${REPORT_DIR}/trial-${LATEST_TRIAL}
+  mkdir -p $REPORT_DIR
+
+  # Use the corpus-archive directly succeeding the last one to be processed
+  if [[ -f $REPORT_DIR/latest-cycle ]]; then
+    . $REPORT_DIR/latest-cycle
+  else
+    LATEST_CYCLE=0
+  fi
+
+
+  THIS_CYCLE=$(($LATEST_CYCLE + 1))
   while [[ $(grep "^${THIS_CYCLE}$" ${EXPERIMENT_DIR}/results/skipped-cycles) ]]; do
     THIS_CYCLE=$((THIS_CYCLE + 1))
   done
@@ -204,10 +225,10 @@ measure_coverage () {
     echo "On cycle $THIS_CYCLE, no new corpus found for benchmark $BENCHMARK and fengine $FENGINE_NAME"
     return
   fi
-  while [[ -f ${EXPERIMENT_DIR}/corpus/corpus-archive-$(($THIS_CYCLE+1)).tar.gz ]]; do
-    echo "On cycle $THIS_CYCLE, skipping a corpus snapsho for benchmark $BENCHMARK fengine $FENGINE_NAME"
-    THIS_CYCLE=$(($THIS_CYCLE + 1))
-  done
+  #while [[ -f ${EXPERIMENT_DIR}/corpus/corpus-archive-$(($THIS_CYCLE+1)).tar.gz ]]; do
+  #  echo "On cycle $THIS_CYCLE, skipping a corpus snapsho for benchmark $BENCHMARK fengine $FENGINE_NAME"
+  #  THIS_CYCLE=$(($THIS_CYCLE + 1))
+  #done
 
   cd $CORPUS_DIR
   tar -xvf ${EXPERIMENT_DIR}/corpus/corpus-archive-${THIS_CYCLE}.tar.gz --strip-components=1
@@ -218,15 +239,17 @@ measure_coverage () {
 
   # Finish generating human readable report
   cd $REPORT_DIR
-  # Report generation goes >here<
-  # Could include calls to external scripts in Golang, HTML, etc
 
   echo "$THIS_CYCLE,$($WORK/coverage-builds/sancov.py print $SANCOV_DIR/* | wc -w)" >> $REPORT_DIR/coverage-graph.csv
   echo "$THIS_CYCLE,$(wc -c $(find $CORPUS_DIR -maxdepth 1 -type f) | tail --lines=1 | grep -o [0-9]* )" >> $REPORT_DIR/corpus-size-graph.csv
   echo "$THIS_CYCLE,$(find $CORPUS_DIR -maxdepth 1 -type f | wc -l)" >> $REPORT_DIR/corpus-elems-graph.csv
 
-  echo "LATEST_REPORT=$THIS_CYCLE" > $REPORT_DIR/latest-report
-  gsutil -m rsync -rd $REPORT_DIR ${GSUTIL_BUCKET}/reports/${THIS_BENCHMARK}
+  # Call gen.go here
+  # Then insert webpages for gsutil_bucket/reports
+  echo "LATEST_CYCLE=$THIS_CYCLE" > $REPORT_DIR/latest-cycle
+  # Sync "old" report dir, which includes all trials
+  gsutil -m rsync -r $WORK/measurement-folders/$THIS_BENCHMARK/reports ${GSUTIL_BUCKET}/reports/${THIS_BENCHMARK}
+  # rsync -r or -rd?
 }
 
 mkdir -p $WORK/coverage-builds
