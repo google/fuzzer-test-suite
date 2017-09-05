@@ -32,6 +32,7 @@ func onlyDirectories(potential_files []os.FileInfo) (out_ls []os.FileInfo) {
 // Return: Extended version of record
 func extendRecordsToTime(records [][]string, desired_time int, recordCols int) ([][]string)  {
 	lenr := len(records)
+	// records[1] stores cycle [1], as records[0] is column names
 	for j := lenr; j < desired_time + 1; j++ {
 		records = append(records, make([]string, recordCols))
 		records[j][0] = strconv.Itoa(j)
@@ -79,11 +80,14 @@ func composeAllNamed(desired_report_fname string) {
 				defer this_file.Close()
 				this_reader := csv.NewReader(this_file)
 
+				// Read whole CSV to an array
 				experiment_records, err := this_reader.ReadAll()
 				checkErr(err)
+				// Add the name of this new column to records[0]
 				records[0] = append(records[0], fengine.Name() + trial.Name())
 
 				for _, row := range experiment_records {
+					// row[0] is time, on the x-axis; row[1] is value, on the y-axis
 					time_now, err := strconv.Atoi(row[0])
 					checkErr(err)
 					//If this test went longer than all of the others, so far
@@ -92,12 +96,13 @@ func composeAllNamed(desired_report_fname string) {
 					}
 					records[time_now][j+1] = row[1]
 				}
-				this_fe_writer.WriteAll(records)
 			}
-			// TODO: create comparison between fengines, having already composed trials
-			// Do this by identifying the max (or potentially median) performing trial
-			// For each fengine, and putting them all into a CSV which can be graphed
+			this_fe_writer.WriteAll(records)
+			// Potentially put this fengine into a broader comparison CSV
 		}
+		// TODO: create comparison between fengines, having already composed trials
+		// Do this by identifying the max (or potentially median) performing trial
+		// For each fengine, and putting them all into a CSV which can be graphed
 	}
 }
 
@@ -108,6 +113,4 @@ func main(){
 	// createIFramesFor("setOfFrames.html")
 	// <iframe width="960" height="500" src="benchmarkN/report.html" frameborder="0"></iframe>
 }
-
-
 
