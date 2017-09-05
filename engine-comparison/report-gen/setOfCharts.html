@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Page Title</title>
+<head>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script>
+    // Based on examples at https://developers.google.com/chart/interactive/docs/gallery/linechart
+    google.charts.load('current', {'packages':['corechart']});
+    google.charts.setOnLoadCallback(drawChart);
+
+    function graphFromText(filename, inputText) {
+      var csvMatrix = inputText.split("\n").map(function(row){return row.split(",");});
+
+      csvMatrix = csvMatrix.slice(0,csvMatrix.length - 1);
+      csvMatrix.forEach( function(row, index) {
+        if (index != 0) {
+          csvMatrix[index] = row.map(function(num)  { return parseInt(num); });
+        }
+      });
+      var data = google.visualization.arrayToDataTable(csvMatrix);
+      var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+      var options = {
+        title: filename,
+        curveType: 'function',
+        legend: { position: 'bottom' }
+      };
+      // defaults to false:
+      // data.setColumnProperty(colIndex, 'interpolateNulls', true);
+      chart.draw(data, options);
+    }
+
+    // Totall generic AJAX: fetch string from file
+    function generateGraph(filename, handleText) {
+      var xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function() {
+        if ((xhr.readyState == 4) && (xhr.status == 200)) {
+          graphFromText(filename, xhr.responseText);
+        }
+      }
+      xhr.open("GET", filename);
+      xhr.send();
+    }
+
+    function drawChart() {
+      generateGraph("coverage-graph.csv", graphFromText);
+      generateGraph("corpus-size-graph.csv", graphFromText);
+      generateGraph("corpus-elems-graph.csv", graphFromText);
+    }
+
+  </script>
+</head>
+<body>
+  <div id="curve_chart" style="width: 900px; height: 500px"></div>
+</body>
+
