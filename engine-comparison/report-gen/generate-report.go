@@ -13,13 +13,12 @@ import (
 
 func checkErr(e error) {
 	if e != nil {
-		fmt.Println("POOP!")
+		fmt.Println("Poop! Error encountered:", e)
 		os.Exit(1)
 	}
 }
 
-// Removes non-directory elements of any []os.FileInfo (a helper function, for convenience)
-// Makes use of idiomatic Golang return: out_ls is declared and returned implicitly
+// Removes non-directory elements of any []os.FileInfo
 func onlyDirectories(potential_files []os.FileInfo) (out_ls []os.FileInfo) {
 	for _, fd := range potential_files {
 		if fd.IsDir() {
@@ -31,15 +30,12 @@ func onlyDirectories(potential_files []os.FileInfo) (out_ls []os.FileInfo) {
 
 // Extend "records" matrix to have rows until time "desired_time"
 // Return: Extended version of record
-func extendRecordsToTime(records [][]string, desired_time int, recordCols int) [][]string {
+func extendRecordsToTime(records [][]string, desired_time int, record_cols int) [][]string {
 	lenr := len(records)
 	// records[1] stores cycle [1], as records[0] is column names
 	for j := lenr; j < desired_time+1; j++ {
-		records = append(records, make([]string, recordCols))
+		records = append(records, make([]string, record_cols))
 		records[j][0] = strconv.Itoa(j)
-		for k := 1; k < recordCols; k++ {
-			records[j][k] = ""
-		}
 	}
 	return records
 }
@@ -90,14 +86,16 @@ func composeAllNamed(desired_report_fname string) {
 				// Add the name of this new column to records[0]
 				records[0] = append(records[0], fengine.Name()+trial.Name())
 
+				final_time, err := strconv.Atoi(experiment_records[len(experiment_records)-1][0])
+				checkErr(err)
+				//If this test went longer than all of the others, so far
+				if len(records) < final_time+1 {
+					records = extendRecordsToTime(records, final_time, num_record_columns)
+				}
 				for _, row := range experiment_records {
 					// row[0] is time, on the x-axis; row[1] is value, on the y-axis
 					time_now, err := strconv.Atoi(row[0])
 					checkErr(err)
-					//If this test went longer than all of the others, so far
-					if len(records) < time_now+1 {
-						records = extendRecordsToTime(records, time_now, num_record_columns)
-					}
 					records[time_now][j+1] = row[1]
 				}
 			}
