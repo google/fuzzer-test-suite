@@ -8,7 +8,7 @@
     google.charts.load('current', {'packages':['corechart']});
     google.charts.setOnLoadCallback(drawChart);
 
-    function graphFromText(filename, inputText) {
+    function graphFromText(filename, inputText, divName) {
       var csvMatrix = inputText.split("\n").map(function(row){return row.split(",");});
 
       csvMatrix = csvMatrix.slice(0,csvMatrix.length - 1);
@@ -18,7 +18,7 @@
         }
       });
       var data = google.visualization.arrayToDataTable(csvMatrix);
-      var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+      var chart = new google.visualization.LineChart(document.getElementById(divName));
       var options = {
         title: filename,
         curveType: 'function',
@@ -30,11 +30,11 @@
     }
 
     // Totall generic AJAX: fetch string from file
-    function generateGraph(filename, handleText) {
+    function generateGraph(filename, handleText, divName) {
       var xhr = new XMLHttpRequest();
       xhr.onreadystatechange = function() {
         if ((xhr.readyState == 4) && (xhr.status == 200)) {
-          graphFromText(filename, xhr.responseText);
+          graphFromText(filename, xhr.responseText, divName);
         }
       }
       xhr.open("GET", filename);
@@ -42,14 +42,16 @@
     }
 
     function drawChart() {
-      generateGraph("coverage-graph.csv", graphFromText);
-      generateGraph("corpus-size-graph.csv", graphFromText);
-      generateGraph("corpus-elems-graph.csv", graphFromText);
+      generateGraph("coverage-graph.csv", graphFromText, "curve_chart_1");
+      generateGraph("corpus-size-graph.csv", graphFromText, "curve_chart_2");
+      generateGraph("corpus-elems-graph.csv", graphFromText, "curve_chart_3");
     }
 
   </script>
 </head>
 <body>
-  <div id="curve_chart" style="width: 900px; height: 500px"></div>
+  <div id="curve_chart_1" style="width: 900px; height: 500px"></div>
+  <div id="curve_chart_2" style="width: 900px; height: 500px"></div>
+  <div id="curve_chart_3" style="width: 900px; height: 500px"></div>
 </body>
 
