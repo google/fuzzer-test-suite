@@ -1,17 +1,18 @@
 package main
 
 import (
-        "fmt"
-//        "io"
+	"fmt"
+	//        "io"
+	"io/ioutil"
 	"path"
-        "io/ioutil"
-//        "strings"
-        "strconv"
-        "encoding/csv"
-        "os"
+	//        "strings"
+	"encoding/csv"
+	"os"
+	"strconv"
 )
-func checkErr(e error){
-	if (e != nil) {
+
+func checkErr(e error) {
+	if e != nil {
 		fmt.Println("POOP!")
 		os.Exit(1)
 	}
@@ -30,10 +31,10 @@ func onlyDirectories(potential_files []os.FileInfo) (out_ls []os.FileInfo) {
 
 // Extend "records" matrix to have rows until time "desired_time"
 // Return: Extended version of record
-func extendRecordsToTime(records [][]string, desired_time int, recordCols int) ([][]string)  {
+func extendRecordsToTime(records [][]string, desired_time int, recordCols int) [][]string {
 	lenr := len(records)
 	// records[1] stores cycle [1], as records[0] is column names
-	for j := lenr; j < desired_time + 1; j++ {
+	for j := lenr; j < desired_time+1; j++ {
 		records = append(records, make([]string, recordCols))
 		records[j][0] = strconv.Itoa(j)
 		for k := 1; k < recordCols; k++ {
@@ -87,14 +88,14 @@ func composeAllNamed(desired_report_fname string) {
 				experiment_records, err := this_reader.ReadAll()
 				checkErr(err)
 				// Add the name of this new column to records[0]
-				records[0] = append(records[0], fengine.Name() + trial.Name())
+				records[0] = append(records[0], fengine.Name()+trial.Name())
 
 				for _, row := range experiment_records {
 					// row[0] is time, on the x-axis; row[1] is value, on the y-axis
 					time_now, err := strconv.Atoi(row[0])
 					checkErr(err)
 					//If this test went longer than all of the others, so far
-					if(len(records) < time_now + 1) {
+					if len(records) < time_now+1 {
 						records = extendRecordsToTime(records, time_now, num_record_columns)
 					}
 					records[time_now][j+1] = row[1]
@@ -109,11 +110,10 @@ func composeAllNamed(desired_report_fname string) {
 	}
 }
 
-func main(){
+func main() {
 	composeAllNamed("coverage-graph.csv")
 	composeAllNamed("corpus-size-graph.csv")
 	composeAllNamed("corpus-elems-graph.csv")
 	// createIFramesFor("setOfFrames.html")
 	// <iframe width="960" height="500" src="benchmarkN/report.html" frameborder="0"></iframe>
 }
-
