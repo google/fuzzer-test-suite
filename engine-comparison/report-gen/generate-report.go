@@ -40,9 +40,6 @@ func extendRecordsToTime(records [][]string, desired_time int, record_cols int) 
 	return records
 }
 
-//func csvWrapper( )
-//func csvWriterWrapper( ) *Writer
-
 // Handles the CSV Reader for a single trial, and updates records[][] accordingly. Returns the updated records
 func handleTrialCSV(this_reader *csv.Reader, records [][]string, fengine os.FileInfo, trial os.FileInfo, num_record_columns int, j int) [][]string {
 	// Read whole CSV to an array
@@ -66,11 +63,55 @@ func handleTrialCSV(this_reader *csv.Reader, records [][]string, fengine os.File
 	return records
 }
 
+func handleFengine(fengine os.FileInfo, current_path string, desired_report_fname string) {
+	this_fe_file, err := os.Create(path.Join(current_path, fengine.Name(), desired_report_fname))
+	checkErr(err)
+	defer this_fe_file.Close()
+	this_fe_writer := csv.NewWriter(this_fe_file)
+
+	// Create matrix, to eventually become a CSV
+	records := [][]string{{"time"}}
+
+	// Enter sub-directories
+	potential_trials, err := ioutil.ReadDir(path.Join(current_path, fengine.Name()))
+	checkErr(err)
+	trials := onlyDirectories(potential_trials)
+
+	num_record_columns := len(trials) + 1
+	for j, trial := range trials {
+		// Create fds
+		this_file, err := os.Open(path.Join(current_path, fengine.Name(), trial.Name(), desired_report_fname))
+		checkErr(err)
+		defer this_file.Close()
+		this_reader := csv.NewReader(this_file)
+
+		records = handleTrialCSV(this_reader, records, fengine, trial, num_record_columns, j)
+
+	}
+	this_fe_writer.WriteAll(records)
+	// Potentially put this fengine into a broader comparison CSV
+}
+
+func handleBmark(bmark os.FileInfo, current_path string, desired_report_fname string) {
+	potential_fengines, err := ioutil.ReadDir(path.Join(current_path, bmark.Name()))
+	checkErr(err)
+	// narrow potential_fengines to fengines so the indices of `range fengines` are useful
+	fengines := onlyDirectories(potential_fengines)
+
+	for _, fengine := range fengines {
+		handleFengine(fengine, path.Join(current_path, bmark.Name()), desired_report_fname)
+
+	}
+	// TODO: create comparison between fengines, having already composed trials
+	// Do this by identifying the max (or potentially median) performing trial
+	// For each fengine, and putting them all into a CSV which can be graphed
+}
+
 // Enters all report subdirectories, from benchmark to fengine to trial;
 // composes individual CSVs (only two columns) into larger CSVs
 func composeAllNamed(desired_report_fname string) {
-	master_path := "./reports"
-	bmarks, err := ioutil.ReadDir(master_path)
+	current_path := "./reports"
+	bmarks, err := ioutil.ReadDir(current_path)
 	checkErr(err)
 	for _, bmark := range bmarks {
 		// all_fe_file, err := os.Create(path.Join(master_path, bmark.Name(), desired_report_fname))
@@ -78,44 +119,7 @@ func composeAllNamed(desired_report_fname string) {
 		// defer all_fe_file.Close()
 		// all_fe_writer := csv.NewWriter(all_fe_file)
 		// meta_records := [][]string{{"time"}}
-		potential_fengines, err := ioutil.ReadDir(path.Join(master_path, bmark.Name()))
-		checkErr(err)
-		// narrow potential_fengines to fengines so the indices of `range fengines` are useful
-		fengines := onlyDirectories(potential_fengines)
-
-		for _, fengine := range fengines {
-			// Create fds
-			this_fe_file, err := os.Create(path.Join(master_path, bmark.Name(), fengine.Name(), desired_report_fname))
-			checkErr(err)
-			defer this_fe_file.Close()
-			this_fe_writer := csv.NewWriter(this_fe_file)
-
-			// Create matrix, to eventually become a CSV
-			records := [][]string{{"time"}}
-
-			// Enter sub-directories
-			potential_trials, err := ioutil.ReadDir(path.Join(master_path, bmark.Name(), fengine.Name()))
-			checkErr(err)
-			trials := onlyDirectories(potential_trials)
-
-			num_record_columns := len(trials) + 1
-			for j, trial := range trials {
-				// Create fds
-				this_file, err := os.Open(path.Join(master_path, bmark.Name(), fengine.Name(), trial.Name(), desired_report_fname))
-				checkErr(err)
-				defer this_file.Close()
-				this_reader := csv.NewReader(this_file)
-
-				// INNER LOOP
-				records = handleTrialCSV(this_reader, records, fengine, trial, num_record_columns, j)
-
-			}
-			this_fe_writer.WriteAll(records)
-			// Potentially put this fengine into a broader comparison CSV
-		}
-		// TODO: create comparison between fengines, having already composed trials
-		// Do this by identifying the max (or potentially median) performing trial
-		// For each fengine, and putting them all into a CSV which can be graphed
+		handleBmark(bmark, current_path, desired_report_fname)
 	}
 }
 
