@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	//        "io"
+	//	"io"
 	"io/ioutil"
 	"path"
 	//        "strings"
@@ -36,6 +36,32 @@ func extendRecordsToTime(records [][]string, desired_time int, record_cols int) 
 	for j := lenr; j < desired_time+1; j++ {
 		records = append(records, make([]string, record_cols))
 		records[j][0] = strconv.Itoa(j)
+	}
+	return records
+}
+
+//func csvWrapper( )
+//func csvWriterWrapper( ) *Writer
+
+// Handles the CSV Reader for a single trial, and updates records[][] accordingly. Returns the updated records
+func handleTrialCSV(this_reader *csv.Reader, records [][]string, fengine os.FileInfo, trial os.FileInfo, num_record_columns int, j int) [][]string {
+	// Read whole CSV to an array
+	experiment_records, err := this_reader.ReadAll()
+	checkErr(err)
+	// Add the name of this new column to records[0]
+	records[0] = append(records[0], fengine.Name()+trial.Name())
+
+	final_time, err := strconv.Atoi(experiment_records[len(experiment_records)-1][0])
+	checkErr(err)
+	//If this test went longer than all of the others, so far
+	if len(records) < final_time+1 {
+		records = extendRecordsToTime(records, final_time, num_record_columns)
+	}
+	for _, row := range experiment_records {
+		// row[0] is time, on the x-axis; row[1] is value, on the y-axis
+		time_now, err := strconv.Atoi(row[0])
+		checkErr(err)
+		records[time_now][j+1] = row[1]
 	}
 	return records
 }
@@ -80,24 +106,9 @@ func composeAllNamed(desired_report_fname string) {
 				defer this_file.Close()
 				this_reader := csv.NewReader(this_file)
 
-				// Read whole CSV to an array
-				experiment_records, err := this_reader.ReadAll()
-				checkErr(err)
-				// Add the name of this new column to records[0]
-				records[0] = append(records[0], fengine.Name()+trial.Name())
+				// INNER LOOP
+				records = handleTrialCSV(this_reader, records, fengine, trial, num_record_columns, j)
 
-				final_time, err := strconv.Atoi(experiment_records[len(experiment_records)-1][0])
-				checkErr(err)
-				//If this test went longer than all of the others, so far
-				if len(records) < final_time+1 {
-					records = extendRecordsToTime(records, final_time, num_record_columns)
-				}
-				for _, row := range experiment_records {
-					// row[0] is time, on the x-axis; row[1] is value, on the y-axis
-					time_now, err := strconv.Atoi(row[0])
-					checkErr(err)
-					records[time_now][j+1] = row[1]
-				}
 			}
 			this_fe_writer.WriteAll(records)
 			// Potentially put this fengine into a broader comparison CSV
