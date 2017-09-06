@@ -50,9 +50,11 @@ func composeAllNamed(desired_report_fname string) {
 	bmarks, err := ioutil.ReadDir(master_path)
 	checkErr(err)
 	for _, bmark := range bmarks {
-		// all_fe_file, _ := os.Create(path.Join(master_path, bmark.Name(), desired_report_fname))
+		// all_fe_file, err := os.Create(path.Join(master_path, bmark.Name(), desired_report_fname))
+		// checkErr(err)
 		// defer all_fe_file.Close()
 		// all_fe_writer := csv.NewWriter(all_fe_file)
+		// meta_records := [][]string{{"time"}}
 		potential_fengines, err := ioutil.ReadDir(path.Join(master_path, bmark.Name()))
 		checkErr(err)
 		// narrow potential_fengines to fengines so the indices of `range fengines` are useful
@@ -69,7 +71,8 @@ func composeAllNamed(desired_report_fname string) {
 			records := [][]string{{"time"}}
 
 			// Enter sub-directories
-			potential_trials, _ := ioutil.ReadDir(path.Join(master_path, bmark.Name(), fengine.Name()))
+			potential_trials, err := ioutil.ReadDir(path.Join(master_path, bmark.Name(), fengine.Name()))
+			checkErr(err)
 			trials := onlyDirectories(potential_trials)
 
 			num_record_columns := len(trials) + 1
