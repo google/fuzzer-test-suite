@@ -13,5 +13,15 @@ READ of size 53713 at 0x629000009748 thread T0
     #5 0x5411de in ssl3_accept ssl/s3_srvr.c:357:9
 ```
 
-
-Note: the build may sometimes fail, apparently due to a race in the makefiles. If so, just rebuild from scratch.
+Also find a memory leak, [CVE-2014-3513](https://www.openssl.org/news/secadv/20141015.txt), repro attached:
+```
+Direct leak of 32 byte(s) in 1 object(s) allocated from:
+    #0 0x514f18 in __interceptor_malloc
+    #1 0x5fd25b in CRYPTO_malloc crypto/mem.c:308:8
+    #2 0x6539c1 in sk_new crypto/stack/stack.c:125:11
+    #3 0x6539c1 in sk_new_null crypto/stack/stack.c:117
+    #4 0x564bf3 in ssl_parse_clienthello_use_srtp_ext ssl/d1_srtp.c:345:7
+    #5 0x55574a in ssl_parse_clienthello_tlsext ssl/t1_lib.c:1419:7
+    #6 0x5997c2 in ssl3_get_client_hello ssl/s3_srvr.c:1180:8
+    #7 0x594a36 in ssl3_accept ssl/s3_srvr.c:357:9
+```
