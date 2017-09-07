@@ -13,7 +13,7 @@ READ of size 53713 at 0x629000009748 thread T0
     #5 0x5411de in ssl3_accept ssl/s3_srvr.c:357:9
 ```
 
-Also find a memory leak, [CVE-2014-3513](https://www.openssl.org/news/secadv/20141015.txt), repro attached:
+Also finds a memory leak, [CVE-2014-3513](https://www.openssl.org/news/secadv/20141015.txt), repro attached:
 ```
 Direct leak of 32 byte(s) in 1 object(s) allocated from:
     #0 0x514f18 in __interceptor_malloc
