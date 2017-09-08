@@ -51,6 +51,7 @@ and make sure you see something like
 ```
 ==31851==ERROR: AddressSanitizer: heap-buffer-overflow on address...
 ```
+Note: this tutorial uses LLVM/Clang 5.0, where libFuzzer uses the flags `-fsanitize=address -fsanitize-coverage=trace-pc-guard`. In newer versions the flags were renamed to `-fsanitize=address,fuzzer`, see http://libfuzzer.info
 
 ## 'Hello world' fuzzer
 Definition:
