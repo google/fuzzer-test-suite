@@ -63,7 +63,7 @@ func handleTrialCSV(this_reader *csv.Reader, records [][]string, column_name str
 	return records
 }
 
-func handleFengine(fengine os.FileInfo, current_path string, desired_report_fname string) {
+func handleFengine(fengine os.FileInfo, current_path string, desired_report_fname string) [][]string {
 	// Create matrix, to eventually become a CSV
 	records := [][]string{{"time"}}
 
@@ -79,7 +79,7 @@ func handleFengine(fengine os.FileInfo, current_path string, desired_report_fnam
 		checkErr(err)
 		this_reader := csv.NewReader(this_file)
 
-		records = handleTrialCSV(this_reader, records, fengine.Name()+trial.Name(), num_record_columns, j)
+		records = handleTrialCSV(this_reader, records, fengine.Name()+"-"+trial.Name(), num_record_columns, j)
 		this_file.Close()
 	}
 
@@ -88,21 +88,66 @@ func handleFengine(fengine os.FileInfo, current_path string, desired_report_fnam
 	this_fe_writer := csv.NewWriter(this_fe_file)
 	this_fe_writer.WriteAll(records)
 	this_fe_file.Close()
-	// Potentially put this fengine into a broader comparison CSV
+	return records
 }
 
+// Identify the fastest trial  column in records and add it to meta_records
+func appendFastestTrial(meta_records [][]string, records [][]string) [][]string {
+	// Initialized to false: track whether this trial has lasted a long time
+	trials := make([]bool, len(records[0])-1)
+	// Use int for faster comparisons
+	finished_trials := len(trials)
+	// Speed of Fastest Trial
+	var speed_of_ft int
+	var fastest_trial int
+
+	// Find the fastest trial by working backwards, since data points are sometimes dropped
+	for r := len(records) - 1; r > 0; r-- {
+		for c := 1; c < len(records[r]); c++ {
+			if (trials[c-1] == false) && (len(records[r][c]) > 0) {
+				trials[c-1] = true
+				finished_trials--
+				if finished_trials == 0 {
+					fastest_trial = c
+					speed_of_ft = r
+					break
+				}
+			}
+		}
+		if finished_trials == 0 {
+			break
+		}
+	}
+
+	// Update meta_records
+	if len(meta_records) < speed_of_ft {
+		meta_records = extendRecordsToTime(meta_records, speed_of_ft, len(meta_records[0]))
+	}
+	for j := 0; j <= speed_of_ft; j++ {
+		meta_records[j] = append(meta_records[j], records[j][fastest_trial])
+	}
+	return meta_records
+}
+
+// Call handleFengine() for each fengine, then compose all fengine data into a single CSV for comparison
 func handleBmark(bmark os.FileInfo, current_path string, desired_report_fname string) {
+	meta_records := [][]string{{"time"}}
+
 	potential_fengines, err := ioutil.ReadDir(path.Join(current_path, bmark.Name()))
 	checkErr(err)
 	// narrow potential_fengines to fengines so the indices of `range fengines` are useful
 	fengines := onlyDirectories(potential_fengines)
 
 	for _, fengine := range fengines {
-		handleFengine(fengine, path.Join(current_path, bmark.Name()), desired_report_fname)
+		records := handleFengine(fengine, path.Join(current_path, bmark.Name()), desired_report_fname)
+		meta_records = appendFastestTrial(meta_records, records)
 	}
-	// TODO: create comparison between fengines, having already composed trials
-	// Do this by identifying the max (or potentially median) performing trial
-	// For each fengine, and putting them all into a CSV which can be graphed
+	this_bm_file, err := os.Create(path.Join(current_path, bmark.Name(), desired_report_fname))
+	checkErr(err)
+	this_bm_writer := csv.NewWriter(this_bm_file)
+	this_bm_writer.WriteAll(meta_records)
+	this_bm_file.Close()
+
 }
 
 // Enters all report subdirectories, from benchmark to fengine to trial;
