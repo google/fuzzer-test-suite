@@ -64,8 +64,6 @@ func handleTrialCSV(this_reader *csv.Reader, records [][]string, column_name str
 }
 
 func handleFengine(fengine os.FileInfo, current_path string, desired_report_fname string) {
-
-
 	// Create matrix, to eventually become a CSV
 	records := [][]string{{"time"}}
 
@@ -87,9 +85,9 @@ func handleFengine(fengine os.FileInfo, current_path string, desired_report_fnam
 
 	this_fe_file, err := os.Create(path.Join(current_path, fengine.Name(), desired_report_fname))
 	checkErr(err)
-	defer this_fe_file.Close()
 	this_fe_writer := csv.NewWriter(this_fe_file)
 	this_fe_writer.WriteAll(records)
+	this_fe_file.Close()
 	// Potentially put this fengine into a broader comparison CSV
 }
 
