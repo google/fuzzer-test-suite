@@ -120,7 +120,7 @@ func appendFastestTrial(meta_records [][]string, records [][]string) [][]string 
 	}
 
 	// Update meta_records
-	if len(meta_records) < speed_of_ft {
+	if len(meta_records) < speed_of_ft+1 {
 		meta_records = extendRecordsToTime(meta_records, speed_of_ft, len(meta_records[0]))
 	}
 	for j := 0; j <= speed_of_ft; j++ {
