@@ -41,9 +41,9 @@ func extendRecordsToTime(records [][]string, desired_time int, record_cols int) 
 }
 
 // Handles the CSV Reader for a single trial, and updates records[][] accordingly. Returns the updated records
-func handleTrialCSV(this_reader *csv.Reader, records [][]string, column_name string, num_record_columns int, j int) [][]string {
+func handleTrialCSV(trial_reader *csv.Reader, records [][]string, column_name string, num_total_cols int, j int) [][]string {
 	// Read whole CSV to an array
-	experiment_records, err := this_reader.ReadAll()
+	experiment_records, err := trial_reader.ReadAll()
 	checkErr(err)
 	// Add the name of this new column to records[0]
 	records[0] = append(records[0], column_name)
@@ -52,7 +52,7 @@ func handleTrialCSV(this_reader *csv.Reader, records [][]string, column_name str
 	checkErr(err)
 	//If this test went longer than all of the others, so far
 	if len(records) < final_time+1 {
-		records = extendRecordsToTime(records, final_time, num_record_columns)
+		records = extendRecordsToTime(records, final_time, num_total_cols)
 	}
 	for _, row := range experiment_records {
 		// row[0] is time, on the x-axis; row[1] is value, on the y-axis
@@ -63,27 +63,27 @@ func handleTrialCSV(this_reader *csv.Reader, records [][]string, column_name str
 	return records
 }
 
-func handleFengine(fengine os.FileInfo, current_path string, desired_report_fname string) [][]string {
+func handleFengine(fengine os.FileInfo, bmark_path string, desired_report_fname string) [][]string {
 	// Create matrix, to eventually become a CSV
 	records := [][]string{{"time"}}
 
 	// Enter sub-directories
-	potential_trials, err := ioutil.ReadDir(path.Join(current_path, fengine.Name()))
+	potential_trials, err := ioutil.ReadDir(path.Join(bmark_path, fengine.Name()))
 	checkErr(err)
 	trials := onlyDirectories(potential_trials)
 
-	num_record_columns := len(trials) + 1
+	num_total_cols := len(trials) + 1
 	for j, trial := range trials {
 		// Create fds
-		this_file, err := os.Open(path.Join(current_path, fengine.Name(), trial.Name(), desired_report_fname))
+		this_file, err := os.Open(path.Join(bmark_path, fengine.Name(), trial.Name(), desired_report_fname))
 		checkErr(err)
-		this_reader := csv.NewReader(this_file)
+		trial_reader := csv.NewReader(this_file)
 
-		records = handleTrialCSV(this_reader, records, fengine.Name()+"-"+trial.Name(), num_record_columns, j)
+		records = handleTrialCSV(trial_reader, records, fengine.Name()+"-"+trial.Name(), num_total_cols, j)
 		this_file.Close()
 	}
 
-	this_fe_file, err := os.Create(path.Join(current_path, fengine.Name(), desired_report_fname))
+	this_fe_file, err := os.Create(path.Join(bmark_path, fengine.Name(), desired_report_fname))
 	checkErr(err)
 	this_fe_writer := csv.NewWriter(this_fe_file)
 	this_fe_writer.WriteAll(records)
@@ -97,19 +97,19 @@ func appendFastestTrial(meta_records [][]string, records [][]string) [][]string 
 	trials := make([]bool, len(records[0])-1)
 	// Use int for faster comparisons
 	finished_trials := len(trials)
-	// Speed of Fastest Trial
-	var speed_of_ft int
+	// Rows in Fastest Trial
+	var rows_in_ft int
 	var fastest_trial int
 
 	// Find the fastest trial by working backwards, since data points are sometimes dropped
 	for r := len(records) - 1; r > 0; r-- {
 		for c := 1; c < len(records[r]); c++ {
-			if (trials[c-1] == false) && (len(records[r][c]) > 0) {
+			if !trials[c-1] && (len(records[r][c]) > 0) {
 				trials[c-1] = true
 				finished_trials--
 				if finished_trials == 0 {
 					fastest_trial = c
-					speed_of_ft = r
+					rows_in_ft = r
 					break
 				}
 			}
@@ -120,10 +120,10 @@ func appendFastestTrial(meta_records [][]string, records [][]string) [][]string 
 	}
 
 	// Update meta_records
-	if len(meta_records) < speed_of_ft+1 {
-		meta_records = extendRecordsToTime(meta_records, speed_of_ft, len(meta_records[0]))
+	if len(meta_records) < rows_in_ft+1 {
+		meta_records = extendRecordsToTime(meta_records, rows_in_ft, len(meta_records[0]))
 	}
-	for j := 0; j <= speed_of_ft; j++ {
+	for j := 0; j <= rows_in_ft; j++ {
 		meta_records[j] = append(meta_records[j], records[j][fastest_trial])
 	}
 	return meta_records
