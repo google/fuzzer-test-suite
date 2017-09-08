@@ -79,7 +79,7 @@ func handleFengine(fengine os.FileInfo, current_path string, desired_report_fnam
 		checkErr(err)
 		this_reader := csv.NewReader(this_file)
 
-		records = handleTrialCSV(this_reader, records, fengine.Name() + trial.Name(), num_record_columns, j)
+		records = handleTrialCSV(this_reader, records, fengine.Name()+trial.Name(), num_record_columns, j)
 		this_file.Close()
 	}
 
