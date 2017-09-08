@@ -32,7 +32,7 @@ git clone https://github.com/google/fuzzer-test-suite.git FTS
 ./FTS/tutorial/install-deps.sh  # Get deps
 ./FTS/tutorial/install-clang.sh # Get fresh clang binaries
 # Get libFuzzer sources and build it
-svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer
+svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer Fuzzer
 Fuzzer/build.sh
 ```
 ### Docker
