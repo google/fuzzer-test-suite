@@ -91,7 +91,9 @@ func handleFengine(fengine os.FileInfo, bmark_path string, desired_report_fname 
 	return records
 }
 
-// Identify the fastest trial  column in records and add it to meta_records
+//func appendAllTrials(meta_records [][]string, records [][]string) [][]string {
+
+// Identify the fastest trial column in records and add it to meta_records
 func appendFastestTrial(meta_records [][]string, records [][]string) [][]string {
 	// Initialized to false: track whether this trial has lasted a long time
 	trials := make([]bool, len(records[0])-1)
@@ -130,39 +132,33 @@ func appendFastestTrial(meta_records [][]string, records [][]string) [][]string 
 }
 
 // Call handleFengine() for each fengine, then compose all fengine data into a single CSV for comparison
-func handleBmark(bmark os.FileInfo, current_path string, desired_report_fname string) {
-	meta_records := [][]string{{"time"}}
+func handleBmark(bmark os.FileInfo, records_path string, desired_report_fname string) {
+	bmark_records := [][]string{{"time"}}
 
-	potential_fengines, err := ioutil.ReadDir(path.Join(current_path, bmark.Name()))
+	potential_fengines, err := ioutil.ReadDir(path.Join(records_path, bmark.Name()))
 	checkErr(err)
 	// narrow potential_fengines to fengines so the indices of `range fengines` are useful
 	fengines := onlyDirectories(potential_fengines)
 
 	for _, fengine := range fengines {
-		records := handleFengine(fengine, path.Join(current_path, bmark.Name()), desired_report_fname)
-		meta_records = appendFastestTrial(meta_records, records)
+		fengine_records := handleFengine(fengine, path.Join(records_path, bmark.Name()), desired_report_fname)
+		bmark_records = appendFastestTrial(bmark_records, fengine_records)
 	}
-	this_bm_file, err := os.Create(path.Join(current_path, bmark.Name(), desired_report_fname))
+	this_bm_file, err := os.Create(path.Join(records_path, bmark.Name(), desired_report_fname))
 	checkErr(err)
 	this_bm_writer := csv.NewWriter(this_bm_file)
-	this_bm_writer.WriteAll(meta_records)
+	this_bm_writer.WriteAll(bmark_records)
 	this_bm_file.Close()
-
 }
 
 // Enters all report subdirectories, from benchmark to fengine to trial;
 // composes individual CSVs (only two columns) into larger CSVs
 func composeAllNamed(desired_report_fname string) {
-	current_path := "./reports"
-	bmarks, err := ioutil.ReadDir(current_path)
+	reports_path := "./reports"
+	bmarks, err := ioutil.ReadDir(reports_path)
 	checkErr(err)
 	for _, bmark := range bmarks {
-		// all_fe_file, err := os.Create(path.Join(master_path, bmark.Name(), desired_report_fname))
-		// checkErr(err)
-		// defer all_fe_file.Close()
-		// all_fe_writer := csv.NewWriter(all_fe_file)
-		// meta_records := [][]string{{"time"}}
-		handleBmark(bmark, current_path, desired_report_fname)
+		handleBmark(bmark, reports_path, desired_report_fname)
 	}
 }
 
