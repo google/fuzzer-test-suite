@@ -38,9 +38,8 @@ Fuzzer/build.sh
 ### Docker
 *This option is less tested*
 * [Install Docker](https://docs.docker.com/engine/installation/)
-* Run `docker run --cap-add SYS_PTRACE -ti libfuzzertutorial/base`
-  * Alternatively, use the `libfuzzertutorial/prebuilt` image -- it is a bit larger but has the the pre-built fuzzer binaries
-
+* Run `docker run --cap-add SYS_PTRACE -ti libfuzzertutorial/prebuilt`
+  
 ## Verify the setup
 Run:
 ```shell
@@ -51,6 +50,7 @@ and make sure you see something like
 ```
 ==31851==ERROR: AddressSanitizer: heap-buffer-overflow on address...
 ```
+Note: this tutorial uses LLVM/Clang 5.0, where libFuzzer uses the flags `-fsanitize=address -fsanitize-coverage=trace-pc-guard`. In newer versions the flags were renamed to `-fsanitize=address,fuzzer`, see http://libfuzzer.info
 
 ## 'Hello world' fuzzer
 Definition:
