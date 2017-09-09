@@ -135,16 +135,17 @@ func appendFastestTrial(meta_records [][]string, records [][]string) [][]string 
 func handleBmark(bmark os.FileInfo, records_path string, desired_report_fname string) {
 	bmark_records := [][]string{{"time"}}
 
-	potential_fengines, err := ioutil.ReadDir(path.Join(records_path, bmark.Name()))
+	bmark_path = path.Join(records_path, bmark.Name())
+	potential_fengines, err := ioutil.ReadDir(bmark_path)
 	checkErr(err)
 	// narrow potential_fengines to fengines so the indices of `range fengines` are useful
 	fengines := onlyDirectories(potential_fengines)
 
 	for _, fengine := range fengines {
-		fengine_records := handleFengine(fengine, path.Join(records_path, bmark.Name()), desired_report_fname)
+		fengine_records := handleFengine(fengine, bmark_path, desired_report_fname)
 		bmark_records = appendFastestTrial(bmark_records, fengine_records)
 	}
-	this_bm_file, err := os.Create(path.Join(records_path, bmark.Name(), desired_report_fname))
+	this_bm_file, err := os.Create(path.Join(bmark_path, desired_report_fname))
 	checkErr(err)
 	this_bm_writer := csv.NewWriter(this_bm_file)
 	this_bm_writer.WriteAll(bmark_records)
