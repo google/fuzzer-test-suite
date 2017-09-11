@@ -91,7 +91,21 @@ func handleFengine(fengine os.FileInfo, bmark_path string, desired_report_fname 
 	return records
 }
 
-//func appendAllTrials(meta_records [][]string, records [][]string) [][]string {
+func appendAllTrials(meta_records [][]string, records [][]string) [][]string {
+
+	if len(meta_records) < len(records) {
+		meta_records = extendRecordsToTime(meta_records, len(records)-1, len(meta_records[0]))
+	}
+	// Store int to avoid recomputation
+	row_len := len(records[0])
+
+	for r, row := range records {
+		for c := 1; c < row_len; c++ {
+			meta_records[r] = append(meta_records[r], row[c])
+		}
+	}
+	return meta_records
+}
 
 // Identify the fastest trial column in records and add it to meta_records
 func appendFastestTrial(meta_records [][]string, records [][]string) [][]string {
@@ -135,7 +149,7 @@ func appendFastestTrial(meta_records [][]string, records [][]string) [][]string 
 func handleBmark(bmark os.FileInfo, records_path string, desired_report_fname string) {
 	bmark_records := [][]string{{"time"}}
 
-	bmark_path = path.Join(records_path, bmark.Name())
+	bmark_path := path.Join(records_path, bmark.Name())
 	potential_fengines, err := ioutil.ReadDir(bmark_path)
 	checkErr(err)
 	// narrow potential_fengines to fengines so the indices of `range fengines` are useful
@@ -143,7 +157,8 @@ func handleBmark(bmark os.FileInfo, records_path string, desired_report_fname st
 
 	for _, fengine := range fengines {
 		fengine_records := handleFengine(fengine, bmark_path, desired_report_fname)
-		bmark_records = appendFastestTrial(bmark_records, fengine_records)
+		//bmark_records = appendFastestTrial(bmark_records, fengine_records)
+		bmark_records = appendAllTrials(bmark_records, fengine_records)
 	}
 	this_bm_file, err := os.Create(path.Join(bmark_path, desired_report_fname))
 	checkErr(err)
