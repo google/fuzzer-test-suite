@@ -92,17 +92,11 @@ func handleFengine(fengine os.FileInfo, bmark_path string, desired_report_fname 
 }
 
 func appendAllTrials(meta_records [][]string, records [][]string) [][]string {
-
 	if len(meta_records) < len(records) {
 		meta_records = extendRecordsToTime(meta_records, len(records)-1, len(meta_records[0]))
 	}
-	// Store int to avoid recomputation
-	row_len := len(records[0])
-
 	for r, row := range records {
-		for c := 1; c < row_len; c++ {
-			meta_records[r] = append(meta_records[r], row[c])
-		}
+		meta_records[r] = append(meta_records[r], row[1:]...)
 	}
 	return meta_records
 }
