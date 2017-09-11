@@ -15,10 +15,11 @@ build_fuzzer
 
 if [[ ! -d seeds ]]; then
   mkdir seeds
-  git clone https://github.com/unicode-org/text-rendering-tests.git
-  cp text-rendering-tests/fonts/TestKERNOne.otf seeds/
-  cp text-rendering-tests/fonts/TestGLYFOne.ttf seeds/
-  rm -fr text-rendering-tests
+  git clone https://github.com/unicode-org/text-rendering-tests.git TRT
+  # TRT/fonts is the full seed folder, but they're too big
+  cp TRT/fonts/TestKERNOne.otf seeds/
+  cp TRT/fonts/TestGLYFOne.ttf seeds/
+  rm -fr TRT
 fi
 
 set -x
