@@ -51,8 +51,8 @@ gcloud_create() {
   fi
   
   # The dispatcher should be more powerful
-  MACHINE_TYPE=n1-standard-1
-  echo $INSTANCE_NAME | grep dispatcher && MACHINE_TYPE=n1-standard-4
+  MACHINE_TYPE=n1-standard-2
+  echo $INSTANCE_NAME | grep dispatcher && MACHINE_TYPE=n1-standard-16
 
   IMAGE_FAMILY="docker-ubuntu"
   gcloud compute instances create $INSTANCE_NAME --image-family=$IMAGE_FAMILY \
