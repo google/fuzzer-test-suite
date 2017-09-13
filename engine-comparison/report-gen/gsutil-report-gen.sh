@@ -19,10 +19,10 @@ for bm in $(find reports -maxdepth 1 -mindepth 1 -type d); do
   cp setOfFengineCharts.html ${bm}/
 done
 
-gsutil -m rsync -rd ./reports ${GSUTIL_BUCKET}/graph-webpage
+gsutil -m rsync -rd ./reports ${GSUTIL_BUCKET}/webpage-graphs
 # Make all files public, each .html needs the .csvs as assets
-gsutil -m acl -r ch -u AllUsers:R ${GSUTIL_BUCKET}/graph-webpage
+gsutil -m acl -r ch -u AllUsers:R ${GSUTIL_BUCKET}/webpage-graphs
 
 #rm -r ./reports
-echo "Navigate the ${GSUTIL_BUCKET}/webpage-graphs to view the most recent report"
+echo "Navigate to ${GSUTIL_BUCKET}/webpage-graphs to view the most recent report"
 
