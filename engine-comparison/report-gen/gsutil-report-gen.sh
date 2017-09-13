@@ -15,10 +15,11 @@
 # This is all that we need from them:
 GSUTIL_BUCKET="gs://fuzzer-test-suite"
 
-#[[ -d reports ]] && mv reports old-reports
+[[ -d reports ]] && mv reports old-reports
+mkdir reports
 
-# rsync wipes all previous results from generate-report.go, as well as and all .html files
-gsutil -m rsync -rd ${GSUTIL_BUCKET}/reports .
+# rsync -d wipes all previous results from generate-report.go, as well as all .html files
+gsutil -m rsync -rd ${GSUTIL_BUCKET}/reports ./reports
 go run generate-report.go
 
 for bm in $(find reports -maxdepth 1 -mindepth 1 -type d); do
