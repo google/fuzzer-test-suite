@@ -5,7 +5,7 @@
 . $(dirname $0)/../common.sh
 . ${SCRIPT_DIR}/common-harness.sh
 
-
+# Given a config file specifying a fuzzing engine, download that fuzzing engine
 build_engine() {
 
   FENGINE_CONFIG=$1
@@ -65,9 +65,13 @@ build_benchmark_using() {
   rm -rf $SEND_DIR
   mkdir $SEND_DIR
 
+  # Copy the executable
   cp ${BUILDING_DIR}/${BENCHMARK}-${FUZZING_ENGINE} $SEND_DIR
 
   # TODO: make these gsutil cp?
+  # dcalifornia: I don't think this is important; moreover, it requires delaying
+  # the cp operation until after this folder is uploaded to gcloud, which
+  # happens outside of this function. So, the code as it is now is best.
   cp $WORK/FTS/engine-comparison/Dockerfile $SEND_DIR
   cp $WORK/FTS/engine-comparison/runner.sh $SEND_DIR
   cp $WORK/FTS/engine-comparison/config/parameters.cfg $SEND_DIR
@@ -95,6 +99,9 @@ dispatcher_cos () {
   create_or_start $INSTANCE_NAME "benchmark=${BENCHMARK},fengine=${FENGINE_NAME}"\
     "startup-script=$WORK/FTS/engine-comparison/startup-runner.sh"
 }
+
+# Top-level function to handle the initialization of a single runner VM. Builds
+# the binary, assembles a folder with configs and seeds, and starts the VM.
 handle_benchmark() {
   BENCHMARK=$1
   FENGINE_CONFIG=$2
@@ -125,7 +132,7 @@ gcloud config set project fuzzer-test-suite
 
 # This config file defines $BMARKS
 . $WORK/FTS/engine-comparison/config/bmarks.cfg
-# Now define $BENCHMARKS
+# Now define $BENCHMARKS. Encode aliases here
 if [[ $BMARKS == 'all' ]]; then
   for b in $(find ${SCRIPT_DIR}/../*/build.sh -type f); do
     BENCHMARKS="$BENCHMARKS $(basename $(dirname $b))"
@@ -143,7 +150,7 @@ fi
 # Reset google cloud results before doing experiments
 gsutil -m rm -r ${GSUTIL_BUCKET}/experiment-folders ${GSUTIL_BUCKET}/reports
 
-# Main working loops
+# Outermost loops
 for FENGINE_CONFIG in $(find ${WORK}/fengine-configs/*); do
   build_engine $FENGINE_CONFIG
   for BENCHMARK in $BENCHMARKS; do
@@ -156,7 +163,7 @@ done
 rm -rf $WORK/send $WORK/build
 ############# NOW wait for experiment results
 
-# Make a coverage build for a benchmark
+# Make a "plain" coverage build for a benchmark
 make_measurer () {
   BENCHMARK=$1
 
@@ -216,20 +223,27 @@ measure_coverage () {
     LATEST_CYCLE=0
   fi
 
-
+  # Decide which cycle to report on
+  # First, check if the runner documented that it skipped any cycles
   THIS_CYCLE=$(($LATEST_CYCLE + 1))
   while [[ $(grep "^${THIS_CYCLE}$" ${EXPERIMENT_DIR}/results/skipped-cycles) ]]; do
     THIS_CYCLE=$((THIS_CYCLE + 1))
   done
+  # Next, check if a cycle was somehow accidentally dropped. Document if this
+  # happened
   if [[ ! -f ${EXPERIMENT_DIR}/corpus/corpus-archive-${THIS_CYCLE}.tar.gz ]]; then
     echo "On cycle $THIS_CYCLE, no new corpus found for benchmark $BENCHMARK and fengine $FENGINE_NAME"
     return
   fi
+  # Finally, skip to the most recent possible cycle. Note: this is commented out
+  # because building all of the benchmarks takes a long time, so there are many
+  # CSV report to process before the dispatcher gets to processing them
   #while [[ -f ${EXPERIMENT_DIR}/corpus/corpus-archive-$(($THIS_CYCLE+1)).tar.gz ]]; do
   #  echo "On cycle $THIS_CYCLE, skipping a corpus snapsho for benchmark $BENCHMARK fengine $FENGINE_NAME"
   #  THIS_CYCLE=$(($THIS_CYCLE + 1))
   #done
 
+  # Extract corpus
   cd $CORPUS_DIR
   tar -xvf ${EXPERIMENT_DIR}/corpus/corpus-archive-${THIS_CYCLE}.tar.gz --strip-components=1
 
@@ -244,8 +258,6 @@ measure_coverage () {
   echo "$THIS_CYCLE,$(wc -c $(find $CORPUS_DIR -maxdepth 1 -type f) | tail --lines=1 | grep -o [0-9]* )" >> $REPORT_DIR/corpus-size-graph.csv
   echo "$THIS_CYCLE,$(find $CORPUS_DIR -maxdepth 1 -type f | wc -l)" >> $REPORT_DIR/corpus-elems-graph.csv
 
-  # Call gen.go here
-  # Then insert webpages for gsutil_bucket/reports
   echo "LATEST_CYCLE=$THIS_CYCLE" > $REPORT_DIR/latest-cycle
   # Sync "old" report dir, which includes all trials
   gsutil -m rsync -r $WORK/measurement-folders/$THIS_BENCHMARK/reports ${GSUTIL_BUCKET}/reports/${THIS_BENCHMARK}

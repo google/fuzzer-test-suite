@@ -7,6 +7,8 @@
 . parameters.cfg
 . fengine.cfg
 
+# This name used to be the name of the file fengine.cfg. It was renamed in the
+# dispatcher, so it was stored as metadata.
 FENGINE_NAME=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/fengine -H "Metadata-Flavor: Google")
 
 BINARY=${BENCHMARK}-${FUZZING_ENGINE}
@@ -16,6 +18,9 @@ chmod 750 $BINARY
 
 # All options which are always called here, rather than being left
 # to $BINARY_RUNTIME_OPTIONS, are effectively mandatory
+# e.g. using seeds, -workers and -jobs
+
+# PROCESS_NAME is used by "ps x" to determine whether a benchmark has completed
 
 if [[ $FUZZING_ENGINE == "afl" ]]; then
   chmod 750 afl-fuzz
