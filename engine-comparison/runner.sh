@@ -100,3 +100,4 @@ while [[ $TRIAL_NUM != $N_ITERATIONS ]]; do
   TRIAL_NUM=$(($TRIAL_NUM + 1))
 done
 
+sudo poweroff

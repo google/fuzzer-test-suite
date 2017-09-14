@@ -135,7 +135,7 @@ elif [[ $BMARKS == 'small' ]]; then
 elif [[ $BMARKS == 'none' ]]; then
   BENCHMARKS=""
 elif [[ $BMARKS == 'three' ]]; then
-  BENCHMARKS="guetzli-2017-3-30 libarchive-2017-01-04 openssl-1.0.1f"
+  BENCHMARKS="libssh-2017-1272 json-2017-02-12 proj4-2017-08-14"
 else
   BENCHMARKS="$(echo $BMARKS | tr ',' ' ')"
 fi
