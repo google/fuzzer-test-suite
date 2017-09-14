@@ -3,4 +3,4 @@ Instead of searching for a bug, this benchmark attempts to reach a particular li
 
 As of September 6, 2017, this benchmark takes about 5 minutes using the provided seeds.
 
-This code version also contains an [integer overflow](https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=2027), and it takes a long time to find by fuzzing.
+This version of freetype also contains an [integer overflow](https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=2027), and it takes a long time to find by fuzzing.
