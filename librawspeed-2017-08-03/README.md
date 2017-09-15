@@ -1,7 +1,7 @@
-This is a benchmark for the TiffDecoderFuzzer-PefDecoder target in (RawSpeed)[https://github.com/darktable-org/rawspeed].
+This is a benchmark for the TiffDecoderFuzzer-PefDecoder target in [RawSpeed](https://github.com/darktable-org/rawspeed).
 
-This benchmark finds an (abort: out of range)[https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=2831], and it takes a long time to find with libFuzzer.
-Interestingly, this bug was first found with AFL in (OSS-Fuzz)[https://github.com/google/oss-fuzz].
+This benchmark finds an [abort: out of range](https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=2831), and it takes a long time to find with libFuzzer.
+Interestingly, this bug was first found with AFL in [OSS-Fuzz](https://github.com/google/oss-fuzz).
 
 A reproducer is included for the crash, which is as follows:
 
