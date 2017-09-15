@@ -4,7 +4,7 @@
 
 set -x
 . $(dirname $0)/../common.sh
-rm -rf $CORPUS
+rm -rf $CORPUS fuzz-*.log
 mkdir $CORPUS
 
 EXECUTABLE_NAME_BASE="TiffDecoderFuzzer-PefDecoder"
