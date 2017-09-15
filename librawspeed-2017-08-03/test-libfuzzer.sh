@@ -7,6 +7,7 @@ set -x
 rm -rf $CORPUS
 mkdir $CORPUS
 
+EXECUTABLE_NAME_BASE="TiffDecoderFuzzer-PefDecoder"
 [ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -jobs=$JOBS -workers=$JOBS\
   -artifact_prefix=$CORPUS/ -dict=TiffDecoderFuzzer-PefDecoder.dict $CORPUS
 
