@@ -11,6 +11,7 @@
 # Send configs for the fuzzing engine
 FENGINE_CONFIGS=${@:2}
 
+# Consolidate fengine-config files
 if [[ -d fengine-configs ]]; then
   rm -r fengine-configs
 fi
@@ -19,6 +20,7 @@ for FENGINE in $FENGINE_CONFIGS; do
   cp $FENGINE fengine-configs/$FENGINE
 done
 
+# Write bmarks to file, for use by future machines
 CONFIG=${SCRIPT_DIR}/config
 [[ -e ${CONFIG}/bmarks.cfg ]] && rm ${CONFIG}/bmarks.cfg
 echo "BMARKS=$1" > ${CONFIG}/bmarks.cfg
@@ -28,7 +30,6 @@ if [[ ! -e ${CONFIG}/autogen-PRIVATE-key.json ]]; then
   gcloud iam service-accounts keys create ${CONFIG}/autogen-PRIVATE-key.json \
     --iam-account=$SERVICE_ACCOUNT --key-file-type=json
 fi
-
 
 # -m parallelizes operation; -r sets recursion, -d syncs deletion of files
 gsutil -m rsync -rd fengine-configs ${GSUTIL_BUCKET}/dispatcher-input/fengine-configs
@@ -52,12 +53,3 @@ gcloud compute ssh $INSTANCE_NAME \
  && bash ~/input/FTS/engine-comparison/startup-dispatcher.sh"
  # && chown --reference=/home ~/input
 
-# TODO appropriately rsync some type of loop e.g.
-# for time in 1m 5m 10m 30m 1h; do
-#  sleep $time
-#  gsutil rsync ${GSE_BUCKET_NAME}:${DIRECTORY}
-# done
-#
-# TODO end script properly
-# gcloud compute instances stop $INSTANCE_NAME
-# gcloud service-account delete key
