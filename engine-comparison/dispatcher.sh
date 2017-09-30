@@ -1,318 +1,335 @@
 #!/bin/bash
 # Copyright 2017 Google Inc. All Rights Reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
+#
+# Script to run on the dispatcher.  Builds each benchmark with each fuzzing
+# configuration, spawns a runner VM for each benchmark-fuzzer combo, and then
+# records coverage data received from the runner VMs.
 
-. $(dirname $0)/../common.sh
-. ${SCRIPT_DIR}/common-harness.sh
+. "$(dirname "$0")/../common.sh"
+. "${SCRIPT_DIR}/common-harness.sh"
 
 # Given a config file specifying a fuzzing engine, download that fuzzing engine
 build_engine() {
+  local fengine_config=$1
+  [[ ! -e "${fengine_config}" ]] && \
+    echo "Error: build_engine() couldn't find ${fengine_config}" && \
+    exit 1
+  local fengine_name="$(basename "${fengine_config}")"
+  local fengine_dir="${WORK}/fengine-builds/${fengine_name}"
 
-  FENGINE_CONFIG=$1
-  [[ ! -e $FENGINE_CONFIG ]] && echo \
-    "Error: build_engine function called for FENGINE_CONFIG=$FENGINE_CONFIG,\
-    but this file can't be found" && exit 1
-  echo "Creating fuzzing engine: $FENGINE_CONFIG"
-  FENGINE_NAME=$(basename $FENGINE_CONFIG)
-  FENGINE_DIR=$WORK/fengine-builds/${FENGINE_NAME}
-  rm -rf $FENGINE_DIR
-  mkdir $FENGINE_DIR
+  echo "Creating fuzzing engine: ${fengine_config}"
+  rm -rf "${fengine_dir}"
+  mkdir "${fengine_dir}"
 
-  . $FENGINE_CONFIG
-  # Build either engine
-
-  if [[ $FUZZING_ENGINE == "libfuzzer" ]]; then
-
-    if [[ ! -d ${LIBFUZZER_SRC}/standalone ]]; then
-      echo "Checking out libFuzzer"
-      svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer $WORK/Fuzzer
-      LIBFUZZER_SRC=$WORK/Fuzzer
-    fi
-
-  elif [[ $FUZZING_ENGINE == "afl" ]]; then
-    # [[ ! -d $LIBFUZZER_SRC ]] && echo "Can't do AFL before libfuzzer" && break
-    if [[ ! -d ${LIBFUZZER_SRC}/afl ]]; then
-      mkdir -p ${LIBFUZZER_SRC}/afl
-      svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer/afl ${LIBFUZZER_SRC}/afl
-    fi
-    echo "Building a version of AFL"
-    cd $WORK/fengine-builds
-    wget http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz
-    tar -xvf afl-latest.tgz -C $FENGINE_DIR --strip-components=1
-    (cd $FENGINE_DIR && AFL_USE_ASAN=1 make clean all)
-    rm afl-latest.tgz
-    cd
-    export AFL_SRC=$FENGINE_DIR
-  fi
+  . "${fengine_config}"
+  case "${FUZZING_ENGINE}" in
+    libfuzzer)
+      if [[ ! -d "${LIBFUZZER_SRC}/standalone" ]]; then
+        echo "Checking out libFuzzer"
+        svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer \
+          "${WORK}/Fuzzer"
+        export LIBFUZZER_SRC="${WORK}/Fuzzer"
+      fi
+      ;;
+    afl)
+      if [[ ! -d "${LIBFUZZER_SRC}/afl" ]]; then
+        mkdir -p "${LIBFUZZER_SRC}/afl"
+        svn co \
+          http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer/afl \
+          "${LIBFUZZER_SRC}/afl"
+      fi
+      echo "Building AFL"
+      pushd "${WORK}/fengine-builds"
+      wget http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz
+      tar xf afl-latest.tgz -C "${fengine_dir}" --strip-components=1
+      (cd "${fengine_dir}" && AFL_USE_ASAN=1 make clean all)
+      rm afl-latest.tgz
+      popd
+      export AFL_SRC="${fengine_dir}"
+      ;;
+    *)
+      echo "Error: Unknown fuzzing engine: ${FUZZING_ENGINE}"
+      exit 1
+      ;;
+  esac
 }
 
-build_benchmark_using() {
-  BENCHMARK=$1
-  FENGINE_CONFIG=$2
-  THIS_BENCHMARK=$3
+build_benchmark() {
+  local benchmark=$1
+  local fengine_config=$2
+  local output_dirname=$3
 
-  BUILDING_DIR=$WORK/build/${THIS_BENCHMARK}
-  echo "Filling $BUILDING_DIR"
-  rm -rf $BUILDING_DIR
-  mkdir $BUILDING_DIR
+  local building_dir="${WORK}/build/${output_dirname}"
+  echo "Building in ${building_dir}"
+  rm -rf "${building_dir}"
+  mkdir "${building_dir}"
 
-  cd $BUILDING_DIR
-  . $FENGINE_CONFIG
-  $WORK/FTS/$BENCHMARK/build.sh
-  cd
+  pushd "${building_dir}"
+  . "${fengine_config}"
+  "${WORK}/FTS/${benchmark}/build.sh"
+  popd
 
-  export SEND_DIR=$WORK/send/${THIS_BENCHMARK}
-  rm -rf $SEND_DIR
-  mkdir $SEND_DIR
+  export SEND_DIR="${WORK}/send/${output_dirname}"
+  rm -rf "${SEND_DIR}"
+  mkdir "${SEND_DIR}"
 
-  # Copy the executable
-  cp ${BUILDING_DIR}/${BENCHMARK}-${FUZZING_ENGINE} $SEND_DIR
+  # Copy the executable and delete build directory
+  cp "${building_dir}/${benchmark}-${FUZZING_ENGINE}" "${SEND_DIR}/"
+  rm -rf "${building_dir}"
 
   # TODO: make these gsutil cp?
   # dcalifornia: I don't think this is important; moreover, it requires delaying
   # the cp operation until after this folder is uploaded to gcloud, which
   # happens outside of this function. So, the code as it is now is best.
-  cp $WORK/FTS/engine-comparison/Dockerfile $SEND_DIR
-  cp $WORK/FTS/engine-comparison/runner.sh $SEND_DIR
-  cp $WORK/FTS/engine-comparison/config/parameters.cfg $SEND_DIR
-  cp $FENGINE_CONFIG $SEND_DIR/fengine.cfg
+  cp "${WORK}/FTS/engine-comparison/Dockerfile" "${SEND_DIR}/"
+  cp "${WORK}/FTS/engine-comparison/runner.sh" "${SEND_DIR}/"
+  cp "${WORK}/FTS/engine-comparison/config/parameters.cfg" "${SEND_DIR}/"
+  cp "${fengine_config}" "${SEND_DIR}/fengine.cfg"
 
-  echo "BENCHMARK=$BENCHMARK" > $SEND_DIR/benchmark.cfg
+  echo "BENCHMARK=${benchmark}" > "${SEND_DIR}/benchmark.cfg"
 
   # TODO: ensure all seeds are in $BENCHMARK/seeds
-  if [[ -d $WORK/FTS/$BENCHMARK/seeds ]]; then
-    cp -r $WORK/FTS/$BENCHMARK/seeds $SEND_DIR
+  if [[ -d "${WORK}/FTS/${benchmark}/seeds" ]]; then
+    cp -r "${WORK}/FTS/${benchmark}/seeds" "${SEND_DIR}"
   fi
-
-  if [[ $FUZZING_ENGINE == "afl" ]]; then
-    cp ${AFL_SRC}/afl-fuzz $SEND_DIR
+  if [[ "${FUZZING_ENGINE}" == "afl" ]]; then
+    cp "${AFL_SRC}/afl-fuzz" "${SEND_DIR}"
   fi
-
-  rm -rf $BUILDING_DIR
 }
 
-# Dispatcher specific create_or_start fields
-dispatcher_cos () {
-  INSTANCE_NAME=$1
-  BENCHMARK=$2
-  FENGINE_NAME=$3
-  create_or_start $INSTANCE_NAME "benchmark=${BENCHMARK},fengine=${FENGINE_NAME}"\
-    "startup-script=$WORK/FTS/engine-comparison/startup-runner.sh"
+# Starts a runner VM
+create_or_start_runner() {
+  local instance_name=$1
+  local benchmark=$2
+  local fengine_name=$3
+  create_or_start "${instance_name}" \
+    "benchmark=${benchmark},fengine=${fengine_name}" \
+    "startup-script=${WORK}/FTS/engine-comparison/startup-runner.sh"
 }
 
 # Top-level function to handle the initialization of a single runner VM. Builds
 # the binary, assembles a folder with configs and seeds, and starts the VM.
 handle_benchmark() {
-  BENCHMARK=$1
-  FENGINE_CONFIG=$2
-  # Just for convenience
-  FENGINE_NAME=$(basename ${FENGINE_CONFIG})
-  THIS_BENCHMARK=${BENCHMARK}-with-${FENGINE_NAME}
-
-  build_benchmark_using $BENCHMARK $FENGINE_CONFIG $THIS_BENCHMARK
-  gsutil -m rsync -rd $SEND_DIR ${GSUTIL_BUCKET}/binary-folders/$THIS_BENCHMARK
+  local benchmark=$1
+  local fengine_config=$2
+  local fengine_name="$(basename "${fengine_config}")"
+  local bmark_with_fengine="${benchmark}-with-${fengine_name}"
+  build_benchmark "${benchmark}" "${fengine_config}" "${bmark_with_fengine}"
+  gsutil -m rsync -rd "${SEND_DIR}" \
+    "${GSUTIL_BUCKET}/binary-folders/${bmark_with_fengine}"
   # GCloud instance names must match the following regular expression:
   # '[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?'
-  INSTANCE_NAME=$(echo "fts-runner-${THIS_BENCHMARK}" | \
-    tr '[:upper:]' '[:lower:]' | tr -d '.')
-  dispatcher_cos $INSTANCE_NAME $BENCHMARK $FENGINE_NAME
+  local instance_name="$(echo "fts-runner-${bmark_with_fengine}" | \
+    tr '[:upper:]' '[:lower:]' | tr -d '.')"
+  create_or_start_runner "${instance_name}" "${benchmark}" "${fengine_name}"
 }
 
-cd
-
-mkdir $WORK/fengine-builds
-mkdir $WORK/build
-mkdir $WORK/send
-
-# Stripped down equivalent of "gcloud init"
-gcloud auth activate-service-account $SERVICE_ACCOUNT \
-  --key-file="$WORK/FTS/engine-comparison/config/autogen-PRIVATE-key.json"
-gcloud config set project fuzzer-test-suite
-
-
-# This config file defines $BMARKS
-. $WORK/FTS/engine-comparison/config/bmarks.cfg
-# Now define $BENCHMARKS. Encode aliases here
-if [[ $BMARKS == 'all' ]]; then
-  for b in $(find ${SCRIPT_DIR}/../*/build.sh -type f); do
-    BENCHMARKS="$BENCHMARKS $(basename $(dirname $b))"
-  done
-elif [[ $BMARKS == 'small' ]]; then
-  BENCHMARKS="c-ares-CVE-2016-5180 re2-2014-12-09"
-elif [[ $BMARKS == 'none' ]]; then
-  BENCHMARKS=""
-elif [[ $BMARKS == 'three' ]]; then
-  BENCHMARKS="libssh-2017-1272 json-2017-02-12 proj4-2017-08-14"
-else
-  BENCHMARKS="$(echo $BMARKS | tr ',' ' ')"
-fi
-
-# Reset google cloud results before doing experiments
-gsutil -m rm -r ${GSUTIL_BUCKET}/experiment-folders ${GSUTIL_BUCKET}/reports
-
-# Outermost loops
-for FENGINE_CONFIG in $(find ${WORK}/fengine-configs/*); do
-  build_engine $FENGINE_CONFIG
-  for BENCHMARK in $BENCHMARKS; do
-    handle_benchmark $BENCHMARK $FENGINE_CONFIG
-  done
-done
-
-# TODO here: reset fengine-config env vars (?)
-############# DONE building
-rm -rf $WORK/send $WORK/build
-############# NOW wait for experiment results
-
 # Make a "plain" coverage build for a benchmark
-make_measurer () {
-  BENCHMARK=$1
-
-  if [[ ! -d ${LIBFUZZER_SRC}/standalone ]]; then
+make_measurer() {
+  local benchmark=$1
+  local building_dir="${WORK}/coverage-builds/${benchmark}"
+  if [[ ! -d "${LIBFUZZER_SRC}/standalone" ]]; then
     echo "Checking out libFuzzer"
-    svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer $WORK/Fuzzer
-    LIBFUZZER_SRC=$WORK/Fuzzer
+    svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer \
+      "${WORK}/Fuzzer"
+    export LIBFUZZER_SRC="${WORK}/Fuzzer"
   fi
-
-  BUILDING_DIR=$WORK/coverage-builds/${BENCHMARK}
-  mkdir -p $BUILDING_DIR
-  cd $BUILDING_DIR
-  FUZZING_ENGINE=coverage $WORK/FTS/${BENCHMARK}/build.sh
+  mkdir -p "${building_dir}"
+  pushd "${building_dir}"
+  FUZZING_ENGINE=coverage "${WORK}/FTS/${benchmark}/build.sh"
+  popd
 }
 
 # Process a corpus, generate a human readable report, send the report to gsutil
 # Processing includes: decompress, use sancov.py, etc
-measure_coverage () {
-  FENGINE_CONFIG=$1
-  FENGINE_NAME=$(basename $FENGINE_CONFIG)
-  BENCHMARK=$2
+measure_coverage() {
+  local fengine_config=$1
+  local benchmark=$2
+  local fengine_name="$(basename "${fengine_config}")"
+  local bmark_fengine_dir="${benchmark}/${fengine_name}"
+  local corpus_dir="${WORK}/measurement-folders/${bmark_fengine_dir}/corpus"
+  local sancov_dir="${WORK}/measurement-folders/${bmark_fengine_dir}/sancovs"
+  local report_dir="${WORK}/measurement-folders/${bmark_fengine_dir}/reports"
+  local experiment_dir="${WORK}/experiment-folders/${benchmark}-${fengine_name}"
 
-  THIS_BENCHMARK="${BENCHMARK}/${FENGINE_NAME}"
-  CORPUS_DIR=$WORK/measurement-folders/$THIS_BENCHMARK/corpus
-  SANCOV_DIR=$WORK/measurement-folders/$THIS_BENCHMARK/sancovs
-  REPORT_DIR=$WORK/measurement-folders/$THIS_BENCHMARK/reports
-
-  EXPERIMENT_DIR=$WORK/experiment-folders/${BENCHMARK}-${FENGINE_NAME}
-
-  rm -fr $CORPUS_DIR $SANCOV_DIR
-  mkdir -p $CORPUS_DIR $SANCOV_DIR $REPORT_DIR
+  rm -rf "${corpus_dir}" "${sancov_dir}"
+  mkdir -p "${corpus_dir}" "${sancov_dir}" "${report_dir}"
 
   # Recall which trial
-  if [[ -f $REPORT_DIR/latest-trial ]]; then
-    . $REPORT_DIR/latest-trial
+  if [[ -f "${report_dir}/latest-trial" ]]; then
+    . "${report_dir}/latest-trial"
   else
     LATEST_TRIAL=0
   fi
 
   # Check for next trial
-  if [[ -d ${EXPERIMENT_DIR}/trial-$(($LATEST_TRIAL + 1)) ]]; then
+  if [[ -d "${experiment_dir}/trial-$((LATEST_TRIAL + 1))" ]]; then
     # This round, we finish report for the old trial. But next time continue
-    echo "LATEST_TRIAL=$((LATEST_TRIAL + 1))" > $REPORT_DIR/latest-trial
-  else
-    echo "LATEST_TRIAL=$LATEST_TRIAL" > $REPORT_DIR/latest-trial
+    echo "LATEST_TRIAL=$((LATEST_TRIAL + 1))" > "${report_dir}/latest-trial"
   fi
 
-  # Enter trial directories
-  EXPERIMENT_DIR=${EXPERIMENT_DIR}/trial-${LATEST_TRIAL}
-  REPORT_DIR=${REPORT_DIR}/trial-${LATEST_TRIAL}
-  mkdir -p $REPORT_DIR
+  # Append trial directories
+  experiment_dir="${experiment_dir}/trial-${LATEST_TRIAL}"
+  report_dir="${report_dir}/trial-${LATEST_TRIAL}"
+  mkdir -p "${report_dir}"
 
   # Use the corpus-archive directly succeeding the last one to be processed
-  if [[ -f $REPORT_DIR/latest-cycle ]]; then
-    . $REPORT_DIR/latest-cycle
+  if [[ -f "${report_dir}/latest-cycle" ]]; then
+    . "${report_dir}/latest-cycle"
   else
     LATEST_CYCLE=0
   fi
 
   # Decide which cycle to report on
   # First, check if the runner documented that it skipped any cycles
-  THIS_CYCLE=$(($LATEST_CYCLE + 1))
-  while [[ $(grep "^${THIS_CYCLE}$" ${EXPERIMENT_DIR}/results/skipped-cycles) ]]; do
-    THIS_CYCLE=$((THIS_CYCLE + 1))
+  local this_cycle=$((LATEST_CYCLE + 1))
+  while grep "^${this_cycle}$" "${experiment_dir}/results/skipped-cycles"; do
+    this_cycle=$((this_cycle + 1))
   done
-  # Next, check if a cycle was somehow accidentally dropped. Document if this
-  # happened
-  if [[ ! -f ${EXPERIMENT_DIR}/corpus/corpus-archive-${THIS_CYCLE}.tar.gz ]]; then
-    echo "On cycle $THIS_CYCLE, no new corpus found for benchmark $BENCHMARK and fengine $FENGINE_NAME"
+  # Next, check if a cycle was somehow dropped.
+  if [[ ! -f \
+    "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" ]]; then
+    echo "On cycle ${this_cycle}, no new corpus found for:"
+    echo "  benchmark: ${benchmark}"
+    echo "  fengine: ${fengine_name}"
     return
   fi
   # Finally, skip to the most recent possible cycle. Note: this is commented out
   # because building all of the benchmarks takes a long time, so there are many
   # CSV report to process before the dispatcher gets to processing them
-  #while [[ -f ${EXPERIMENT_DIR}/corpus/corpus-archive-$(($THIS_CYCLE+1)).tar.gz ]]; do
-  #  echo "On cycle $THIS_CYCLE, skipping a corpus snapsho for benchmark $BENCHMARK fengine $FENGINE_NAME"
-  #  THIS_CYCLE=$(($THIS_CYCLE + 1))
+  #while [[ -f ${experiment_dir}/corpus/corpus-archive-$(($this_cycle+1)).tar.gz ]]; do
+  #  echo "On cycle $this_cycle, skipping a corpus snapsho for benchmark $BENCHMARK fengine $fengine_name"
+  #  this_cycle=$(($this_cycle + 1))
   #done
 
   # Extract corpus
-  cd $CORPUS_DIR
-  tar -xvf ${EXPERIMENT_DIR}/corpus/corpus-archive-${THIS_CYCLE}.tar.gz --strip-components=1
+  pushd "${corpus_dir}"
+  tar -xf "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" \
+    --strip-components=1
+  popd
 
   # Generate sancov
-  cd $SANCOV_DIR
-  UBSAN_OPTIONS=coverage=1 $WORK/coverage-builds/${BENCHMARK}/${BENCHMARK}-coverage $(find $CORPUS_DIR -type f)
+  pushd "${sancov_dir}"
+  UBSAN_OPTIONS=coverage=1 \
+    "${WORK}/coverage-builds/${benchmark}/${benchmark}-coverage" \
+    $(find "${corpus_dir}" -type f)
+  popd
 
   # Finish generating human readable report
-  cd $REPORT_DIR
+  local sancov_output="$("${WORK}/coverage-builds/sancov.py" print \
+    "${sancov_dir}/*" | wc -w)"
+  local corpus_size="$(wc -c $(find "${corpus_dir}" -maxdepth 1 -type f) \
+    | tail --lines=1 \
+    | grep -o "[0-9]*")"
+  local corpus_elems="$(find "${corpus_dir}" -maxdepth 1 -type f | wc -l)"
+  echo "${this_cycle},${sancov_output}" >> "${report_dir}/coverage-graph.csv"
+  echo "${this_cycle},${corpus_size}" >> "${report_dir}/corpus-size-graph.csv"
+  echo "${this_cycle},${corpus_elems}" >> "${report_dir}/corpus-elems-graph.csv"
 
-  echo "$THIS_CYCLE,$($WORK/coverage-builds/sancov.py print $SANCOV_DIR/* | wc -w)" >> $REPORT_DIR/coverage-graph.csv
-  echo "$THIS_CYCLE,$(wc -c $(find $CORPUS_DIR -maxdepth 1 -type f) | tail --lines=1 | grep -o [0-9]* )" >> $REPORT_DIR/corpus-size-graph.csv
-  echo "$THIS_CYCLE,$(find $CORPUS_DIR -maxdepth 1 -type f | wc -l)" >> $REPORT_DIR/corpus-elems-graph.csv
-
-  echo "LATEST_CYCLE=$THIS_CYCLE" > $REPORT_DIR/latest-cycle
+  echo "LATEST_CYCLE=${this_cycle}" > "${report_dir}/latest-cycle"
   # Sync "old" report dir, which includes all trials
-  gsutil -m rsync -r $WORK/measurement-folders/$THIS_BENCHMARK/reports ${GSUTIL_BUCKET}/reports/${THIS_BENCHMARK}
+  gsutil -m rsync -r \
+    "${WORK}/measurement-folders/${bmark_fengine_dir}/reports" \
+    "${GSUTIL_BUCKET}/reports/${bmark_fengine_dir}"
   # rsync -r or -rd?
 }
 
-mkdir -p $WORK/coverage-builds
+main() {
+  mkdir "${WORK}/fengine-builds"
+  mkdir "${WORK}/build"
+  mkdir "${WORK}/send"
 
-# Choice of preference: sancov.py over sancov CLI
-if [[ ! -f $WORK/coverage-builds/sancov.py ]]; then
-  cd $WORK/coverage-builds
-  wget http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/sanitizer_common/scripts/sancov.py
-  chmod 750 $WORK/coverage-builds/sancov.py
-fi
+  # Stripped down equivalent of "gcloud init"
+  gcloud auth activate-service-account "${SERVICE_ACCOUNT}" \
+    --key-file="${WORK}/FTS/engine-comparison/config/autogen-PRIVATE-key.json"
+  gcloud config set project fuzzer-test-suite
 
-for BENCHMARK in $BENCHMARKS; do
-  make_measurer $BENCHMARK
-done
+  # This config file defines $BMARKS
+  . "${WORK}/FTS/engine-comparison/config/bmarks.cfg"
+  # Now define $BENCHMARKS. Encode aliases here
+  case "${BMARKS}" in
+    all)
+      while read benchmark; do
+        BENCHMARKS="${BENCHMARKS} $(basename "$(dirname "${benchmark}")")"
+      done < <(find "${SCRIPT_DIR}/.." -name "build.sh")
+      ;;
+    small) BENCHMARKS="c-ares-CVE-2016-5180 re2-2014-12-09" ;;
+    none) BENCHMARKS="" ;;
+    three) BENCHMARKS="libssh-2017-1272 json-2017-02-12 proj4-2017-08-14" ;;
+    *) BENCHMARKS="$(echo "${BMARKS}" | tr ',' ' ')" ;;
+  esac
+  readonly BENCHMARKS
 
-set -x
+  # Reset google cloud results before doing experiments
+  gsutil -m rm -r "${GSUTIL_BUCKET}/experiment-folders" \
+    "${GSUTIL_BUCKET}/reports"
 
-mkdir -p $WORK/experiment-folders
-mkdir -p $WORK/measurement-folders
-
-# WAIT_PERIOD defines how frequently the dispatcher generates new reports for
-# every benchmark with every fengine. For a large number of runner VMs,
-# WAIT_PERIOD in dispatcher.sh can be smaller than it is in runner.sh
-
-WAIT_PERIOD=20
-
-# Is CYCLE necessary in dispatcher? No?
-CYCLE=1
-
-NEXT_SYNC=$(($SECONDS + $WAIT_PERIOD))
-
-# TODO: better "while" condition?
-# Maybe not: just end dispatcher VM when done
-while [[ "infinite loop" ]]; do
-  SLEEP_TIME=$(($NEXT_SYNC - $SECONDS))
-  sleep $SLEEP_TIME
-
-  # Prevent calling measure_coverage before runner VM begins
-  if [[ $(gsutil ls ${GSUTIL_BUCKET} | grep experiment-folders) ]]; then
-    gsutil -m rsync -rd ${GSUTIL_BUCKET}/experiment-folders $WORK/experiment-folders
-    for BENCHMARK in $BENCHMARKS; do
-      for FENGINE_CONFIG in $(find ${WORK}/fengine-configs -type f); do
-        measure_coverage $FENGINE_CONFIG $BENCHMARK
-      done
+  # Outermost loops
+  while read fengine_config; do
+    build_engine "${fengine_config}"
+    for benchmark in ${BENCHMARKS}; do
+      handle_benchmark "${benchmark}" "${fengine_config}"
     done
-    CYCLE=$(($CYCLE + 1))
+  done < <(find "${WORK}/fengine-configs" -type f)
+
+  # TODO here: reset fengine-config env vars (?)
+  ############# DONE building
+  rm -rf "${WORK}/send" "${WORK}"/build
+  ############# NOW wait for experiment results
+
+  mkdir -p "${WORK}/coverage-builds"
+
+  # Choice of preference: sancov.py over sancov CLI
+  if [[ ! -f "${WORK}/coverage-builds/sancov.py" ]]; then
+    pushd "${WORK}/coverage-builds"
+    local compiler_rt_url="http://llvm.org/svn/llvm-project/compiler-rt/trunk/"
+    local sancov_py_path="lib/sanitizer_common/scripts/sancov.py"
+    wget "${compiler_rt_url}${sancov_py_path}"
+    chmod 750 "sancov.py"
+    popd
   fi
 
-  # Skip cycle if need be
-  while [[ $(($NEXT_SYNC < $SECONDS)) == 1 ]]; do
-    NEXT_SYNC=$(($NEXT_SYNC + $WAIT_PERIOD))
+  for benchmark in ${BENCHMARKS}; do
+    make_measurer "${benchmark}"
   done
-done
 
+  set -x
+
+  mkdir -p "${WORK}/experiment-folders"
+  mkdir -p "${WORK}/measurement-folders"
+
+  # wait_period defines how frequently the dispatcher generates new reports for
+  # every benchmark with every fengine. For a large number of runner VMs,
+  # wait_period in dispatcher.sh can be smaller than it is in runner.sh
+  local wait_period=20
+
+  # Is cycle necessary in dispatcher? No?
+  local cycle=1
+  local next_sync=$((SECONDS + wait_period))
+
+  # TODO: better "while" condition?
+  # Maybe not: just end dispatcher VM when done
+  while true; do
+    sleep $((next_sync - SECONDS))
+
+    # Prevent calling measure_coverage before runner VM begins
+    if gsutil ls "${GSUTIL_BUCKET}" | grep "experiment-folders"; then
+      gsutil -m rsync -rd "${GSUTIL_BUCKET}/experiment-folders" \
+        "${WORK}/experiment-folders"
+      for benchmark in ${BENCHMARKS}; do
+        while read fengine_config; do
+          measure_coverage "${fengine_config}" "${benchmark}"
+        done < <(find "${WORK}/fengine-configs" -type f)
+      done
+      cycle=$((cycle + 1))
+    fi
+
+    # Skip cycle if need be
+    while [[ "${next_sync}" -lt "${SECONDS}" ]]; do
+      next_sync=$((next_sync + wait_period))
+    done
+  done
+}
+
+main "$@"
