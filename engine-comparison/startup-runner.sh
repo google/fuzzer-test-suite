@@ -1,20 +1,24 @@
 #!/bin/bash
 # Copyright 2017 Google Inc. All Rights Reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
+#
+# Script to run on creation of each runner VM.
+# Pulls down the benchmark fuzzer built for this runner, configures the runner
+# container, and runs the runner script.
+
+METADATA_URL="http://metadata.google.internal/computeMetadata/v1/instance"
+METADATA_URL="${METADATA_URL}/attributes"
+readonly METADATA_URL
+readonly BENCHMARK="$(curl "${METADATA_URL}/benchmark" -H \
+  "Metadata-Flavor: Google")"
+readonly FENGINE_NAME="$(curl "${METADATA_URL}/fengine" -H \
+  "Metadata-Flavor: Google")"
+readonly FOLDER_NAME="${BENCHMARK}-with-${FENGINE_NAME}"
 
 mkdir -p ~/input
-BENCHMARK=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/benchmark -H "Metadata-Flavor: Google")
-FENGINE_NAME=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/fengine -H "Metadata-Flavor: Google")
-
-FOLDER_NAME=${BENCHMARK}-with-${FENGINE_NAME}
-
-gsutil -m rsync -rd gs://fuzzer-test-suite/binary-folders/${FOLDER_NAME} ~/input
+gsutil -m rsync -rd "gs://fuzzer-test-suite/binary-folders/${FOLDER_NAME}" \
+  ~/input
 sudo gcloud docker -- pull gcr.io/fuzzer-test-suite/gcloud-clang-deps
-
-for f in $(find ~/input/*.sh); do
-  chmod 750 $f
-done
-
+find ~/input -name "*.sh" -exec chmod 750 {} \;
 sudo docker build -t base-image ~/input
 sudo docker run --cap-add SYS_PTRACE base-image /work/runner.sh
-

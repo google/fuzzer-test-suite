@@ -1,108 +1,96 @@
 #!/bin/bash
 # Copyright 2017 Google Inc. All Rights Reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
+#
+# Script to run on the runner VMs.  Executes several trials of a benchmark and
+# uploads corpus snapshots for the dispatcher to pull.
 
-# set -x
 . benchmark.cfg
 . parameters.cfg
 . fengine.cfg
 
-# This name used to be the name of the file fengine.cfg. It was renamed in the
-# dispatcher, so it was stored as metadata.
-FENGINE_NAME=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/fengine -H "Metadata-Flavor: Google")
-
-BINARY=${BENCHMARK}-${FUZZING_ENGINE}
-
-# seeds comes from dispatcher.sh, if it exists
-chmod 750 $BINARY
-
-# All options which are always called here, rather than being left
-# to $BINARY_RUNTIME_OPTIONS, are effectively mandatory
-# e.g. using seeds, -workers and -jobs
-
-# PROCESS_NAME is used by "ps x" to determine whether a benchmark has completed
-
-if [[ $FUZZING_ENGINE == "afl" ]]; then
-  chmod 750 afl-fuzz
-
-  # AFL requires some starter input
-  if [[ ! -d seeds ]]; then
-    mkdir seeds
-  fi
-  if [[ !$(find seeds -type f) ]]; then
-    echo "Input" > ./seeds/nil_seed
-  fi
-  # TODO: edit core_pattern in Docker VM
-  # https://groups.google.com/forum/m/#!msg/afl-users/7arn66RyNfg/BsnOPViuCAAJ
-  export AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
-
-  EXEC_CMD="./afl-fuzz $BINARY_RUNTIME_OPTIONS -i ./seeds/ -o corpus -- $BINARY &"
-  PROCESS_NAME="afl-fuzz"
-elif [[ $FUZZING_ENGINE == "libfuzzer" ]]; then
-
-  EXEC_CMD="./$BINARY $BINARY_RUNTIME_OPTIONS -workers=$JOBS -jobs=$JOBS corpus"
-  PROCESS_NAME=$BINARY
-
-  if [[ -d seeds ]]; then
-    EXEC_CMD="$EXEC_CMD seeds"
-  fi
-  EXEC_CMD="$EXEC_CMD &"
-
-fi
-
-# Folder name to sync to (convenient)
-SYNC_TO=${BENCHMARK}-${FENGINE_NAME}
-# WAIT_PERIOD should be longer than the whole loop, otherwise a sync cycle will be missed
-WAIT_PERIOD=20
+# WAIT_PERIOD should be longer than the main loop, otherwise a sync cycle will
+# be missed
+readonly WAIT_PERIOD=20
 
 conduct_experiment() {
-  TRIAL_NUM=$1
+  local exec_cmd=$1
+  local trial_num=$2
+  local bmark_fengine_dir=$3
+  local next_sync=${WAIT_PERIOD}
+  local cycle=1
+  local sync_dir="gs://fuzzer-test-suite/experiment-folders"
+  sync_dir="${sync_dir}/${bmark_fengine_dir}/trial-${trial_num}"
 
-  rm -fr corpus corpus-archives results
+  rm -rf corpus corpus-archives results
   mkdir -p corpus corpus-archives results
 
-  # "cycle 0" will be "time 0", and for purposes is skipped
-  CYCLE=1
-  # Now, begin
-  $EXEC_CMD
-  # Setting SECONDS is fine, it still gets ++ on schedule
-  SECONDS=0
-  NEXT_SYNC=$WAIT_PERIOD
-
-  while [[ $(ps -x | grep $PROCESS_NAME) ]]; do
-
-    # Ensure that measurements happen every $WAIT_PERIOD
-    SLEEP_TIME=$(($NEXT_SYNC - $SECONDS))
-    sleep $SLEEP_TIME
+  ${exec_cmd} &
+  local process_pid=$!
+  SECONDS=0  # Builtin that automatically increments every second
+  while kill -0 "${process_pid}"; do
+    # Ensure that measurements happen every wait period
+    local sleep_time=$((next_sync - SECONDS))
+    sleep ${sleep_time}
 
     # Snapshot
     cp -r corpus corpus-copy
 
-    echo "VM_SECONDS=$SECONDS" > results/seconds-${CYCLE}
-    # ls -l corpus-copy > results/corpus-data-${CYCLE}
-    tar -cvzf corpus-archives/corpus-archive-${CYCLE}.tar.gz corpus-copy
-    gsutil -m rsync -rPd results gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/trial-${TRIAL_NUM}/results
-    gsutil -m rsync -rPd corpus-archives gs://fuzzer-test-suite/experiment-folders/${SYNC_TO}/trial-${TRIAL_NUM}/corpus
+    echo "VM_SECONDS=${SECONDS}" > results/seconds-${cycle}
+    tar -czf "corpus-archives/corpus-archive-${cycle}.tar.gz" corpus-copy
+    gsutil -m rsync -rPd results "${sync_dir}/results"
+    gsutil -m rsync -rPd corpus-archives "${sync_dir}/corpus"
 
     # Done with snapshot
     rm -r corpus-copy
 
-    CYCLE=$(($CYCLE + 1))
-    NEXT_SYNC=$(($CYCLE * $WAIT_PERIOD))
+    cycle=$((cycle + 1))
+    next_sync=$((cycle * WAIT_PERIOD))
     # Skip cycle if need be
-    while [[ $(($NEXT_SYNC < $SECONDS)) == 1 ]]; do
-      echo "$CYCLE" >> results/skipped-cycles
-      CYCLE=$(($CYCLE + 1))
-      NEXT_SYNC=$(($CYCLE * $WAIT_PERIOD))
+    while [[ ${next_sync} -lt ${SECONDS} ]]; do
+      echo "${cycle}" >> results/skipped-cycles
+      cycle=$((cycle + 1))
+      next_sync=$((cycle * WAIT_PERIOD))
     done
-
   done
 }
 
-TRIAL_NUM=0
-while [[ $TRIAL_NUM != $N_ITERATIONS ]]; do
-  conduct_experiment $TRIAL_NUM
-  TRIAL_NUM=$(($TRIAL_NUM + 1))
-done
+main() {
+  # This name used to be the name of the file fengine.cfg. It was renamed in the
+  # dispatcher, so it was stored as metadata.
+  local binary="${BENCHMARK}-${FUZZING_ENGINE}"
+  local fengine_url="http://metadata.google.internal/computeMetadata/v1"
+  fengine_url="${fengine_url}/instance/attributes/fengine"
+  local fengine_name="$(curl "${fengine_url}" -H "Metadata-Flavor: Google")"
 
-sudo poweroff
+  chmod 750 "${binary}"
+
+  if [[ "${FUZZING_ENGINE}" == "afl" ]]; then
+    chmod 750 afl-fuzz
+
+    # AFL requires some starter input
+    [[ ! -d seeds ]] && mkdir seeds
+    [[ ! $(find seeds -type f) ]] && echo "Input" > ./seeds/nil_seed
+    # TODO: edit core_pattern in Docker VM
+    # https://groups.google.com/forum/m/#!msg/afl-users/7arn66RyNfg/BsnOPViuCAAJ
+    export AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
+
+    local exec_cmd="./afl-fuzz ${BINARY_RUNTIME_OPTIONS} -i ./seeds/ -o corpus"
+    exec_cmd="${exec_cmd} -- ${binary}"
+  elif [[ "${FUZZING_ENGINE}" == "libfuzzer" ]]; then
+    local exec_cmd="./${binary} ${BINARY_RUNTIME_OPTIONS}"
+    exec_cmd="${exec_cmd} -workers=${JOBS} -jobs=${JOBS} corpus"
+    [[ -d seeds ]] && exec_cmd="${exec_cmd} seeds"
+  fi
+
+  local bmark_fengine_dir="${BENCHMARK}-${fengine_name}"
+  local trial=0
+  while [[ "${trial}" != "${N_ITERATIONS}" ]]; do
+    conduct_experiment "${exec_cmd}" "${trial}" "${bmark_fengine_dir}"
+    trial=$((trial + 1))
+  done
+
+  sudo poweroff
+}
+
+main "$@"

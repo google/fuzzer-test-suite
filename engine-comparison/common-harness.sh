@@ -1,66 +1,61 @@
 #!/bin/bash
 # Copyright 2017 Google Inc. All Rights Reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
+#
+# Defines utility functions and variables used by the engine-comparison tool.
 
 # Define zone to avoid prompt
-GCLOUD_ZONE="us-west1-b"
-export CLOUDSDK_COMPUTE_ZONE=$GCLOUD_ZONE
+declare -xr CLOUDSDK_COMPUTE_ZONE="us-west1-b"
+declare -xr GSUTIL_BUCKET="gs://fuzzer-test-suite"
 
 # Almost definitely fine to be in the public domain
-SERVICE_ACCOUNT="373628893752-compute@developer.gserviceaccount.com"
+declare -xr SERVICE_ACCOUNT="373628893752-compute@developer.gserviceaccount.com"
 
-GSUTIL_BUCKET="gs://fuzzer-test-suite"
-
-# Sometimes, gcloud compute instances create returns before a VM is ready to be
-# SSH'ed into. Use this function after "instances create" to prevent skipped calls
-robust_begin_gcloud_ssh () {
-  INSTANCE_NAME=$1
-  while :
-  do
-    ! (gcloud compute ssh $INSTANCE_NAME --command="echo ping"\
-      2>&1 | grep "ERROR") && break
+# It takes some time for sshd to start up after a VM is created.  This function
+# repeatedly tries to connect until the ssh succeeds.
+robust_begin_gcloud_ssh() {
+  local instance_name=$1
+  while true; do
+    gcloud compute ssh "${instance_name}" --command="echo ping" 2>&1 \
+      | grep "ERROR" || break
     echo "GCloud VM isn't ready yet. Rerunning SSH momentarily."
-    sleep 5 # arbitrary choice of time
+    sleep 5
   done
 }
 
 create_or_start() {
-  INSTANCE_NAME=$1
-  METADATA=$2
-  METADATA_FROM_FILE=$3
-
-  if gcloud compute instances describe $INSTANCE_NAME 2>&1 | grep "ERROR"; then
-    echo "$INSTANCE_NAME doesn't exist yet. Now creating VM."
-    gcloud_create $INSTANCE_NAME $METADATA $METADATA_FROM_FILE
+  local instance_name=$1
+  local metadata=$2
+  local metadata_from_file=$3
+  gcloud compute instances describe "${instance_name}" 2>&1 | grep "ERROR"
+  if [[ $? == 0 ]]; then
+    echo "${instance_name} doesn't exist yet. Now creating VM."
+    gcloud_create "${instance_name}" "${metadata}" "${metadata_from_file}"
   else
-    gcloud compute instances start $INSTANCE_NAME
+    gcloud compute instances start "${instance_name}"
   fi
-
 }
+
 gcloud_create() {
-  INSTANCE_NAME=$1
+  local instance_name=$1
+  [[ -n $2 ]] && local metadata_cmd="--metadata $2"
+  [[ -n $3 ]] && local metadata_ff_cmd="--metadata-from-file $3"
 
-  # If there is a second argument
-  if [[ -n $2 ]]; then
-    METADATA_CMD="--metadata $2"
-  fi
-
-  #  If there is a third argument
-  if [[ -n $3 ]]; then
-    METADATA_FF_CMD="--metadata-from-file $3"
-  fi
-  
   # The dispatcher should be more powerful
-  MACHINE_TYPE=n1-standard-2
-  echo $INSTANCE_NAME | grep dispatcher && MACHINE_TYPE=n1-standard-16
+  echo "${instance_name}" | grep "dispatcher"
+  if [[ $? == 0 ]]; then
+    local machine_type="n1-standard-16"
+  else
+    local machine_type="n1-standard-2"
+  fi
 
-  IMAGE_FAMILY="docker-ubuntu"
-  gcloud compute instances create $INSTANCE_NAME --image-family=$IMAGE_FAMILY \
-    --service-account=$SERVICE_ACCOUNT --machine-type=$MACHINE_TYPE \
-    --scopes=compute-rw,storage-rw,default $METADATA_CMD $METADATA_FF_CMD
+  gcloud compute instances create "${instance_name}" \
+    --image-family="docker-ubuntu" --service-account="${SERVICE_ACCOUNT}" \
+    --machine-type="${machine_type}" --scopes="compute-rw,storage-rw,default" \
+    ${metadata_cmd} ${metadata_ff_cmd}
 }
 
 gcloud_delete() {
-  INSTANCE_NAME=$1
-  gcloud compute instances delete $INSTANCE_NAME
+  local instance_name=$1
+  gcloud compute instances delete "${instance_name}"
 }
