@@ -1,174 +1,171 @@
 package main
 
 import (
-	"fmt"
-	//	"io"
-	"io/ioutil"
-	"path"
-	//        "strings"
 	"encoding/csv"
+	"fmt"
+	"io/ioutil"
 	"os"
+	"path"
 	"strconv"
 )
 
 func checkErr(e error) {
 	if e != nil {
-		fmt.Println("Poop! Error encountered:", e)
+		fmt.Println("Error: ", e)
 		os.Exit(1)
 	}
 }
 
 // Removes non-directory elements of any []os.FileInfo
-func onlyDirectories(potential_files []os.FileInfo) (out_ls []os.FileInfo) {
-	for _, fd := range potential_files {
+func onlyDirectories(inLs []os.FileInfo) (outLs []os.FileInfo) {
+	for _, fd := range inLs {
 		if fd.IsDir() {
-			out_ls = append(out_ls, fd)
+			outLs = append(outLs, fd)
 		}
 	}
 	return
 }
 
-// Extend "records" matrix to have rows until time "desired_time"
+// Extend "records" matrix to have rows until time "desiredTime"
 // Return: Extended version of record
-func extendRecordsToTime(records [][]string, desired_time int, record_cols int) [][]string {
+func extendRecordsToTime(records [][]string, desiredTime int, recordCols int) [][]string {
 	lenr := len(records)
 	// records[1] stores cycle [1], as records[0] is column names
-	for j := lenr; j < desired_time+1; j++ {
-		records = append(records, make([]string, record_cols))
+	for j := lenr; j < desiredTime+1; j++ {
+		records = append(records, make([]string, recordCols))
 		records[j][0] = strconv.Itoa(j)
 	}
 	return records
 }
 
 // Handles the CSV Reader for a single trial, and updates records[][] accordingly. Returns the updated records
-func handleTrialCSV(trial_reader *csv.Reader, records [][]string, column_name string, num_total_cols int, j int) [][]string {
+func handleTrialCSV(trialReader *csv.Reader, records [][]string, colName string, totalCols int, trialNum int) [][]string {
 	// Read whole CSV to an array
-	experiment_records, err := trial_reader.ReadAll()
+	trialRecords, err := trialReader.ReadAll()
 	checkErr(err)
 	// Add the name of this new column to records[0]
-	records[0] = append(records[0], column_name)
+	records[0] = append(records[0], colName)
 
-	final_time, err := strconv.Atoi(experiment_records[len(experiment_records)-1][0])
+	finalTime, err := strconv.Atoi(trialRecords[len(trialRecords)-1][0])
 	checkErr(err)
 	//If this test went longer than all of the others, so far
-	if len(records) < final_time+1 {
-		records = extendRecordsToTime(records, final_time, num_total_cols)
+	if len(records) < finalTime+1 {
+		records = extendRecordsToTime(records, finalTime, totalCols)
 	}
-	for _, row := range experiment_records {
+	for _, row := range trialRecords {
 		// row[0] is time, on the x-axis; row[1] is value, on the y-axis
-		time_now, err := strconv.Atoi(row[0])
+		time, err := strconv.Atoi(row[0])
 		checkErr(err)
-		records[time_now][j+1] = row[1]
+		records[time][trialNum+1] = row[1]
 	}
 	return records
 }
 
-func handleFengine(fengine os.FileInfo, bmark_path string, desired_report_fname string) [][]string {
+func handleFEngine(fengine os.FileInfo, bmarkPath string, finalReportFName string) [][]string {
 	// Create matrix, to eventually become a CSV
 	records := [][]string{{"time"}}
 
 	// Enter sub-directories
-	potential_trials, err := ioutil.ReadDir(path.Join(bmark_path, fengine.Name()))
+	fenginePath := path.Join(bmarkPath, fengine.Name())
+	ls, err := ioutil.ReadDir(fenginePath)
 	checkErr(err)
-	trials := onlyDirectories(potential_trials)
+	trials := onlyDirectories(ls)
 
-	num_total_cols := len(trials) + 1
+	totalCols := len(trials) + 1
 	for j, trial := range trials {
 		// Create fds
-		this_file, err := os.Open(path.Join(bmark_path, fengine.Name(), trial.Name(), desired_report_fname))
+		trialCSV, err := os.Open(path.Join(fenginePath, trial.Name(), finalReportFName))
 		checkErr(err)
-		trial_reader := csv.NewReader(this_file)
+		trialReader := csv.NewReader(trialCSV)
 
-		records = handleTrialCSV(trial_reader, records, fengine.Name()+"-"+trial.Name(), num_total_cols, j)
-		this_file.Close()
+		records = handleTrialCSV(trialReader, records, fengine.Name()+"-"+trial.Name(), totalCols, j)
+		trialCSV.Close()
 	}
 
-	this_fe_file, err := os.Create(path.Join(bmark_path, fengine.Name(), desired_report_fname))
+	fengineCSV, err := os.Create(path.Join(fenginePath, finalReportFName))
 	checkErr(err)
-	this_fe_writer := csv.NewWriter(this_fe_file)
-	this_fe_writer.WriteAll(records)
-	this_fe_file.Close()
+	fengineWriter := csv.NewWriter(fengineCSV)
+	fengineWriter.WriteAll(records)
+	fengineCSV.Close()
 	return records
 }
 
-func appendAllTrials(meta_records [][]string, records [][]string) [][]string {
-	if len(meta_records) < len(records) {
-		meta_records = extendRecordsToTime(meta_records, len(records)-1, len(meta_records[0]))
+func appendAllTrials(aggregateRecords [][]string, records [][]string) [][]string {
+	if len(aggregateRecords) < len(records) {
+		aggregateRecords = extendRecordsToTime(aggregateRecords, len(records)-1, len(aggregateRecords[0]))
 	}
 	for r, row := range records {
-		meta_records[r] = append(meta_records[r], row[1:]...)
+		aggregateRecords[r] = append(aggregateRecords[r], row[1:]...)
 	}
-	return meta_records
+	return aggregateRecords
 }
 
-// Identify the fastest trial column in records and add it to meta_records
-func appendFastestTrial(meta_records [][]string, records [][]string) [][]string {
+// Identify the fastest trial column in records and add it to aggregateRecords
+func appendFastestTrial(aggregateRecords [][]string, records [][]string) [][]string {
 	// Initialized to false: track whether this trial has lasted a long time
-	trials := make([]bool, len(records[0])-1)
+	trials := make([]bool, len(records[0]))
 	// Use int for faster comparisons
-	finished_trials := len(trials)
+	finishedTrials := len(trials) - 1
 	// Rows in Fastest Trial
-	var rows_in_ft int
-	var fastest_trial int
+	var rowsInFT int
+	var fastestTrial int
 
 	// Find the fastest trial by working backwards, since data points are sometimes dropped
 	for r := len(records) - 1; r > 0; r-- {
 		for c := 1; c < len(records[r]); c++ {
-			if !trials[c-1] && (len(records[r][c]) > 0) {
-				trials[c-1] = true
-				finished_trials--
-				if finished_trials == 0 {
-					fastest_trial = c
-					rows_in_ft = r
+			if !trials[c] && (len(records[r][c]) > 0) {
+				trials[c] = true
+				finishedTrials--
+				if finishedTrials == 0 {
+					fastestTrial = c
+					rowsInFT = r
 					break
 				}
 			}
 		}
-		if finished_trials == 0 {
+		if finishedTrials == 0 {
 			break
 		}
 	}
 
-	// Update meta_records
-	if len(meta_records) < rows_in_ft+1 {
-		meta_records = extendRecordsToTime(meta_records, rows_in_ft, len(meta_records[0]))
+	// Update aggregateRecords
+	if len(aggregateRecords) < rowsInFT+1 {
+		aggregateRecords = extendRecordsToTime(aggregateRecords, rowsInFT, len(aggregateRecords[0]))
 	}
-	for j := 0; j <= rows_in_ft; j++ {
-		meta_records[j] = append(meta_records[j], records[j][fastest_trial])
+	for j := 0; j <= rowsInFT; j++ {
+		aggregateRecords[j] = append(aggregateRecords[j], records[j][fastestTrial])
 	}
-	return meta_records
+	return aggregateRecords
 }
 
-// Call handleFengine() for each fengine, then compose all fengine data into a single CSV for comparison
-func handleBmark(bmark os.FileInfo, records_path string, desired_report_fname string) {
-	bmark_records := [][]string{{"time"}}
-
-	bmark_path := path.Join(records_path, bmark.Name())
-	potential_fengines, err := ioutil.ReadDir(bmark_path)
+// Call handleFEngine() for each fengine, then compose all fengine data into a single CSV for comparison
+func handleBmark(bmark os.FileInfo, recordsPath string, finalReportFName string) {
+	bmarkRecords := [][]string{{"time"}}
+	bmarkPath := path.Join(recordsPath, bmark.Name())
+	ls, err := ioutil.ReadDir(bmarkPath)
 	checkErr(err)
-	// narrow potential_fengines to fengines so the indices of `range fengines` are useful
-	fengines := onlyDirectories(potential_fengines)
+	fengines := onlyDirectories(ls)
 
 	for _, fengine := range fengines {
-		fengine_records := handleFengine(fengine, bmark_path, desired_report_fname)
-		//bmark_records = appendFastestTrial(bmark_records, fengine_records)
-		bmark_records = appendAllTrials(bmark_records, fengine_records)
+		fengineRecords := handleFEngine(fengine, bmarkPath, finalReportFName)
+		//bmarkRecords = appendFastestTrial(bmarkRecords, fengineRecords)
+		bmarkRecords = appendAllTrials(bmarkRecords, fengineRecords)
 	}
-	this_bm_file, err := os.Create(path.Join(bmark_path, desired_report_fname))
+	bmCSV, err := os.Create(path.Join(bmarkPath, finalReportFName))
 	checkErr(err)
-	this_bm_writer := csv.NewWriter(this_bm_file)
-	this_bm_writer.WriteAll(bmark_records)
-	this_bm_file.Close()
+	bmWriter := csv.NewWriter(bmCSV)
+	bmWriter.WriteAll(bmarkRecords)
+	bmCSV.Close()
 }
 
 // Enters all report subdirectories, from benchmark to fengine to trial;
 // composes individual CSVs (only two columns) into larger CSVs
-func composeAllNamed(desired_report_fname string) {
-	reports_path := "./reports"
-	bmarks, err := ioutil.ReadDir(reports_path)
+func composeAllNamed(finalReportFName string) {
+	reportsPath := "./reports"
+	bmarks, err := ioutil.ReadDir(reportsPath)
 	checkErr(err)
 	for _, bmark := range bmarks {
-		handleBmark(bmark, reports_path, desired_report_fname)
+		handleBmark(bmark, reportsPath, finalReportFName)
 	}
 }
 

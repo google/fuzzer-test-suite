@@ -15,6 +15,7 @@
 # This is all that we need from them:
 readonly GSUTIL_BUCKET="gs://fuzzer-test-suite"
 
+[[ -d old-reports ]] && rm -rf old-reports
 [[ -d reports ]] && mv reports old-reports
 mkdir reports
 
@@ -23,9 +24,9 @@ gsutil -m rsync -rd "${GSUTIL_BUCKET}/reports" ./reports
 go run generate-report.go
 
 while read bm; do
-  cp setOfFengineCharts.html "${bm}/"
+  cp setOfCharts10.html "${bm}/"
   find "${bm}" -maxdepth 1 -mindepth 1 -type d -exec \
-    cp setOfTrialCharts.html {}/ \;
+    cp setOfCharts.html {}/ \;
 done < <(find reports -maxdepth 1 -mindepth 1 -type d)
 
 gsutil -m rsync -rd ./reports "${GSUTIL_BUCKET}/webpage-graphs"
