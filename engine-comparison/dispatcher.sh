@@ -9,6 +9,13 @@
 . "$(dirname "$0")/../common.sh"
 . "${SCRIPT_DIR}/common-harness.sh"
 
+# Run the specified command in a shell with no environment variables set.
+exec_in_clean_env() {
+  local cmd=$1
+  local set_path_cmd="export PATH=/usr/bin:/bin:/usr/local/bin"
+  env -i bash -c "${set_path_cmd} && ${cmd}"
+}
+
 # Given a config file specifying a fuzzing engine, download that fuzzing engine
 build_engine() {
   local fengine_config=$1
@@ -66,8 +73,8 @@ build_benchmark() {
   mkdir "${building_dir}"
 
   pushd "${building_dir}"
-  . "${fengine_config}"
-  "${WORK}/FTS/${benchmark}/build.sh"
+  local build_cmd=". ${fengine_config} && ${WORK}/FTS/${benchmark}/build.sh"
+  exec_in_clean_env "${build_cmd}"
   popd
 
   export SEND_DIR="${WORK}/send/${output_dirname}"
@@ -137,7 +144,7 @@ make_measurer() {
   fi
   mkdir -p "${building_dir}"
   pushd "${building_dir}"
-  FUZZING_ENGINE=coverage "${WORK}/FTS/${benchmark}/build.sh"
+  exec_in_clean_env "FUZZING_ENGINE=coverage ${WORK}/FTS/${benchmark}/build.sh"
   popd
 }
 
