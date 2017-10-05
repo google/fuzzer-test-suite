@@ -55,6 +55,7 @@ build_engine() {
       popd
       export AFL_SRC="${fengine_dir}"
       ;;
+    fsanitize_fuzzer) ;;
     *)
       echo "Error: Unknown fuzzing engine: ${FUZZING_ENGINE}"
       exit 1
