@@ -9,6 +9,13 @@
 . "$(dirname "$0")/../common.sh"
 . "${SCRIPT_DIR}/common-harness.sh"
 
+# Run the specified command in a shell with no environment variables set.
+exec_in_clean_env() {
+  local cmd=$1
+  local set_path_cmd="export PATH=/usr/bin:/bin:/usr/local/bin"
+  env -i bash -c "${set_path_cmd} && ${cmd}"
+}
+
 # Given a config file specifying a fuzzing engine, download that fuzzing engine
 build_engine() {
   local fengine_config=$1
@@ -48,6 +55,7 @@ build_engine() {
       popd
       export AFL_SRC="${fengine_dir}"
       ;;
+    fsanitize_fuzzer) ;;
     *)
       echo "Error: Unknown fuzzing engine: ${FUZZING_ENGINE}"
       exit 1
@@ -66,8 +74,8 @@ build_benchmark() {
   mkdir "${building_dir}"
 
   pushd "${building_dir}"
-  . "${fengine_config}"
-  "${WORK}/FTS/${benchmark}/build.sh"
+  local build_cmd=". ${fengine_config} && ${WORK}/FTS/${benchmark}/build.sh"
+  exec_in_clean_env "${build_cmd}"
   popd
 
   export SEND_DIR="${WORK}/send/${output_dirname}"
@@ -82,7 +90,7 @@ build_benchmark() {
   # dcalifornia: I don't think this is important; moreover, it requires delaying
   # the cp operation until after this folder is uploaded to gcloud, which
   # happens outside of this function. So, the code as it is now is best.
-  cp "${WORK}/FTS/engine-comparison/Dockerfile" "${SEND_DIR}/"
+  cp "${WORK}/FTS/engine-comparison/Dockerfile-runner" "${SEND_DIR}/Dockerfile"
   cp "${WORK}/FTS/engine-comparison/runner.sh" "${SEND_DIR}/"
   cp "${WORK}/FTS/engine-comparison/config/parameters.cfg" "${SEND_DIR}/"
   cp "${fengine_config}" "${SEND_DIR}/fengine.cfg"
@@ -137,7 +145,7 @@ make_measurer() {
   fi
   mkdir -p "${building_dir}"
   pushd "${building_dir}"
-  FUZZING_ENGINE=coverage "${WORK}/FTS/${benchmark}/build.sh"
+  exec_in_clean_env "FUZZING_ENGINE=coverage ${WORK}/FTS/${benchmark}/build.sh"
   popd
 }
 

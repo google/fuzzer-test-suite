@@ -77,10 +77,14 @@ main() {
 
     local exec_cmd="./afl-fuzz ${BINARY_RUNTIME_OPTIONS} -i ./seeds/ -o corpus"
     exec_cmd="${exec_cmd} -- ${binary}"
-  elif [[ "${FUZZING_ENGINE}" == "libfuzzer" ]]; then
+  elif [[ "${FUZZING_ENGINE}" == "libfuzzer" || \
+    "${FUZZING_ENGINE}" == "fsanitize_fuzzer" ]]; then
     local exec_cmd="./${binary} ${BINARY_RUNTIME_OPTIONS}"
     exec_cmd="${exec_cmd} -workers=${JOBS} -jobs=${JOBS} corpus"
     [[ -d seeds ]] && exec_cmd="${exec_cmd} seeds"
+  else
+    echo "Error: Unsupported fuzzing engine ${FUZZING_ENGINE}"
+    exit 1
   fi
 
   local bmark_fengine_dir="${BENCHMARK}-${fengine_name}"
