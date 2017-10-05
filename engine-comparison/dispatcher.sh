@@ -90,7 +90,7 @@ build_benchmark() {
   # dcalifornia: I don't think this is important; moreover, it requires delaying
   # the cp operation until after this folder is uploaded to gcloud, which
   # happens outside of this function. So, the code as it is now is best.
-  cp "${WORK}/FTS/engine-comparison/Dockerfile" "${SEND_DIR}/"
+  cp "${WORK}/FTS/engine-comparison/Dockerfile-runner" "${SEND_DIR}/Dockerfile"
   cp "${WORK}/FTS/engine-comparison/runner.sh" "${SEND_DIR}/"
   cp "${WORK}/FTS/engine-comparison/config/parameters.cfg" "${SEND_DIR}/"
   cp "${fengine_config}" "${SEND_DIR}/fengine.cfg"

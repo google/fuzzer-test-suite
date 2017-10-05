@@ -7,7 +7,7 @@
 
 sudo gcloud docker -- pull gcr.io/fuzzer-test-suite/gcloud-clang-deps
 find ~/input/FTS/ -name "*.sh" -exec chmod 750 {} \;
-sudo docker build -t base-image -f ~/input/FTS/engine-comparison/Dockerfile \
-  ~/input
+sudo docker build -t base-image \
+  -f ~/input/FTS/engine-comparison/Dockerfile-dispatcher ~/input
 sudo docker run --cap-add SYS_PTRACE base-image \
   /work/FTS/engine-comparison/dispatcher.sh
