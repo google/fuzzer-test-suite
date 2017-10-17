@@ -47,12 +47,13 @@ gcloud_create() {
     local machine_type="n1-standard-16"
   else
     local machine_type="n1-standard-2"
+    local network_cmd="--network=runner-net --no-address"
   fi
 
   gcloud compute instances create "${instance_name}" \
     --image-family="docker-ubuntu" --service-account="${SERVICE_ACCOUNT}" \
     --machine-type="${machine_type}" --scopes="compute-rw,storage-rw,default" \
-    ${metadata_cmd} ${metadata_ff_cmd}
+    ${metadata_cmd} ${metadata_ff_cmd} ${network_cmd}
 }
 
 gcloud_delete() {
