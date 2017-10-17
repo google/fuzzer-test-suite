@@ -53,6 +53,10 @@ conduct_experiment() {
       next_sync=$((cycle * WAIT_PERIOD))
     done
   done
+
+  # Sync final fuzz log
+  cp fuzz-0.log results/
+  gsutil -m rsync -rPd results "${sync_dir}/results"
 }
 
 main() {
