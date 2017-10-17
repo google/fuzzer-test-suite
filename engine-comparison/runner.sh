@@ -98,7 +98,8 @@ main() {
     trial=$((trial + 1))
   done
 
-  sudo poweroff
+  # We're done. Delete this runner to save resources.
+  gcloud compute instances delete --zone us-west1-b -q "${INSTANCE_NAME}"
 }
 
 main "$@"
