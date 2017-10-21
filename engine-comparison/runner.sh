@@ -53,6 +53,10 @@ conduct_experiment() {
       next_sync=$((cycle * WAIT_PERIOD))
     done
   done
+
+  # Sync final fuzz log
+  cp fuzz-0.log results/
+  gsutil -m rsync -rPd results "${sync_dir}/results"
 }
 
 main() {
@@ -94,7 +98,8 @@ main() {
     trial=$((trial + 1))
   done
 
-  sudo poweroff
+  # We're done. Delete this runner to save resources.
+  gcloud compute instances delete --zone us-west1-b -q "${INSTANCE_NAME}"
 }
 
 main "$@"

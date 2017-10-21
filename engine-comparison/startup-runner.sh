@@ -21,4 +21,5 @@ gsutil -m rsync -rd "gs://fuzzer-test-suite/binary-folders/${FOLDER_NAME}" \
 sudo gcloud docker -- pull gcr.io/fuzzer-test-suite/gcloud-clang-deps
 find ~/input -name "*.sh" -exec chmod 750 {} \;
 sudo docker build -t base-image ~/input
-sudo docker run --cap-add SYS_PTRACE base-image /work/runner.sh
+sudo docker run -e INSTANCE_NAME="${HOSTNAME}" --cap-add SYS_PTRACE base-image \
+  /work/runner.sh
