@@ -97,7 +97,6 @@ build_benchmark() {
 
   echo "BENCHMARK=${benchmark}" > "${SEND_DIR}/benchmark.cfg"
 
-  # TODO: ensure all seeds are in $BENCHMARK/seeds
   if [[ -d "${WORK}/FTS/${benchmark}/seeds" ]]; then
     cp -r "${WORK}/FTS/${benchmark}/seeds" "${SEND_DIR}"
   fi

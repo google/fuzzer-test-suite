@@ -6,8 +6,6 @@ set -x
 rm -rf $CORPUS
 mkdir $CORPUS
 
-cp $SCRIPT_DIR/seed $CORPUS
-
-[ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS/ -jobs=$JOBS -workers=$JOBS $CORPUS
+[ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS/ -jobs=$JOBS -workers=$JOBS $CORPUS $SCRIPT_DIR/seeds
 grep 'ERROR: AddressSanitizer: heap-buffer-overflow' fuzz-0.log || exit 1
 
