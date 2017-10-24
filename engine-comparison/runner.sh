@@ -84,7 +84,7 @@ main() {
   elif [[ "${FUZZING_ENGINE}" == "libfuzzer" || \
     "${FUZZING_ENGINE}" == "fsanitize_fuzzer" ]]; then
     local exec_cmd="./${binary} ${BINARY_RUNTIME_OPTIONS}"
-    exec_cmd="${exec_cmd} -workers=${JOBS} -jobs=${JOBS} corpus"
+    exec_cmd="${exec_cmd} -workers=${JOBS} -jobs=${JOBS} -runs=${RUNS} corpus"
     [[ -d seeds ]] && exec_cmd="${exec_cmd} seeds"
   else
     echo "Error: Unsupported fuzzing engine ${FUZZING_ENGINE}"
