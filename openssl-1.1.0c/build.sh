@@ -17,3 +17,4 @@ for f in bignum x509; do
   $CC $CFLAGS -DFuzzerTestOneInput=LLVMFuzzerTestOneInput -c -g BUILD/fuzz/$f.c -I BUILD/include
   $CXX $CXXFLAGS $f.o BUILD/libssl.a BUILD/libcrypto.a $LIB_FUZZING_ENGINE -lgcrypt -o $EXECUTABLE_NAME_BASE-$f
 done
+cp $EXECUTABLE_NAME_BASE-bignum $EXECUTABLE_NAME_BASE
