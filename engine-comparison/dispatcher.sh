@@ -17,10 +17,10 @@ exec_in_clean_env() {
 }
 
 # Given a config file specifying a fuzzing engine, download that fuzzing engine
-build_engine() {
+download_engine() {
   local fengine_config=$1
   [[ ! -e "${fengine_config}" ]] && \
-    echo "Error: build_engine() couldn't find ${fengine_config}" && \
+    echo "Error: download_engine() couldn't find ${fengine_config}" && \
     exit 1
   local fengine_name="$(basename "${fengine_config}")"
   local fengine_dir="${WORK}/fengine-builds/${fengine_name}"
@@ -73,10 +73,8 @@ build_benchmark() {
   rm -rf "${building_dir}"
   mkdir "${building_dir}"
 
-  pushd "${building_dir}"
   local build_cmd=". ${fengine_config} && ${WORK}/FTS/${benchmark}/build.sh"
-  exec_in_clean_env "${build_cmd}"
-  popd
+  (cd "${building_dir}" && exec_in_clean_env "${build_cmd}")
 
   export SEND_DIR="${WORK}/send/${output_dirname}"
   rm -rf "${SEND_DIR}"
@@ -86,10 +84,6 @@ build_benchmark() {
   cp "${building_dir}/${benchmark}-${FUZZING_ENGINE}" "${SEND_DIR}/"
   rm -rf "${building_dir}"
 
-  # TODO: make these gsutil cp?
-  # dcalifornia: I don't think this is important; moreover, it requires delaying
-  # the cp operation until after this folder is uploaded to gcloud, which
-  # happens outside of this function. So, the code as it is now is best.
   cp "${WORK}/FTS/engine-comparison/Dockerfile-runner" "${SEND_DIR}/Dockerfile"
   cp "${WORK}/FTS/engine-comparison/runner.sh" "${SEND_DIR}/"
   cp "${WORK}/FTS/engine-comparison/config/parameters.cfg" "${SEND_DIR}/"
@@ -138,14 +132,13 @@ make_measurer() {
   local building_dir="${WORK}/coverage-builds/${benchmark}"
   if [[ ! -d "${LIBFUZZER_SRC}/standalone" ]]; then
     echo "Checking out libFuzzer"
-    svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer \
-      "${WORK}/Fuzzer"
     export LIBFUZZER_SRC="${WORK}/Fuzzer"
+    svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer \
+      "${LIBFUZZER_SRC}"
   fi
   mkdir -p "${building_dir}"
-  pushd "${building_dir}"
-  exec_in_clean_env "FUZZING_ENGINE=coverage ${WORK}/FTS/${benchmark}/build.sh"
-  popd
+  (cd "${building_dir}" && exec_in_clean_env \
+    "FUZZING_ENGINE=coverage ${WORK}/FTS/${benchmark}/build.sh")
 }
 
 # Process a corpus, generate a human readable report, send the report to gsutil
@@ -211,10 +204,9 @@ measure_coverage() {
   #done
 
   # Extract corpus
-  pushd "${corpus_dir}"
-  tar -xf "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" \
-    --strip-components=1
-  popd
+  (cd "${corpus_dir}" &&
+    tar -xf "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" \
+      --strip-components=1)
 
   # Generate sancov
   pushd "${sancov_dir}"
@@ -274,7 +266,7 @@ main() {
 
   # Outermost loops
   while read fengine_config; do
-    build_engine "${fengine_config}"
+    download_engine "${fengine_config}"
     for benchmark in ${BENCHMARKS}; do
       handle_benchmark "${benchmark}" "${fengine_config}"
     done
