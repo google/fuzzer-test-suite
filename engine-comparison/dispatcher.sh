@@ -139,6 +139,8 @@ make_measurer() {
   mkdir -p "${building_dir}"
   (cd "${building_dir}" && exec_in_clean_env \
     "FUZZING_ENGINE=coverage ${WORK}/FTS/${benchmark}/build.sh")
+  mv "${building_dir}/${benchmark}-coverage" "${WORK}/coverage-binaries/"
+  rm -rf "${building_dir}"
 }
 
 # Process a corpus, generate a human readable report, send the report to gsutil
@@ -209,11 +211,9 @@ measure_coverage() {
       --strip-components=1)
 
   # Generate sancov
-  pushd "${sancov_dir}"
-  UBSAN_OPTIONS=coverage=1 \
-    "${WORK}/coverage-builds/${benchmark}/${benchmark}-coverage" \
-    $(find "${corpus_dir}" -type f)
-  popd
+  (cd "${sancov_dir}" &&
+    UBSAN_OPTIONS=coverage=1 "${WORK}/coverage-binaries/${benchmark}-coverage" \
+      $(find "${corpus_dir}" -type f))
 
   # Finish generating human readable report
   local sancov_output="$("${WORK}/coverage-builds/sancov.py" print \
@@ -289,6 +289,7 @@ main() {
     popd
   fi
 
+  mkdir -p "${WORK}/coverage-binaries"
   for benchmark in ${BENCHMARKS}; do
     make_measurer "${benchmark}"
   done
