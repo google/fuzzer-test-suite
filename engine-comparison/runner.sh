@@ -13,6 +13,13 @@
 # be missed
 readonly WAIT_PERIOD=20
 
+# rsyncs directories recursively without deleting files at dst.
+rsync_no_delete() {
+  local src=$1
+  local dst=$2
+  gsutil -m rsync -rP "${src}" "${dst}"
+}
+
 conduct_experiment() {
   local exec_cmd=$1
   local trial_num=$2
@@ -38,8 +45,8 @@ conduct_experiment() {
 
     echo "VM_SECONDS=${SECONDS}" > results/seconds-${cycle}
     tar -czf "corpus-archives/corpus-archive-${cycle}.tar.gz" corpus-copy
-    gsutil -m rsync -rP results "${sync_dir}/results"
-    gsutil -m rsync -rP corpus-archives "${sync_dir}/corpus"
+    rsync_no_delete results "${sync_dir}/results"
+    rsync_no_delete corpus-archives "${sync_dir}/corpus"
 
     # Done with snapshot
     rm -r corpus-copy
@@ -58,7 +65,7 @@ conduct_experiment() {
 
   # Sync final fuzz log
   cp fuzz-0.log results/
-  gsutil -m rsync -rP results "${sync_dir}/results"
+  rsync_no_delete results "${sync_dir}/results"
 }
 
 main() {
