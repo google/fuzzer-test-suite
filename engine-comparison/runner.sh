@@ -38,11 +38,13 @@ conduct_experiment() {
 
     echo "VM_SECONDS=${SECONDS}" > results/seconds-${cycle}
     tar -czf "corpus-archives/corpus-archive-${cycle}.tar.gz" corpus-copy
-    gsutil -m rsync -rPd results "${sync_dir}/results"
-    gsutil -m rsync -rPd corpus-archives "${sync_dir}/corpus"
+    gsutil -m rsync -rP results "${sync_dir}/results"
+    gsutil -m rsync -rP corpus-archives "${sync_dir}/corpus"
 
     # Done with snapshot
     rm -r corpus-copy
+    rm "results/seconds-${cycle}"
+    rm "corpus-archives/corpus-archive-${cycle}.tar.gz"
 
     cycle=$((cycle + 1))
     next_sync=$((cycle * WAIT_PERIOD))
@@ -56,7 +58,7 @@ conduct_experiment() {
 
   # Sync final fuzz log
   cp fuzz-0.log results/
-  gsutil -m rsync -rPd results "${sync_dir}/results"
+  gsutil -m rsync -rP results "${sync_dir}/results"
 }
 
 main() {
