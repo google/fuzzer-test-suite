@@ -88,7 +88,7 @@ main() {
     local exec_cmd="./${binary} ${BINARY_RUNTIME_OPTIONS}"
     exec_cmd="${exec_cmd} -workers=${JOBS} -jobs=${JOBS} -runs=${RUNS}"
     exec_cmd="${exec_cmd} -max_total_time=${MAX_TOTAL_TIME}"
-    exec_cmd="${exec_cmd} -print_final_stats=1 corpus"
+    exec_cmd="${exec_cmd} -print_final_stats=1 -close_fd_mask=3 corpus"
     [[ -d seeds ]] && exec_cmd="${exec_cmd} seeds"
   else
     echo "Error: Unsupported fuzzing engine ${FUZZING_ENGINE}"
