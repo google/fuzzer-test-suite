@@ -13,6 +13,13 @@
 # be missed
 readonly WAIT_PERIOD=20
 
+# rsyncs directories recursively without deleting files at dst.
+rsync_no_delete() {
+  local src=$1
+  local dst=$2
+  gsutil -m rsync -rP "${src}" "${dst}"
+}
+
 conduct_experiment() {
   local exec_cmd=$1
   local trial_num=$2
@@ -38,11 +45,13 @@ conduct_experiment() {
 
     echo "VM_SECONDS=${SECONDS}" > results/seconds-${cycle}
     tar -czf "corpus-archives/corpus-archive-${cycle}.tar.gz" corpus-copy
-    gsutil -m rsync -rPd results "${sync_dir}/results"
-    gsutil -m rsync -rPd corpus-archives "${sync_dir}/corpus"
+    rsync_no_delete results "${sync_dir}/results"
+    rsync_no_delete corpus-archives "${sync_dir}/corpus"
 
     # Done with snapshot
     rm -r corpus-copy
+    rm "results/seconds-${cycle}"
+    rm "corpus-archives/corpus-archive-${cycle}.tar.gz"
 
     cycle=$((cycle + 1))
     next_sync=$((cycle * WAIT_PERIOD))
@@ -56,7 +65,7 @@ conduct_experiment() {
 
   # Sync final fuzz log
   cp fuzz-0.log results/
-  gsutil -m rsync -rPd results "${sync_dir}/results"
+  rsync_no_delete results "${sync_dir}/results"
 }
 
 main() {
@@ -85,7 +94,8 @@ main() {
     "${FUZZING_ENGINE}" == "fsanitize_fuzzer" ]]; then
     local exec_cmd="./${binary} ${BINARY_RUNTIME_OPTIONS}"
     exec_cmd="${exec_cmd} -workers=${JOBS} -jobs=${JOBS} -runs=${RUNS}"
-    exec_cmd="${exec_cmd} -max_total_time=${MAX_TOTAL_TIME} corpus"
+    exec_cmd="${exec_cmd} -max_total_time=${MAX_TOTAL_TIME}"
+    exec_cmd="${exec_cmd} -print_final_stats=1 -close_fd_mask=3 corpus"
     [[ -d seeds ]] && exec_cmd="${exec_cmd} seeds"
   else
     echo "Error: Unsupported fuzzing engine ${FUZZING_ENGINE}"

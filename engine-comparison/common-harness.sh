@@ -42,18 +42,21 @@ gcloud_create() {
   [[ -n $3 ]] && local metadata_ff_cmd="--metadata-from-file $3"
 
   # The dispatcher should be more powerful
-  echo "${instance_name}" | grep "dispatcher"
-  if [[ $? == 0 ]]; then
-    local machine_type="n1-standard-16"
+  if echo "${instance_name}" | grep "dispatcher"; then
+    gcloud compute instances create "${instance_name}" \
+      --image-family="docker-ubuntu" --service-account="${SERVICE_ACCOUNT}" \
+      --machine-type="n1-standard-16" --scopes="compute-rw,storage-rw,default" \
+      ${metadata_cmd} ${metadata_ff_cmd}
+    gcloud compute disks resize "${instance_name}" --size 100 -q
+    # Restart to access additional disk space.
+    gcloud compute instances stop "${instance_name}"
+    gcloud compute instances start "${instance_name}"
   else
-    local machine_type="n1-standard-2"
-    local network_cmd="--network=runner-net --no-address"
+    gcloud compute instances create "${instance_name}" \
+      --image-family="docker-ubuntu" --service-account="${SERVICE_ACCOUNT}" \
+      --machine-type="n1-standard-2" --scopes="compute-rw,storage-rw,default" \
+      ${metadata_cmd} ${metadata_ff_cmd} --network=runner-net --no-address
   fi
-
-  gcloud compute instances create "${instance_name}" \
-    --image-family="docker-ubuntu" --service-account="${SERVICE_ACCOUNT}" \
-    --machine-type="${machine_type}" --scopes="compute-rw,storage-rw,default" \
-    ${metadata_cmd} ${metadata_ff_cmd} ${network_cmd}
 }
 
 gcloud_delete() {
