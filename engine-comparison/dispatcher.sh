@@ -307,14 +307,17 @@ main() {
   # wait_period defines how frequently the dispatcher generates new reports for
   # every benchmark with every fengine. For a large number of runner VMs,
   # wait_period in dispatcher.sh can be smaller than it is in runner.sh
-  local wait_period=20
-
-  local next_sync=$((SECONDS + wait_period))
-
+  local wait_period=10
+  local next_sync=${SECONDS}
   # TODO: better "while" condition?
   # Maybe not: just end dispatcher VM when done
   while true; do
-    sleep $((next_sync - SECONDS))
+    local sleep_time=$((next_sync - SECONDS))
+    if [[ ${sleep_time} -gt 0 ]]; then
+      sleep ${sleep_time}
+    else
+      next_sync=${SECONDS}
+    fi
 
     # Prevent calling measure_coverage before runner VM begins
     if gsutil ls "${GSUTIL_BUCKET}" | grep "experiment-folders"; then
@@ -327,9 +330,7 @@ main() {
       done
     fi
 
-    while [[ "${next_sync}" -lt "${SECONDS}" ]]; do
-      next_sync=$((next_sync + wait_period))
-    done
+    next_sync=$((next_sync + wait_period))
   done
 }
 
