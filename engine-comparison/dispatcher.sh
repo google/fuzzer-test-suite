@@ -130,12 +130,6 @@ handle_benchmark() {
 make_measurer() {
   local benchmark=$1
   local building_dir="${WORK}/coverage-builds/${benchmark}"
-  if [[ ! -d "${LIBFUZZER_SRC}/standalone" ]]; then
-    echo "Checking out libFuzzer"
-    export LIBFUZZER_SRC="${WORK}/Fuzzer"
-    svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer \
-      "${LIBFUZZER_SRC}"
-  fi
   mkdir -p "${building_dir}"
   (cd "${building_dir}" && exec_in_clean_env \
     "FUZZING_ENGINE=coverage ${WORK}/FTS/${benchmark}/build.sh")
@@ -268,9 +262,10 @@ main() {
   while read fengine_config; do
     download_engine "${fengine_config}"
     for benchmark in ${BENCHMARKS}; do
-      handle_benchmark "${benchmark}" "${fengine_config}"
+      handle_benchmark "${benchmark}" "${fengine_config}" &
     done
   done < <(find "${WORK}/fengine-configs" -type f)
+  wait
 
   # TODO here: reset fengine-config env vars (?)
   ############# DONE building
@@ -289,10 +284,20 @@ main() {
     popd
   fi
 
+  # Download standalone main for coverage builds.
+  if [[ ! -d "${LIBFUZZER_SRC}/standalone" ]]; then
+    echo "Checking out libFuzzer"
+    export LIBFUZZER_SRC="${WORK}/Fuzzer"
+    svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer \
+      "${LIBFUZZER_SRC}"
+  fi
+
+  # Do coverage builds
   mkdir -p "${WORK}/coverage-binaries"
   for benchmark in ${BENCHMARKS}; do
-    make_measurer "${benchmark}"
+    make_measurer "${benchmark}" &
   done
+  wait
 
   set -x
 
