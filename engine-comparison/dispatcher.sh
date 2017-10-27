@@ -309,8 +309,6 @@ main() {
   # wait_period in dispatcher.sh can be smaller than it is in runner.sh
   local wait_period=20
 
-  # Is cycle necessary in dispatcher? No?
-  local cycle=1
   local next_sync=$((SECONDS + wait_period))
 
   # TODO: better "while" condition?
@@ -327,10 +325,8 @@ main() {
           measure_coverage "${fengine_config}" "${benchmark}"
         done < <(find "${WORK}/fengine-configs" -type f)
       done
-      cycle=$((cycle + 1))
     fi
 
-    # Skip cycle if need be
     while [[ "${next_sync}" -lt "${SECONDS}" ]]; do
       next_sync=$((next_sync + wait_period))
     done
