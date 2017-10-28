@@ -319,9 +319,10 @@ main() {
         "${WORK}/experiment-folders"
       for benchmark in ${BENCHMARKS}; do
         while read fengine_config; do
-          measure_coverage "${fengine_config}" "${benchmark}"
+          measure_coverage "${fengine_config}" "${benchmark}" &
         done < <(find "${WORK}/fengine-configs" -type f)
       done
+      wait
     fi
 
     next_sync=$((next_sync + wait_period))
