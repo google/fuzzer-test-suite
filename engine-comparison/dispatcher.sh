@@ -130,12 +130,6 @@ handle_benchmark() {
 make_measurer() {
   local benchmark=$1
   local building_dir="${WORK}/coverage-builds/${benchmark}"
-  if [[ ! -d "${LIBFUZZER_SRC}/standalone" ]]; then
-    echo "Checking out libFuzzer"
-    export LIBFUZZER_SRC="${WORK}/Fuzzer"
-    svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer \
-      "${LIBFUZZER_SRC}"
-  fi
   mkdir -p "${building_dir}"
   (cd "${building_dir}" && exec_in_clean_env \
     "FUZZING_ENGINE=coverage ${WORK}/FTS/${benchmark}/build.sh")
@@ -152,28 +146,22 @@ measure_coverage() {
   local bmark_fengine_dir="${benchmark}/${fengine_name}"
   local corpus_dir="${WORK}/measurement-folders/${bmark_fengine_dir}/corpus"
   local sancov_dir="${WORK}/measurement-folders/${bmark_fengine_dir}/sancovs"
-  local report_dir="${WORK}/measurement-folders/${bmark_fengine_dir}/reports"
-  local experiment_dir="${WORK}/experiment-folders/${benchmark}-${fengine_name}"
+  local rep_base_dir="${WORK}/measurement-folders/${bmark_fengine_dir}/reports"
+  local exp_base_dir="${WORK}/experiment-folders/${benchmark}-${fengine_name}"
 
   rm -rf "${corpus_dir}" "${sancov_dir}"
-  mkdir -p "${corpus_dir}" "${sancov_dir}" "${report_dir}"
+  mkdir -p "${corpus_dir}" "${sancov_dir}" "${rep_base_dir}"
 
   # Recall which trial
-  if [[ -f "${report_dir}/latest-trial" ]]; then
-    . "${report_dir}/latest-trial"
+  if [[ -f "${rep_base_dir}/latest-trial" ]]; then
+    . "${rep_base_dir}/latest-trial"
   else
     LATEST_TRIAL=0
   fi
 
-  # Check for next trial
-  if [[ -d "${experiment_dir}/trial-$((LATEST_TRIAL + 1))" ]]; then
-    # This round, we finish report for the old trial. But next time continue
-    echo "LATEST_TRIAL=$((LATEST_TRIAL + 1))" > "${report_dir}/latest-trial"
-  fi
-
   # Append trial directories
-  experiment_dir="${experiment_dir}/trial-${LATEST_TRIAL}"
-  report_dir="${report_dir}/trial-${LATEST_TRIAL}"
+  local experiment_dir="${exp_base_dir}/trial-${LATEST_TRIAL}"
+  local report_dir="${rep_base_dir}/trial-${LATEST_TRIAL}"
   mkdir -p "${report_dir}"
 
   # Use the corpus-archive directly succeeding the last one to be processed
@@ -189,21 +177,21 @@ measure_coverage() {
   while grep "^${this_cycle}$" "${experiment_dir}/results/skipped-cycles"; do
     this_cycle=$((this_cycle + 1))
   done
-  # Next, check if a cycle was somehow dropped.
+
+  # Check if we have a new corpus.
   if [[ ! -f \
     "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" ]]; then
     echo "On cycle ${this_cycle}, no new corpus found for:"
     echo "  benchmark: ${benchmark}"
     echo "  fengine: ${fengine_name}"
+    echo "  trial: ${LATEST_TRIAL}"
+
+    # No new corpus; check if there's data for the next trial.
+    if [[ -d "${exp_base_dir}/trial-$((LATEST_TRIAL + 1))" ]]; then
+      echo "LATEST_TRIAL=$((LATEST_TRIAL + 1))" > "${rep_base_dir}/latest-trial"
+    fi
     return
   fi
-  # Finally, skip to the most recent possible cycle. Note: this is commented out
-  # because building all of the benchmarks takes a long time, so there are many
-  # CSV report to process before the dispatcher gets to processing them
-  #while [[ -f ${experiment_dir}/corpus/corpus-archive-$(($this_cycle+1)).tar.gz ]]; do
-  #  echo "On cycle $this_cycle, skipping a corpus snapsho for benchmark $BENCHMARK fengine $fengine_name"
-  #  this_cycle=$(($this_cycle + 1))
-  #done
 
   # Extract corpus
   (cd "${corpus_dir}" &&
@@ -268,9 +256,10 @@ main() {
   while read fengine_config; do
     download_engine "${fengine_config}"
     for benchmark in ${BENCHMARKS}; do
-      handle_benchmark "${benchmark}" "${fengine_config}"
+      handle_benchmark "${benchmark}" "${fengine_config}" &
     done
   done < <(find "${WORK}/fengine-configs" -type f)
+  wait
 
   # TODO here: reset fengine-config env vars (?)
   ############# DONE building
@@ -289,10 +278,20 @@ main() {
     popd
   fi
 
+  # Download standalone main for coverage builds.
+  if [[ ! -d "${LIBFUZZER_SRC}/standalone" ]]; then
+    echo "Checking out libFuzzer"
+    export LIBFUZZER_SRC="${WORK}/Fuzzer"
+    svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer \
+      "${LIBFUZZER_SRC}"
+  fi
+
+  # Do coverage builds
   mkdir -p "${WORK}/coverage-binaries"
   for benchmark in ${BENCHMARKS}; do
-    make_measurer "${benchmark}"
+    make_measurer "${benchmark}" &
   done
+  wait
 
   set -x
 
@@ -302,16 +301,17 @@ main() {
   # wait_period defines how frequently the dispatcher generates new reports for
   # every benchmark with every fengine. For a large number of runner VMs,
   # wait_period in dispatcher.sh can be smaller than it is in runner.sh
-  local wait_period=20
-
-  # Is cycle necessary in dispatcher? No?
-  local cycle=1
-  local next_sync=$((SECONDS + wait_period))
-
+  local wait_period=10
+  local next_sync=${SECONDS}
   # TODO: better "while" condition?
   # Maybe not: just end dispatcher VM when done
   while true; do
-    sleep $((next_sync - SECONDS))
+    local sleep_time=$((next_sync - SECONDS))
+    if [[ ${sleep_time} -gt 0 ]]; then
+      sleep ${sleep_time}
+    else
+      next_sync=${SECONDS}
+    fi
 
     # Prevent calling measure_coverage before runner VM begins
     if gsutil ls "${GSUTIL_BUCKET}" | grep "experiment-folders"; then
@@ -319,16 +319,13 @@ main() {
         "${WORK}/experiment-folders"
       for benchmark in ${BENCHMARKS}; do
         while read fengine_config; do
-          measure_coverage "${fengine_config}" "${benchmark}"
+          measure_coverage "${fengine_config}" "${benchmark}" &
         done < <(find "${WORK}/fengine-configs" -type f)
       done
-      cycle=$((cycle + 1))
+      wait
     fi
 
-    # Skip cycle if need be
-    while [[ "${next_sync}" -lt "${SECONDS}" ]]; do
-      next_sync=$((next_sync + wait_period))
-    done
+    next_sync=$((next_sync + wait_period))
   done
 }
 

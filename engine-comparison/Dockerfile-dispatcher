@@ -1,4 +1,4 @@
-FROM gcr.io/fuzzer-test-suite/gcloud-clang-deps
+FROM gcr.io/fuzzer-test-suite/gcloud-clang-deps:latest
 
 # Install clang nightly build
 RUN echo "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main" >> \

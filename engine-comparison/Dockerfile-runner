@@ -1,4 +1,4 @@
-FROM gcr.io/fuzzer-test-suite/gcloud-clang-deps
+FROM gcr.io/fuzzer-test-suite/gcloud-clang-deps:latest
 
 # Create directory, and set it as the working directory "."
 WORKDIR /work
