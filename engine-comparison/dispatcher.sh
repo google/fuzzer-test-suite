@@ -178,39 +178,56 @@ measure_coverage() {
     this_cycle=$((this_cycle + 1))
   done
 
-  # Check if we have a new corpus.
   if [[ ! -f \
     "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" ]]; then
-    echo "On cycle ${this_cycle}, no new corpus found for:"
-    echo "  benchmark: ${benchmark}"
-    echo "  fengine: ${fengine_name}"
-    echo "  trial: ${LATEST_TRIAL}"
+    # We don't have a new corpus archive.  Determine why.
+    if grep "^${this_cycle}$" "${experiment_dir}/results/unchanged-cycles"; then
+      # No corpus archive because the corpus hasn't changed.
+      # Copy stats from last cycle.
+      local coverage_line="$(tail -n1 "${report_dir}/coverage-graph.csv")"
+      local corpus_size_line="$(tail -n1 "${report_dir}/corpus-size-graph.csv")"
+      local corpus_elems_line="$(tail -n1 \
+        "${report_dir}/corpus-elems-graph.csv")"
+      local coverage="${coverage_line##*,}"
+      local corpus_size="${corpus_size_line##*,}"
+      local corpus_elems="${corpus_elems_line##*,}"
+    else
+      echo "On cycle ${this_cycle}, no new corpus found for:"
+      echo "  benchmark: ${benchmark}"
+      echo "  fengine: ${fengine_name}"
+      echo "  trial: ${LATEST_TRIAL}"
 
-    # No new corpus; check if there's data for the next trial.
-    if [[ -d "${exp_base_dir}/trial-$((LATEST_TRIAL + 1))" ]]; then
-      echo "LATEST_TRIAL=$((LATEST_TRIAL + 1))" > "${rep_base_dir}/latest-trial"
+      if [[ -d "${exp_base_dir}/trial-$((LATEST_TRIAL + 1))" ]]; then
+        # No corpus archive because we've already analyzed all corpora for this
+        # trial.
+        echo "LATEST_TRIAL=$((LATEST_TRIAL + 1))" > \
+          "${rep_base_dir}/latest-trial"
+      fi
+      return
     fi
-    return
+  else
+    # We have a new corpus archive.  Collect stats on it.
+    # Extract corpus
+    (cd "${corpus_dir}" &&
+      tar -xf "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" \
+        --strip-components=1)
+
+    # Generate sancov
+    (cd "${sancov_dir}" &&
+      UBSAN_OPTIONS=coverage=1 \
+        "${WORK}/coverage-binaries/${benchmark}-coverage" \
+        $(find "${corpus_dir}" -type f))
+
+    local coverage="$("${WORK}/coverage-builds/sancov.py" print \
+      "${sancov_dir}/*" | wc -w)"
+    local corpus_size="$(wc -c $(find "${corpus_dir}" -maxdepth 1 -type f) \
+      | tail --lines=1 \
+      | grep -o "[0-9]*")"
+    local corpus_elems="$(find "${corpus_dir}" -maxdepth 1 -type f | wc -l)"
   fi
 
-  # Extract corpus
-  (cd "${corpus_dir}" &&
-    tar -xf "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" \
-      --strip-components=1)
-
-  # Generate sancov
-  (cd "${sancov_dir}" &&
-    UBSAN_OPTIONS=coverage=1 "${WORK}/coverage-binaries/${benchmark}-coverage" \
-      $(find "${corpus_dir}" -type f))
-
   # Finish generating human readable report
-  local sancov_output="$("${WORK}/coverage-builds/sancov.py" print \
-    "${sancov_dir}/*" | wc -w)"
-  local corpus_size="$(wc -c $(find "${corpus_dir}" -maxdepth 1 -type f) \
-    | tail --lines=1 \
-    | grep -o "[0-9]*")"
-  local corpus_elems="$(find "${corpus_dir}" -maxdepth 1 -type f | wc -l)"
-  echo "${this_cycle},${sancov_output}" >> "${report_dir}/coverage-graph.csv"
+  echo "${this_cycle},${coverage}" >> "${report_dir}/coverage-graph.csv"
   echo "${this_cycle},${corpus_size}" >> "${report_dir}/corpus-size-graph.csv"
   echo "${this_cycle},${corpus_elems}" >> "${report_dir}/corpus-elems-graph.csv"
 
