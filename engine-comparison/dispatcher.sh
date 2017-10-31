@@ -144,6 +144,16 @@ make_measurer() {
   rm -rf "${building_dir}"
 }
 
+# Runs a coverage binary on the inputs present in corpus2 but not corpus1.
+run_cov_new_inputs() {
+  local coverage_binary=$1
+  local corpus1=$2
+  local corpus2=$3
+  UBSAN_OPTIONS=coverage=1 "${coverage_binary}" \
+    $(comm -13 <(ls "${corpus1}") <(ls "${corpus2}") \
+      | while read line; do echo "${corpus2}/${line}"; done)
+}
+
 # Process a corpus, generate a human readable report, send the report to gsutil
 # Processing includes: decompress, use sancov.py, etc
 measure_coverage() {
@@ -151,13 +161,16 @@ measure_coverage() {
   local benchmark=$2
   local fengine_name="$(basename "${fengine_config}")"
   local bmark_fengine_dir="${benchmark}/${fengine_name}"
-  local corpus_dir="${WORK}/measurement-folders/${bmark_fengine_dir}/corpus"
-  local sancov_dir="${WORK}/measurement-folders/${bmark_fengine_dir}/sancovs"
-  local rep_base_dir="${WORK}/measurement-folders/${bmark_fengine_dir}/reports"
+  local measurement_dir="${WORK}/measurement-folders/${bmark_fengine_dir}"
+  local corpus_dir="${measurement_dir}/corpus"
+  local prev_corpus_dir="${measurement_dir}/last-corpus"
+  local sancov_dir="${measurement_dir}/sancovs"
+  local rep_base_dir="${measurement_dir}/reports"
   local exp_base_dir="${WORK}/experiment-folders/${benchmark}-${fengine_name}"
 
   rm -rf "${corpus_dir}" "${sancov_dir}"
-  mkdir -p "${corpus_dir}" "${sancov_dir}" "${rep_base_dir}"
+  mkdir -p "${corpus_dir}" "${sancov_dir}" "${rep_base_dir}" \
+    "${prev_corpus_dir}"
 
   # Recall which trial
   if [[ -f "${rep_base_dir}/latest-trial" ]]; then
@@ -169,7 +182,9 @@ measure_coverage() {
   # Append trial directories
   local experiment_dir="${exp_base_dir}/trial-${LATEST_TRIAL}"
   local report_dir="${rep_base_dir}/trial-${LATEST_TRIAL}"
+  local covered_pcs_file="${report_dir}/covered-pcs.txt"
   mkdir -p "${report_dir}"
+  [[ -f "${covered_pcs_file}" ]] || touch "${covered_pcs_file}"
 
   # Use the corpus-archive directly succeeding the last one to be processed
   if [[ -f "${report_dir}/latest-cycle" ]]; then
@@ -209,28 +224,35 @@ measure_coverage() {
         # trial.
         echo "LATEST_TRIAL=$((LATEST_TRIAL + 1))" > \
           "${rep_base_dir}/latest-trial"
+        rm -rf "${prev_corpus_dir}"
       fi
       return
     fi
   else
     # We have a new corpus archive.  Collect stats on it.
     # Extract corpus
-    (cd "${corpus_dir}" &&
+    (cd "${corpus_dir}" && \
       tar -xf "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" \
         --strip-components=1)
 
-    # Generate sancov
-    (cd "${sancov_dir}" &&
-      UBSAN_OPTIONS=coverage=1 \
-        "${WORK}/coverage-binaries/${benchmark}-coverage" \
-        $(find "${corpus_dir}" -type f))
+    # Generate coverage information for new inputs only.
+    (cd "${sancov_dir}" && \
+      run_cov_new_inputs "${WORK}/coverage-binaries/${benchmark}-coverage" \
+        "${prev_corpus_dir}" "${corpus_dir}")
 
-    local coverage="$("${WORK}/coverage-builds/sancov.py" print \
-      "${sancov_dir}/*" | wc -w)"
+    # Get PCs covered by new inputs and merge with the previous list.
+    "${WORK}/coverage-builds/sancov.py" print "${sancov_dir}/*" 2>/dev/null \
+      | sort -o "${covered_pcs_file}" -m -u - "${covered_pcs_file}"
+
+    local coverage="$(wc -w < "${covered_pcs_file}")"
     local corpus_size="$(wc -c $(find "${corpus_dir}" -maxdepth 1 -type f) \
       | tail --lines=1 \
       | grep -o "[0-9]*")"
     local corpus_elems="$(find "${corpus_dir}" -maxdepth 1 -type f | wc -l)"
+
+    # Save corpus for comparison next cycle
+    rm -rf "${prev_corpus_dir}"
+    mv "${corpus_dir}" "${prev_corpus_dir}"
   fi
 
   # Finish generating human readable report
