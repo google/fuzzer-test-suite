@@ -9,6 +9,13 @@
 . "$(dirname "$0")/../common.sh"
 . "${SCRIPT_DIR}/common-harness.sh"
 
+# rsyncs directories recursively, deleting files at dst.
+rsync_delete() {
+  local src=$1
+  local dst=$2
+  gsutil -m rsync -rd "${src}" "${dst}"
+}
+
 # Run the specified command in a shell with no environment variables set.
 exec_in_clean_env() {
   local cmd=$1
@@ -117,7 +124,7 @@ handle_benchmark() {
   local fengine_name="$(basename "${fengine_config}")"
   local bmark_with_fengine="${benchmark}-with-${fengine_name}"
   build_benchmark "${benchmark}" "${fengine_config}" "${bmark_with_fengine}"
-  gsutil -m rsync -rd "${SEND_DIR}" \
+  rsync_delete "${SEND_DIR}" \
     "${GSUTIL_BUCKET}/binary-folders/${bmark_with_fengine}"
   # GCloud instance names must match the following regular expression:
   # '[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?'
@@ -232,11 +239,7 @@ measure_coverage() {
   echo "${this_cycle},${corpus_elems}" >> "${report_dir}/corpus-elems-graph.csv"
 
   echo "LATEST_CYCLE=${this_cycle}" > "${report_dir}/latest-cycle"
-  # Sync "old" report dir, which includes all trials
-  gsutil -m rsync -r \
-    "${WORK}/measurement-folders/${bmark_fengine_dir}/reports" \
-    "${GSUTIL_BUCKET}/reports/${bmark_fengine_dir}"
-  # rsync -r or -rd?
+  rsync_delete "${rep_base_dir}" "${GSUTIL_BUCKET}/reports/${bmark_fengine_dir}"
 }
 
 main() {
@@ -332,7 +335,7 @@ main() {
 
     # Prevent calling measure_coverage before runner VM begins
     if gsutil ls "${GSUTIL_BUCKET}" | grep "experiment-folders"; then
-      gsutil -m rsync -rd "${GSUTIL_BUCKET}/experiment-folders" \
+      rsync_delete "${GSUTIL_BUCKET}/experiment-folders" \
         "${WORK}/experiment-folders"
       for benchmark in ${BENCHMARKS}; do
         while read fengine_config; do
