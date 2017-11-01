@@ -615,7 +615,7 @@ LeakSanitizer libFuzzer will eventually die with OOM (see above).
 ### Timeouts
 
 Timeouts are equally bad for in-process fuzzing.
-If some intput takes more than 1200 seconds to run libFuzzer will report a
+If some input takes more than 1200 seconds to run libFuzzer will report a
 "timeout" error and exit, dumping the reproducer on disk.
 You may change the default timeout with `-timeout=N`.
 
