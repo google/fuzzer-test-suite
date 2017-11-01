@@ -151,7 +151,7 @@ To reproduce the crash again w/o fuzzing run
 ## Heartbleed
 Let us run something real.
 [Heartbleed](https://en.wikipedia.org/wiki/Heartbleed) (aka CVE-2014-0160)
-was a critical security bug in the [OpenSSL cryptography library](http://www.openssl.org).
+was a critical security bug in the [OpenSSL cryptography library](https://www.openssl.org).
 It was discovered in 2014, probably by code inspection.
 It was later [demonstrated](https://blog.hboeck.de/archives/868-How-Heartbleed-couldve-been-found.html)
 that this bug can be easily found by fuzzing.
