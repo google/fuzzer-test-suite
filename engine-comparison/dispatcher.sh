@@ -9,11 +9,19 @@
 . "$(dirname "$0")/../common.sh"
 . "${SCRIPT_DIR}/common-harness.sh"
 
+# Runs the specified gsutil command with its own state directory to avoid race
+# conditions.
+p_gsutil() {
+  local state_dir="/tmp/gsutil.${BASHPID}"
+  gsutil -o "GSUtil:state_dir=${state_dir}" "$@"
+  rm -rf "${state_dir}"
+}
+
 # rsyncs directories recursively, deleting files at dst.
 rsync_delete() {
   local src=$1
   local dst=$2
-  gsutil -m rsync -rd "${src}" "${dst}"
+  p_gsutil -m rsync -rd "${src}" "${dst}"
 }
 
 # Run the specified command in a shell with no environment variables set.
@@ -261,7 +269,7 @@ measure_coverage() {
     src_archive="${src_archive}/corpus/corpus-archive-${this_cycle}.tar.gz"
     local dst_archive="${GSUTIL_BUCKET}/processed-folders/${bmark_trial}"
     dst_archive="${dst_archive}/corpus-archive-${this_cycle}.tar.gz"
-    gsutil mv "${src_archive}" "${dst_archive}"
+    p_gsutil -m mv "${src_archive}" "${dst_archive}"
   fi
 
   # Finish generating human readable report
@@ -349,7 +357,7 @@ main() {
   mkdir -p "${WORK}/experiment-folders"
   mkdir -p "${WORK}/measurement-folders"
 
-  gsutil rm -r "${GSUTIL_BUCKET}/processed-folders"
+  gsutil -m rm -r "${GSUTIL_BUCKET}/processed-folders"
 
   # wait_period defines how frequently the dispatcher generates new reports for
   # every benchmark with every fengine. For a large number of runner VMs,
