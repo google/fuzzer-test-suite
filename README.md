@@ -16,7 +16,7 @@ and potentially other fuzzing engines.
 
 # Contributing
 See [CONTRIBUTING](CONTRIBUTING) first. 
-If you want to add one more benchmark to the test suite,
+If you want to add one more benchmarks to the test suite,
 simply mimic one of the existing benchmarks and send the pull request. 
 
 # Disclaimer
