@@ -143,7 +143,7 @@ artifact_prefix='./'; Test unit written to ./crash-0eb8e4ed029b774d80f2b66408203
 Before exiting the process libFuzzer has created a file on disc with the bytes that triggered the crash.
 Take a look at this file. What do you see? Why did it trigger the crash?
 
-To reproduce the crash again w/o fuzzing run
+To reproduce the crash again without fuzzing run
 ```shell
 ./a.out crash-0eb8e4ed029b774d80f2b66408203801cb982a60
 ```
@@ -168,7 +168,7 @@ mkdir -p ~/heartbleed; rm -rf ~/heartbleed/*; cd ~/heartbleed
 
 This command will download the openssl sources at the affected revision
 and build the fuzzer for one specific API that has the bug,
-see  [openssl-1.0.1f/target.cc](../openssl-1.0.1f/target.cc).
+see [openssl-1.0.1f/target.cc](../openssl-1.0.1f/target.cc).
 
 Try running the fuzzer:
 ```shell
@@ -193,7 +193,7 @@ The experience should be very similar to that of heartbleed.
 
 ## Seed corpus
 
-So far we have tried several fuzz targets on which a bug can be found w/o much effort.
+So far we have tried several fuzz targets on which a bug can be found without much effort.
 Not all targets are that easy.
 
 One important way to increase fuzzing efficiency is to provide an initial set of inputs, aka a *seed corpus*.
@@ -338,7 +338,7 @@ mkdir CORPUS
 
 How much time did it take to find the bug?
 What is the bug?
-How much time will it take to find the bug w/o a dictionary?
+How much time will it take to find the bug without a dictionary?
 
 Take a look at the file `afl/dictionaries/xml.dict`
 (distributed with [AFL](http://lcamtuf.coredump.cx/afl/)).
@@ -466,7 +466,7 @@ reports like this:
 src/pcre2_compile.c:5506:19: runtime error: signed integer overflow: 1111111411 * 10 cannot be represented in type 'int'
 ```
 
-In some cases you may want to run fuzzing w/o any additional tool (e.g.
+In some cases you may want to run fuzzing without any additional tool (e.g.
 a sanitizer).
 This will allow you to find only the simplest bugs
 (null dereferences, assertion failures) but will run faster.
