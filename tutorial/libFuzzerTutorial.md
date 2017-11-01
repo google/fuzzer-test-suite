@@ -23,7 +23,7 @@ You may also use your own Linux machine, but [YMMV](https://en.wiktionary.org/wi
    * Ubuntu 14.04 or 16.04 is recommended, other VMs may or may not work
    * Choose as many CPUs as you can
    * Choose "Access scopes" = "Allow full access to all Cloud APIs"
-* Install dependencies: 
+* Install dependencies:
 
 ```shell
 # Install git and get this tutorial
@@ -39,7 +39,7 @@ Fuzzer/build.sh
 *This option is less tested*
 * [Install Docker](https://docs.docker.com/engine/installation/)
 * Run `docker run --cap-add SYS_PTRACE -ti libfuzzertutorial/prebuilt`
-  
+
 ## Verify the setup
 Run:
 ```shell
@@ -64,13 +64,13 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
 
 Take a look at an example of such **fuzz target**: [./fuzz_me.cc](fuzz_me.cc). Can you see the bug?
 
-To build a fuzzer binary for this target you need to compile the source using the recent Clang compiler 
+To build a fuzzer binary for this target you need to compile the source using the recent Clang compiler
 with the following extra flags:
 * `-fsanitize-coverage=trace-pc-guard` (required): provides in-process coverage information to libFuzzer.
 * `-fsanitize=address` (recommended): enables [AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html)
-* `-g` (recommended): enables debug info, makes the error messages easier to read. 
+* `-g` (recommended): enables debug info, makes the error messages easier to read.
 
-Then you need to link the target code with `libFuzzer.a` which provides the `main()` function. 
+Then you need to link the target code with `libFuzzer.a` which provides the `main()` function.
 ```shell
 clang++ -g -fsanitize=address -fsanitize-coverage=trace-pc-guard FTS/tutorial/fuzz_me.cc libFuzzer.a
 ```
@@ -81,7 +81,7 @@ Now try running it:
 You will see something like this:
 ```
 INFO: Seed: 3918206239
-INFO: Loaded 1 modules (14 guards): [0x73be00, 0x73be38), 
+INFO: Loaded 1 modules (14 guards): [0x73be00, 0x73be38),
 INFO: -max_len is not provided, using 64
 INFO: A corpus is not provided, starting from an empty corpus
 #0      READ units: 1
@@ -100,7 +100,7 @@ artifact_prefix='./'; Test unit written to ./crash-0eb8e4ed029b774d80f2b66408203
 ...
 ```
 Do you see a similar output? Congratulations, you have built a fuzzer and found a bug.
-Let us look at the output. 
+Let us look at the output.
 
 
 ```
@@ -125,7 +125,7 @@ To change that either use `-max_len=N` or run with a non-empty [seed corpus](#se
 ```
 libFuzzer has tried at least 272167 inputs (`#272167`)
 and has discovered 5 inputs of 201 bytes total (`corp: 5/201b`)
-that together cover 7 *coverage points* (`cov: 7`). 
+that together cover 7 *coverage points* (`cov: 7`).
 You may think of coverage points as of
 [basic blocks](https://en.wikipedia.org/wiki/Basic_block) in the code.
 
@@ -135,30 +135,30 @@ READ of size 1 at 0x602000155c13 thread T0
     #0 0x4ee636 in FuzzMe(unsigned char const*, unsigned long) FTS/tutorial/fuzz_me.cc:10:7
     #1 0x4ee6aa in LLVMFuzzerTestOneInput FTS/tutorial/fuzz_me.cc:14:3
 ```
-On one of the inputs AddressSanitizer has detected a `heap-buffer-overflow` bug and aborted the execution. 
+On one of the inputs AddressSanitizer has detected a `heap-buffer-overflow` bug and aborted the execution.
 
 ```
 artifact_prefix='./'; Test unit written to ./crash-0eb8e4ed029b774d80f2b66408203801cb982a60
 ```
-Before exiting the process libFuzzer has created a file on disc with the bytes that triggered the crash. 
-Take a look at this file. What do you see? Why did it trigger the crash? 
+Before exiting the process libFuzzer has created a file on disc with the bytes that triggered the crash.
+Take a look at this file. What do you see? Why did it trigger the crash?
 
-To reproduce the crash again w/o fuzzing run 
+To reproduce the crash again w/o fuzzing run
 ```shell
 ./a.out crash-0eb8e4ed029b774d80f2b66408203801cb982a60
 ```
 
 ## Heartbleed
-Let us run something real. 
+Let us run something real.
 [Heartbleed](https://en.wikipedia.org/wiki/Heartbleed) (aka CVE-2014-0160)
 was a critical security bug in the [OpenSSL cryptography library](http://www.openssl.org).
 It was discovered in 2014, probably by code inspection.
 It was later [demonstrated](https://blog.hboeck.de/archives/868-How-Heartbleed-couldve-been-found.html)
-that this bug can be easily found by fuzzing. 
+that this bug can be easily found by fuzzing.
 
 [This repository](https://github.com/google/fuzzer-test-suite)
-contains ready-to-use scripts to build fuzzers for various targets, including openssl-1.0.1f where 
-the 'heartbleed' bug is present. 
+contains ready-to-use scripts to build fuzzers for various targets, including openssl-1.0.1f where
+the 'heartbleed' bug is present.
 
 To build the fuzzer for openssl-1.0.1f execute the following:
 ```shell
@@ -166,7 +166,7 @@ mkdir -p ~/heartbleed; rm -rf ~/heartbleed/*; cd ~/heartbleed
 ~/FTS/openssl-1.0.1f/build.sh
 ```
 
-This command will download the openssl sources at the affected revision 
+This command will download the openssl sources at the affected revision
 and build the fuzzer for one specific API that has the bug,
 see  [openssl-1.0.1f/target.cc](../openssl-1.0.1f/target.cc).
 
@@ -189,7 +189,7 @@ READ of size 19715 at 0x629000009748 thread T0
 
 **Exercise**:
 run the [fuzzer that finds CVE-2016-5180](../c-ares-CVE-2016-5180).
-The experience should be very similar to that of heartbleed. 
+The experience should be very similar to that of heartbleed.
 
 ## Seed corpus
 
@@ -202,12 +202,12 @@ For example, let us try another target: [Woff2](../woff2-2016-05-06). Build it l
 cd; mkdir -p woff; cd woff;
 ~/FTS/woff2-2016-05-06/build.sh
 ```
-Now run it like you did it with the previous fuzz targets: 
+Now run it like you did it with the previous fuzz targets:
 ```shell
 ./woff2-2016-05-06-libfuzzer
 ```
 Most likely you will see that the fuzzer is stuck --
-it is running millions of inputs but can not find many new code paths. 
+it is running millions of inputs but can not find many new code paths.
 ```
 #1      INITED cov: 18 ft: 15 corp: 1/1b exec/s: 0 rss: 27Mb
 #15     NEW    cov: 23 ft: 16 corp: 2/5b exec/s: 0 rss: 27Mb L: 4 MS: 4 InsertByte-...
@@ -239,7 +239,7 @@ corpus directory (in this case, `MY_CORPUS`).
 Let us look at the output:
 ```
 INFO: Seed: 3976665814
-INFO: Loaded 1 modules (17592 guards): [0x946de0, 0x9580c0), 
+INFO: Loaded 1 modules (17592 guards): [0x946de0, 0x9580c0),
 Loading corpus dir: MY_CORPUS/
 Loading corpus dir: SEED_CORPUS/
 INFO: -max_len is not provided, using 168276
@@ -263,11 +263,11 @@ It will start from where it stopped.
 
 How long does it take for this fuzzer to slowdown the path discovery
 (i.e. stop finding new coverage every few seconds)?
-Did it find any bugs so far? 
+Did it find any bugs so far?
 
 ## Parallel runs
-Another way to increase the fuzzing efficiency is to use more CPUs. 
-If you run the fuzzer with `-jobs=N` it will spawn N independent jobs 
+Another way to increase the fuzzing efficiency is to use more CPUs.
+If you run the fuzzer with `-jobs=N` it will spawn N independent jobs
 but no more than half of the number of cores you have;
 use `-workers=M` to set the number of allowed parallel jobs.
 
@@ -285,18 +285,18 @@ Running 4 workers
 ```
 
 At this time it would be convenient to have some terminal multiplexer, e.g. [GNU screen]
-(https://www.gnu.org/software/screen/manual/screen.html), or to simply open another terminal window. 
+(https://www.gnu.org/software/screen/manual/screen.html), or to simply open another terminal window.
 
 Let's look at one of the log files, `fuzz-3.log`. You will see lines like this:
 ```
 #17634  RELOAD cov: 864 ft: 2555 corp: 340/20Mb exec/s: 979 rss: 408Mb
 ```
 Such lines show that this instance of the fuzzer has reloaded the corpus (only the first directory is reloaded)
-and found some new interesting inputs created by other instances. 
+and found some new interesting inputs created by other instances.
 
 If you keep running this target for some time (at the time of writing: 20-60 minutes on 4-8 cores)
 you will be
-rewarded by a [nice security bug](https://bugs.chromium.org/p/chromium/issues/detail?id=609042).  
+rewarded by a [nice security bug](https://bugs.chromium.org/p/chromium/issues/detail?id=609042).
 
 If you are both impatient and curious you may feed a provided crash reproducer to see the bug:
 ```
@@ -310,7 +310,7 @@ See also [Distributed Fuzzing](#distributed-fuzzing)
 ## Dictionaries
 
 Another important way to improve fuzzing efficiency is to use a *dictionary*.
-This works well if the input format being fuzzed consists of tokens or 
+This works well if the input format being fuzzed consists of tokens or
 have lots of magic values.
 
 Let's look at an example of such input format: XML.
@@ -328,7 +328,7 @@ Now, run the newly bult fuzzer for 10-20 seconds with and without a dictionary:
 ./libxml2-v2.9.2-libfuzzer -dict=afl/dictionaries/xml.dict  # Press Ctrl-C in 10-20 seconds
 ```
 
-Did you see the differentce? 
+Did you see the differentce?
 
 Now create a corpus directory and run for real on all CPUs:
 ```shell
@@ -338,11 +338,11 @@ mkdir CORPUS
 
 How much time did it take to find the bug?
 What is the bug?
-How much time will it take to find the bug w/o a dictionary?  
+How much time will it take to find the bug w/o a dictionary?
 
 Take a look at the file `afl/dictionaries/xml.dict`
 (distributed with [AFL](http://lcamtuf.coredump.cx/afl/)).
-It is pretty self-explanatory. 
+It is pretty self-explanatory.
 The [syntax of dictionary files](http://libfuzzer.info#dictionaries) is shared between
 [libFuzzer](http://libfuzzer.info) and [AFL](http://lcamtuf.coredump.cx/afl/).
 
@@ -358,14 +358,14 @@ mkdir -p ~/openssl-1.0.2d; rm -rf ~/openssl-1.0.2d/*; cd ~/openssl-1.0.2d
 mkdir CORPUS; ./openssl-1.0.2d-libfuzzer  -max_len=256 CORPUS -jobs=8 -workers=8
 ```
 
-Did it crash? How? 
+Did it crash? How?
 
 ## Competing bugs
 
 Sometimes there is one shallow (easy to find) bug in the target that prevents
-you from finding more bugs. The best approach in such cases is to fix the shallow bug(s) 
-and restart fuzzing. However you can move forward a bit by simply re-starting libFuzzer 
-many times. `-jobs=1000` will do this for you. 
+you from finding more bugs. The best approach in such cases is to fix the shallow bug(s)
+and restart fuzzing. However you can move forward a bit by simply re-starting libFuzzer
+many times. `-jobs=1000` will do this for you.
 
 ```shell
 mkdir -p ~/pcre2 ; rm -rf ~/pcre2/*; cd ~/pcre2
@@ -381,15 +381,15 @@ After a minute or two look for the erros in the log files:
 ```shell
 grep ERROR *.log | sort -k 3
 ```
-You will see one paticular bug very often (which one?) but occasionally others will occur too. 
+You will see one paticular bug very often (which one?) but occasionally others will occur too.
 
 
 ## Minimizing a corpus
 
 The test corpus may grow to large sizes during fuzzing.
-Or you may be lucky to have a large seed corpus. 
-In either way, you may want to minimize your corpus, 
-that is to create a subset of the corpus that has the same coverage. 
+Or you may be lucky to have a large seed corpus.
+In either way, you may want to minimize your corpus,
+that is to create a subset of the corpus that has the same coverage.
 
 ```shell
 mkdir NEW_CORPPUS
@@ -420,7 +420,7 @@ cd ~/openssl-1.0.2d
   ~/FTS/openssl-1.0.2d/crash-12ae1af0c82252420b5f780bc9ed48d3ba05109e
 ```
 
-Try this with one of the crashes you have found previously. 
+Try this with one of the crashes you have found previously.
 
 ## Visualizing Coverage
 We recommend [Clang Coverage](http://clang.llvm.org/docs/SourceBasedCodeCoverage.html) to visualize and study your code coverage. A simple example:
@@ -437,19 +437,19 @@ echo -n A > CORPUS/A && ./a.out CORPUS/* && \
 ```
 ![cov1](cov1.png)
 ```
-echo -n AAA > CORPUS/AAA && ./a.out CORPUS/* && ... 
+echo -n AAA > CORPUS/AAA && ./a.out CORPUS/* && ...
 ```
 ![cov2](cov2.png)
 ```
-echo -n FAA > CORPUS/FAA && ./a.out CORPUS/* && ... 
+echo -n FAA > CORPUS/FAA && ./a.out CORPUS/* && ...
 ```
 ![cov3](cov3.png)
 ```
-echo -n FUA > CORPUS/FUA && ./a.out CORPUS/* && ... 
+echo -n FUA > CORPUS/FUA && ./a.out CORPUS/* && ...
 ```
 ![cov4](cov4.png)
 ```
-echo -n FUZA > CORPUS/FUZA && ./a.out CORPUS/* && ... 
+echo -n FUZA > CORPUS/FUZA && ./a.out CORPUS/* && ...
 ```
 ![cov5](cov5.png)
 
