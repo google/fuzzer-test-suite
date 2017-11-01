@@ -68,7 +68,7 @@ conduct_experiment() {
   done
 
   # Sync final fuzz log
-  cp fuzz-0.log crash* leak* timeout* results/
+  cp fuzz-0.log crash* leak* timeout* oom* results/
   rsync_no_delete results "${sync_dir}/results"
 }
 
