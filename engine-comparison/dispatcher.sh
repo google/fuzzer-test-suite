@@ -253,6 +253,15 @@ measure_coverage() {
     # Save corpus for comparison next cycle
     rm -rf "${prev_corpus_dir}"
     mv "${corpus_dir}" "${prev_corpus_dir}"
+
+    # Move this corpus archive to the processed folder so that rsync doesn't
+    # need to check it anymore.
+    local bmark_trial="${benchmark}-${fengine_name}/trial-${LATEST_TRIAL}"
+    local src_archive="${GSUTIL_BUCKET}/experiment-folders/${bmark_trial}"
+    src_archive="${src_archive}/corpus/corpus-archive-${this_cycle}.tar.gz"
+    local dst_archive="${GSUTIL_BUCKET}/processed-folders/${bmark_trial}"
+    dst_archive="${dst_archive}/corpus-archive-${this_cycle}.tar.gz"
+    gsutil mv "${src_archive}" "${dst_archive}"
   fi
 
   # Finish generating human readable report
@@ -339,6 +348,8 @@ main() {
 
   mkdir -p "${WORK}/experiment-folders"
   mkdir -p "${WORK}/measurement-folders"
+
+  gsutil rm -r "${GSUTIL_BUCKET}/processed-folders"
 
   # wait_period defines how frequently the dispatcher generates new reports for
   # every benchmark with every fengine. For a large number of runner VMs,
