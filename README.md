@@ -15,9 +15,9 @@ and potentially other fuzzing engines.
 * [AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html)
 
 # Contributing
-See [CONTRIBUTING](CONTRIBUTING) first. 
+See [CONTRIBUTING](CONTRIBUTING) first.
 If you want to add one more benchmarks to the test suite,
-simply mimic one of the existing benchmarks and send the pull request. 
+simply mimic one of the existing benchmarks and send the pull request.
 
 # Disclaimer
 This is not an official Google product.
