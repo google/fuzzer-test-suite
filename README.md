@@ -7,7 +7,7 @@ libraries that have interesting bugs, hard-to-find code paths, or other
 challenges for bug finding tools.
 
 The current version supports [libFuzzer](http://libFuzzer.info),
-in future versions we exect to support [AFL](http://lcamtuf.coredump.cx/afl/)
+in future versions we expect to support [AFL](http://lcamtuf.coredump.cx/afl/)
 and potentially other fuzzing engines.
 
 # See also
