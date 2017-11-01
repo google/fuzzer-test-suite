@@ -5,7 +5,7 @@ In this tutorial you will learn how to use [libFuzzer](http://libfuzzer.info)
  -- a coverage-guided in-process fuzzing engine.
 
 You will also learn basics of
-[AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html) --
+[AddressSanitizer](https://clang.llvm.org/docs/AddressSanitizer.html) --
 a dynamic memory error detector for C/C++.
 
 Prerequisites: experience with C/C++ and Unix shell.
@@ -423,7 +423,7 @@ cd ~/openssl-1.0.2d
 Try this with one of the crashes you have found previously.
 
 ## Visualizing Coverage
-We recommend [Clang Coverage](http://clang.llvm.org/docs/SourceBasedCodeCoverage.html) to visualize and study your code coverage. A simple example:
+We recommend [Clang Coverage](https://clang.llvm.org/docs/SourceBasedCodeCoverage.html) to visualize and study your code coverage. A simple example:
 ```
 # Build you code for Clang Coverage; link it against a standalone driver for running fuzz targets.
 clang -fprofile-instr-generate -fcoverage-mapping ~/FTS/tutorial/fuzz_me.cc \
@@ -456,9 +456,9 @@ echo -n FUZA > CORPUS/FUZA && ./a.out CORPUS/* && ...
 
 
 ## Other sanitizers
-[AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html) is not the
+[AddressSanitizer](https://clang.llvm.org/docs/AddressSanitizer.html) is not the
 only dynamic testing tool that can be combined with fuzzing.
-At the very least try [UBSan](http://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html).
+At the very least try [UBSan](https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html).
 For example, add `-fsanitize=signed-integer-overflow -fno-sanitize-recover=all` to the build flags for
 the [pcre2 benchmark](../pcre2-10.00) and do some more fuzzing. You will see
 reports like this:
