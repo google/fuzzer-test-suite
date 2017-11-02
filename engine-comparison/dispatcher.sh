@@ -356,8 +356,6 @@ main() {
   done
   wait
 
-  set -x
-
   mkdir -p "${WORK}/experiment-folders"
   mkdir -p "${WORK}/measurement-folders"
 
