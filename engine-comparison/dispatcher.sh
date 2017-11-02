@@ -204,7 +204,8 @@ measure_coverage() {
   # Decide which cycle to report on
   # First, check if the runner documented that it skipped any cycles
   local this_cycle=$((LATEST_CYCLE + 1))
-  while grep "^${this_cycle}$" "${experiment_dir}/results/skipped-cycles"; do
+  while grep "^${this_cycle}$" "${experiment_dir}/results/skipped-cycles" \
+    &> /dev/null; do
     # Record empty stats for proper data aggregation later.
     echo "${this_cycle}" >> "${report_dir}/coverage-graph.csv"
     echo "${this_cycle}" >> "${report_dir}/corpus-size-graph.csv"
@@ -215,7 +216,8 @@ measure_coverage() {
   if [[ ! -f \
     "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" ]]; then
     # We don't have a new corpus archive.  Determine why.
-    if grep "^${this_cycle}$" "${experiment_dir}/results/unchanged-cycles"; then
+    if grep "^${this_cycle}$" "${experiment_dir}/results/unchanged-cycles" \
+      &> /dev/null; then
       # No corpus archive because the corpus hasn't changed.
       # Copy stats from last cycle.
       local coverage_line="$(tail -n1 "${report_dir}/coverage-graph.csv")"
@@ -377,7 +379,8 @@ main() {
     fi
 
     # Prevent calling measure_coverage before runner VM begins
-    if gsutil ls "${GSUTIL_BUCKET}" | grep "experiment-folders"; then
+    if gsutil ls "${GSUTIL_BUCKET}" | grep "experiment-folders" > /dev/null;
+    then
       rsync_delete "${GSUTIL_BUCKET}/experiment-folders" \
         "${WORK}/experiment-folders"
       for benchmark in ${BENCHMARKS}; do
