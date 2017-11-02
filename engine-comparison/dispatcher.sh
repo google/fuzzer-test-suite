@@ -228,11 +228,6 @@ measure_coverage() {
       local corpus_size="${corpus_size_line##*,}"
       local corpus_elems="${corpus_elems_line##*,}"
     else
-      echo "On cycle ${this_cycle}, no new corpus found for:"
-      echo "  benchmark: ${benchmark}"
-      echo "  fengine: ${fengine_name}"
-      echo "  trial: ${LATEST_TRIAL}"
-
       if [[ -d "${exp_base_dir}/trial-$((LATEST_TRIAL + 1))" ]]; then
         # No corpus archive because we've already analyzed all corpora for this
         # trial.
@@ -245,6 +240,11 @@ measure_coverage() {
   else
     # We have a new corpus archive.  Collect stats on it.
     # Extract corpus
+    echo "Corpus #${this_cycle} found for:"
+    echo "  benchmark: ${benchmark}"
+    echo "  fengine: ${fengine_name}"
+    echo "  trial: ${LATEST_TRIAL}"
+
     (cd "${corpus_dir}" && \
       tar -xf "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" \
         --strip-components=1)
@@ -368,6 +368,7 @@ main() {
   # wait_period in dispatcher.sh can be smaller than it is in runner.sh
   local wait_period=10
   local next_sync=${SECONDS}
+  local sync_num=1
   # TODO: better "while" condition?
   # Maybe not: just end dispatcher VM when done
   while true; do
@@ -381,6 +382,7 @@ main() {
     # Prevent calling measure_coverage before runner VM begins
     if gsutil ls "${GSUTIL_BUCKET}" | grep "experiment-folders" > /dev/null;
     then
+      echo "Doing sync #${sync_num}..."
       rsync_delete "${GSUTIL_BUCKET}/experiment-folders" \
         "${WORK}/experiment-folders"
       for benchmark in ${BENCHMARKS}; do
@@ -389,6 +391,7 @@ main() {
         done < <(find "${WORK}/fengine-configs" -type f)
       done
       wait
+      sync_num=$((sync_num + 1))
     fi
 
     next_sync=$((next_sync + wait_period))
