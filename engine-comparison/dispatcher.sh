@@ -13,7 +13,7 @@
 # conditions.
 p_gsutil() {
   local state_dir="/tmp/gsutil.${BASHPID}"
-  gsutil -o "GSUtil:state_dir=${state_dir}" "$@"
+  gsutil -m -o "GSUtil:state_dir=${state_dir}" "$@"
   rm -rf "${state_dir}"
 }
 
@@ -21,7 +21,7 @@ p_gsutil() {
 rsync_delete() {
   local src=$1
   local dst=$2
-  p_gsutil -m rsync -rd "${src}" "${dst}"
+  p_gsutil rsync -rd "${src}" "${dst}"
 }
 
 # Run the specified command in a shell with no environment variables set.
@@ -273,7 +273,7 @@ measure_coverage() {
     src_archive="${src_archive}/corpus/corpus-archive-${this_cycle}.tar.gz"
     local dst_archive="${GSUTIL_BUCKET}/processed-folders/${bmark_trial}"
     dst_archive="${dst_archive}/corpus-archive-${this_cycle}.tar.gz"
-    p_gsutil -m mv "${src_archive}" "${dst_archive}"
+    p_gsutil mv "${src_archive}" "${dst_archive}"
   fi
 
   # Finish generating human readable report
@@ -312,7 +312,7 @@ main() {
   readonly BENCHMARKS
 
   # Reset google cloud results before doing experiments
-  gsutil -m rm -r "${GSUTIL_BUCKET}/experiment-folders" \
+  p_gsutil rm -r "${GSUTIL_BUCKET}/experiment-folders" \
     "${GSUTIL_BUCKET}/reports"
 
   # Outermost loops
@@ -361,7 +361,7 @@ main() {
   mkdir -p "${WORK}/experiment-folders"
   mkdir -p "${WORK}/measurement-folders"
 
-  gsutil -m rm -r "${GSUTIL_BUCKET}/processed-folders"
+  p_gsutil rm -r "${GSUTIL_BUCKET}/processed-folders"
 
   # wait_period defines how frequently the dispatcher generates new reports for
   # every benchmark with every fengine. For a large number of runner VMs,
