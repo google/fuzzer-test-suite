@@ -204,7 +204,8 @@ measure_coverage() {
   # Decide which cycle to report on
   # First, check if the runner documented that it skipped any cycles
   local this_cycle=$((LATEST_CYCLE + 1))
-  while grep "^${this_cycle}$" "${experiment_dir}/results/skipped-cycles"; do
+  while grep "^${this_cycle}$" "${experiment_dir}/results/skipped-cycles" \
+    &> /dev/null; do
     # Record empty stats for proper data aggregation later.
     echo "${this_cycle}" >> "${report_dir}/coverage-graph.csv"
     echo "${this_cycle}" >> "${report_dir}/corpus-size-graph.csv"
@@ -215,7 +216,8 @@ measure_coverage() {
   if [[ ! -f \
     "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" ]]; then
     # We don't have a new corpus archive.  Determine why.
-    if grep "^${this_cycle}$" "${experiment_dir}/results/unchanged-cycles"; then
+    if grep "^${this_cycle}$" "${experiment_dir}/results/unchanged-cycles" \
+      &> /dev/null; then
       # No corpus archive because the corpus hasn't changed.
       # Copy stats from last cycle.
       local coverage_line="$(tail -n1 "${report_dir}/coverage-graph.csv")"
@@ -226,11 +228,6 @@ measure_coverage() {
       local corpus_size="${corpus_size_line##*,}"
       local corpus_elems="${corpus_elems_line##*,}"
     else
-      echo "On cycle ${this_cycle}, no new corpus found for:"
-      echo "  benchmark: ${benchmark}"
-      echo "  fengine: ${fengine_name}"
-      echo "  trial: ${LATEST_TRIAL}"
-
       if [[ -d "${exp_base_dir}/trial-$((LATEST_TRIAL + 1))" ]]; then
         # No corpus archive because we've already analyzed all corpora for this
         # trial.
@@ -243,6 +240,11 @@ measure_coverage() {
   else
     # We have a new corpus archive.  Collect stats on it.
     # Extract corpus
+    echo "Corpus #${this_cycle} found for:"
+    echo "  benchmark: ${benchmark}"
+    echo "  fengine: ${fengine_name}"
+    echo "  trial: ${LATEST_TRIAL}"
+
     (cd "${corpus_dir}" && \
       tar -xf "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" \
         --strip-components=1)
@@ -356,8 +358,6 @@ main() {
   done
   wait
 
-  set -x
-
   mkdir -p "${WORK}/experiment-folders"
   mkdir -p "${WORK}/measurement-folders"
 
@@ -368,6 +368,7 @@ main() {
   # wait_period in dispatcher.sh can be smaller than it is in runner.sh
   local wait_period=10
   local next_sync=${SECONDS}
+  local sync_num=1
   # TODO: better "while" condition?
   # Maybe not: just end dispatcher VM when done
   while true; do
@@ -379,7 +380,9 @@ main() {
     fi
 
     # Prevent calling measure_coverage before runner VM begins
-    if gsutil ls "${GSUTIL_BUCKET}" | grep "experiment-folders"; then
+    if gsutil ls "${GSUTIL_BUCKET}" | grep "experiment-folders" > /dev/null;
+    then
+      echo "Doing sync #${sync_num}..."
       rsync_delete "${GSUTIL_BUCKET}/experiment-folders" \
         "${WORK}/experiment-folders"
       for benchmark in ${BENCHMARKS}; do
@@ -388,6 +391,7 @@ main() {
         done < <(find "${WORK}/fengine-configs" -type f)
       done
       wait
+      sync_num=$((sync_num + 1))
     fi
 
     next_sync=$((next_sync + wait_period))

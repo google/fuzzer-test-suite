@@ -17,7 +17,7 @@ robust_begin_gcloud_ssh() {
   local instance_name=$1
   while true; do
     gcloud compute ssh "${instance_name}" --command="echo ping" 2>&1 \
-      | grep "ERROR" || break
+      | grep "ERROR" > /dev/null || break
     echo "GCloud VM isn't ready yet. Rerunning SSH momentarily."
     sleep 5
   done
@@ -27,7 +27,8 @@ create_or_start() {
   local instance_name=$1
   local metadata=$2
   local metadata_from_file=$3
-  gcloud compute instances describe "${instance_name}" 2>&1 | grep "ERROR"
+  gcloud compute instances describe "${instance_name}" 2>&1 | grep "ERROR" \
+    > /dev/null
   if [[ $? == 0 ]]; then
     echo "${instance_name} doesn't exist yet. Now creating VM."
     gcloud_create "${instance_name}" "${metadata}" "${metadata_from_file}"
@@ -42,7 +43,7 @@ gcloud_create() {
   [[ -n $3 ]] && local metadata_ff_cmd="--metadata-from-file $3"
 
   # The dispatcher should be more powerful
-  if echo "${instance_name}" | grep "dispatcher"; then
+  if echo "${instance_name}" | grep "dispatcher" > /dev/null; then
     gcloud compute instances create "${instance_name}" \
       --image-family="docker-ubuntu" --service-account="${SERVICE_ACCOUNT}" \
       --machine-type="n1-standard-16" --scopes="compute-rw,storage-rw,default" \
