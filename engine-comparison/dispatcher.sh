@@ -9,6 +9,13 @@
 . "$(dirname "$0")/../common.sh"
 . "${SCRIPT_DIR}/common-harness.sh"
 
+# rsyncs directories recursively, deleting files at dst.
+rsync_delete() {
+  local src=$1
+  local dst=$2
+  gsutil -m rsync -rd "${src}" "${dst}"
+}
+
 # Run the specified command in a shell with no environment variables set.
 exec_in_clean_env() {
   local cmd=$1
@@ -117,7 +124,7 @@ handle_benchmark() {
   local fengine_name="$(basename "${fengine_config}")"
   local bmark_with_fengine="${benchmark}-with-${fengine_name}"
   build_benchmark "${benchmark}" "${fengine_config}" "${bmark_with_fengine}"
-  gsutil -m rsync -rd "${SEND_DIR}" \
+  rsync_delete "${SEND_DIR}" \
     "${GSUTIL_BUCKET}/binary-folders/${bmark_with_fengine}"
   # GCloud instance names must match the following regular expression:
   # '[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?'
@@ -137,6 +144,16 @@ make_measurer() {
   rm -rf "${building_dir}"
 }
 
+# Runs a coverage binary on the inputs present in corpus2 but not corpus1.
+run_cov_new_inputs() {
+  local coverage_binary=$1
+  local corpus1=$2
+  local corpus2=$3
+  UBSAN_OPTIONS=coverage=1 "${coverage_binary}" \
+    $(comm -13 <(ls "${corpus1}") <(ls "${corpus2}") \
+      | while read line; do echo "${corpus2}/${line}"; done)
+}
+
 # Process a corpus, generate a human readable report, send the report to gsutil
 # Processing includes: decompress, use sancov.py, etc
 measure_coverage() {
@@ -144,13 +161,16 @@ measure_coverage() {
   local benchmark=$2
   local fengine_name="$(basename "${fengine_config}")"
   local bmark_fengine_dir="${benchmark}/${fengine_name}"
-  local corpus_dir="${WORK}/measurement-folders/${bmark_fengine_dir}/corpus"
-  local sancov_dir="${WORK}/measurement-folders/${bmark_fengine_dir}/sancovs"
-  local rep_base_dir="${WORK}/measurement-folders/${bmark_fengine_dir}/reports"
+  local measurement_dir="${WORK}/measurement-folders/${bmark_fengine_dir}"
+  local corpus_dir="${measurement_dir}/corpus"
+  local prev_corpus_dir="${measurement_dir}/last-corpus"
+  local sancov_dir="${measurement_dir}/sancovs"
+  local rep_base_dir="${measurement_dir}/reports"
   local exp_base_dir="${WORK}/experiment-folders/${benchmark}-${fengine_name}"
 
   rm -rf "${corpus_dir}" "${sancov_dir}"
-  mkdir -p "${corpus_dir}" "${sancov_dir}" "${rep_base_dir}"
+  mkdir -p "${corpus_dir}" "${sancov_dir}" "${rep_base_dir}" \
+    "${prev_corpus_dir}"
 
   # Recall which trial
   if [[ -f "${rep_base_dir}/latest-trial" ]]; then
@@ -162,7 +182,9 @@ measure_coverage() {
   # Append trial directories
   local experiment_dir="${exp_base_dir}/trial-${LATEST_TRIAL}"
   local report_dir="${rep_base_dir}/trial-${LATEST_TRIAL}"
+  local covered_pcs_file="${report_dir}/covered-pcs.txt"
   mkdir -p "${report_dir}"
+  [[ -f "${covered_pcs_file}" ]] || touch "${covered_pcs_file}"
 
   # Use the corpus-archive directly succeeding the last one to be processed
   if [[ -f "${report_dir}/latest-cycle" ]]; then
@@ -178,48 +200,68 @@ measure_coverage() {
     this_cycle=$((this_cycle + 1))
   done
 
-  # Check if we have a new corpus.
   if [[ ! -f \
     "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" ]]; then
-    echo "On cycle ${this_cycle}, no new corpus found for:"
-    echo "  benchmark: ${benchmark}"
-    echo "  fengine: ${fengine_name}"
-    echo "  trial: ${LATEST_TRIAL}"
+    # We don't have a new corpus archive.  Determine why.
+    if grep "^${this_cycle}$" "${experiment_dir}/results/unchanged-cycles"; then
+      # No corpus archive because the corpus hasn't changed.
+      # Copy stats from last cycle.
+      local coverage_line="$(tail -n1 "${report_dir}/coverage-graph.csv")"
+      local corpus_size_line="$(tail -n1 "${report_dir}/corpus-size-graph.csv")"
+      local corpus_elems_line="$(tail -n1 \
+        "${report_dir}/corpus-elems-graph.csv")"
+      local coverage="${coverage_line##*,}"
+      local corpus_size="${corpus_size_line##*,}"
+      local corpus_elems="${corpus_elems_line##*,}"
+    else
+      echo "On cycle ${this_cycle}, no new corpus found for:"
+      echo "  benchmark: ${benchmark}"
+      echo "  fengine: ${fengine_name}"
+      echo "  trial: ${LATEST_TRIAL}"
 
-    # No new corpus; check if there's data for the next trial.
-    if [[ -d "${exp_base_dir}/trial-$((LATEST_TRIAL + 1))" ]]; then
-      echo "LATEST_TRIAL=$((LATEST_TRIAL + 1))" > "${rep_base_dir}/latest-trial"
+      if [[ -d "${exp_base_dir}/trial-$((LATEST_TRIAL + 1))" ]]; then
+        # No corpus archive because we've already analyzed all corpora for this
+        # trial.
+        echo "LATEST_TRIAL=$((LATEST_TRIAL + 1))" > \
+          "${rep_base_dir}/latest-trial"
+        rm -rf "${prev_corpus_dir}"
+      fi
+      return
     fi
-    return
+  else
+    # We have a new corpus archive.  Collect stats on it.
+    # Extract corpus
+    (cd "${corpus_dir}" && \
+      tar -xf "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" \
+        --strip-components=1)
+
+    # Generate coverage information for new inputs only.
+    (cd "${sancov_dir}" && \
+      run_cov_new_inputs "${WORK}/coverage-binaries/${benchmark}-coverage" \
+        "${prev_corpus_dir}" "${corpus_dir}")
+
+    # Get PCs covered by new inputs and merge with the previous list.
+    "${WORK}/coverage-builds/sancov.py" print "${sancov_dir}/*" 2>/dev/null \
+      | sort -o "${covered_pcs_file}" -m -u - "${covered_pcs_file}"
+
+    local coverage="$(wc -w < "${covered_pcs_file}")"
+    local corpus_size="$(wc -c $(find "${corpus_dir}" -maxdepth 1 -type f) \
+      | tail --lines=1 \
+      | grep -o "[0-9]*")"
+    local corpus_elems="$(find "${corpus_dir}" -maxdepth 1 -type f | wc -l)"
+
+    # Save corpus for comparison next cycle
+    rm -rf "${prev_corpus_dir}"
+    mv "${corpus_dir}" "${prev_corpus_dir}"
   fi
 
-  # Extract corpus
-  (cd "${corpus_dir}" &&
-    tar -xf "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" \
-      --strip-components=1)
-
-  # Generate sancov
-  (cd "${sancov_dir}" &&
-    UBSAN_OPTIONS=coverage=1 "${WORK}/coverage-binaries/${benchmark}-coverage" \
-      $(find "${corpus_dir}" -type f))
-
   # Finish generating human readable report
-  local sancov_output="$("${WORK}/coverage-builds/sancov.py" print \
-    "${sancov_dir}/*" | wc -w)"
-  local corpus_size="$(wc -c $(find "${corpus_dir}" -maxdepth 1 -type f) \
-    | tail --lines=1 \
-    | grep -o "[0-9]*")"
-  local corpus_elems="$(find "${corpus_dir}" -maxdepth 1 -type f | wc -l)"
-  echo "${this_cycle},${sancov_output}" >> "${report_dir}/coverage-graph.csv"
+  echo "${this_cycle},${coverage}" >> "${report_dir}/coverage-graph.csv"
   echo "${this_cycle},${corpus_size}" >> "${report_dir}/corpus-size-graph.csv"
   echo "${this_cycle},${corpus_elems}" >> "${report_dir}/corpus-elems-graph.csv"
 
   echo "LATEST_CYCLE=${this_cycle}" > "${report_dir}/latest-cycle"
-  # Sync "old" report dir, which includes all trials
-  gsutil -m rsync -r \
-    "${WORK}/measurement-folders/${bmark_fengine_dir}/reports" \
-    "${GSUTIL_BUCKET}/reports/${bmark_fengine_dir}"
-  # rsync -r or -rd?
+  rsync_delete "${rep_base_dir}" "${GSUTIL_BUCKET}/reports/${bmark_fengine_dir}"
 }
 
 main() {
@@ -315,7 +357,7 @@ main() {
 
     # Prevent calling measure_coverage before runner VM begins
     if gsutil ls "${GSUTIL_BUCKET}" | grep "experiment-folders"; then
-      gsutil -m rsync -rd "${GSUTIL_BUCKET}/experiment-folders" \
+      rsync_delete "${GSUTIL_BUCKET}/experiment-folders" \
         "${WORK}/experiment-folders"
       for benchmark in ${BENCHMARKS}; do
         while read fengine_config; do

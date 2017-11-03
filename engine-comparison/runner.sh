@@ -29,8 +29,8 @@ conduct_experiment() {
   local sync_dir="gs://fuzzer-test-suite/experiment-folders"
   sync_dir="${sync_dir}/${bmark_fengine_dir}/trial-${trial_num}"
 
-  rm -rf corpus corpus-archives results
-  mkdir -p corpus corpus-archives results
+  rm -rf corpus last-corpus corpus-archives results
+  mkdir -p corpus last-corpus corpus-archives results
 
   ${exec_cmd} &
   local process_pid=$!
@@ -44,12 +44,18 @@ conduct_experiment() {
     cp -r corpus corpus-copy
 
     echo "VM_SECONDS=${SECONDS}" > results/seconds-${cycle}
-    tar -czf "corpus-archives/corpus-archive-${cycle}.tar.gz" corpus-copy
+    if diff <(ls corpus-copy) <(ls last-corpus); then
+      # Corpus is unchanged; avoid rsyncing it.
+      echo "${cycle}" >> results/unchanged-cycles
+    else
+      tar -czf "corpus-archives/corpus-archive-${cycle}.tar.gz" corpus-copy
+      rsync_no_delete corpus-archives "${sync_dir}/corpus"
+    fi
     rsync_no_delete results "${sync_dir}/results"
-    rsync_no_delete corpus-archives "${sync_dir}/corpus"
 
     # Done with snapshot
-    rm -r corpus-copy
+    rm -r last-corpus
+    mv corpus-copy last-corpus
     rm "results/seconds-${cycle}"
     rm "corpus-archives/corpus-archive-${cycle}.tar.gz"
 
@@ -64,7 +70,7 @@ conduct_experiment() {
   done
 
   # Sync final fuzz log
-  cp fuzz-0.log results/
+  cp fuzz-0.log crash* leak* timeout* results/
   rsync_no_delete results "${sync_dir}/results"
 }
 
