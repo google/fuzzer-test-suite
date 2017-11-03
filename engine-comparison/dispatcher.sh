@@ -9,11 +9,19 @@
 . "$(dirname "$0")/../common.sh"
 . "${SCRIPT_DIR}/common-harness.sh"
 
+# Runs the specified gsutil command with its own state directory to avoid race
+# conditions.
+p_gsutil() {
+  local state_dir="/tmp/gsutil.${BASHPID}"
+  gsutil -m -o "GSUtil:state_dir=${state_dir}" "$@"
+  rm -rf "${state_dir}"
+}
+
 # rsyncs directories recursively, deleting files at dst.
 rsync_delete() {
   local src=$1
   local dst=$2
-  gsutil -m rsync -rd "${src}" "${dst}"
+  p_gsutil rsync -rd "${src}" "${dst}"
 }
 
 # Run the specified command in a shell with no environment variables set.
@@ -197,6 +205,10 @@ measure_coverage() {
   # First, check if the runner documented that it skipped any cycles
   local this_cycle=$((LATEST_CYCLE + 1))
   while grep "^${this_cycle}$" "${experiment_dir}/results/skipped-cycles"; do
+    # Record empty stats for proper data aggregation later.
+    echo "${this_cycle}" >> "${report_dir}/coverage-graph.csv"
+    echo "${this_cycle}" >> "${report_dir}/corpus-size-graph.csv"
+    echo "${this_cycle}" >> "${report_dir}/corpus-elems-graph.csv"
     this_cycle=$((this_cycle + 1))
   done
 
@@ -253,6 +265,15 @@ measure_coverage() {
     # Save corpus for comparison next cycle
     rm -rf "${prev_corpus_dir}"
     mv "${corpus_dir}" "${prev_corpus_dir}"
+
+    # Move this corpus archive to the processed folder so that rsync doesn't
+    # need to check it anymore.
+    local bmark_trial="${benchmark}-${fengine_name}/trial-${LATEST_TRIAL}"
+    local src_archive="${GSUTIL_BUCKET}/experiment-folders/${bmark_trial}"
+    src_archive="${src_archive}/corpus/corpus-archive-${this_cycle}.tar.gz"
+    local dst_archive="${GSUTIL_BUCKET}/processed-folders/${bmark_trial}"
+    dst_archive="${dst_archive}/corpus-archive-${this_cycle}.tar.gz"
+    p_gsutil mv "${src_archive}" "${dst_archive}"
   fi
 
   # Finish generating human readable report
@@ -291,7 +312,7 @@ main() {
   readonly BENCHMARKS
 
   # Reset google cloud results before doing experiments
-  gsutil -m rm -r "${GSUTIL_BUCKET}/experiment-folders" \
+  p_gsutil rm -r "${GSUTIL_BUCKET}/experiment-folders" \
     "${GSUTIL_BUCKET}/reports"
 
   # Outermost loops
@@ -339,6 +360,8 @@ main() {
 
   mkdir -p "${WORK}/experiment-folders"
   mkdir -p "${WORK}/measurement-folders"
+
+  p_gsutil rm -r "${GSUTIL_BUCKET}/processed-folders"
 
   # wait_period defines how frequently the dispatcher generates new reports for
   # every benchmark with every fengine. For a large number of runner VMs,

@@ -43,7 +43,6 @@ conduct_experiment() {
     # Snapshot
     cp -r corpus corpus-copy
 
-    echo "VM_SECONDS=${SECONDS}" > results/seconds-${cycle}
     if diff <(ls corpus-copy) <(ls last-corpus); then
       # Corpus is unchanged; avoid rsyncing it.
       echo "${cycle}" >> results/unchanged-cycles
@@ -56,7 +55,6 @@ conduct_experiment() {
     # Done with snapshot
     rm -r last-corpus
     mv corpus-copy last-corpus
-    rm "results/seconds-${cycle}"
     rm "corpus-archives/corpus-archive-${cycle}.tar.gz"
 
     cycle=$((cycle + 1))
@@ -70,7 +68,7 @@ conduct_experiment() {
   done
 
   # Sync final fuzz log
-  cp fuzz-0.log crash* leak* timeout* results/
+  mv fuzz-0.log crash* leak* timeout* oom* results/
   rsync_no_delete results "${sync_dir}/results"
 }
 
