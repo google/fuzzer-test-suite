@@ -31,18 +31,20 @@ exec_in_clean_env() {
   env -i bash -c "${set_path_cmd} && ${cmd}"
 }
 
+get_afl() {
+  echo "Building AFL"
+  wget http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz
+  tar xf afl-latest.tgz --strip-components=1
+  rm afl-latest.tgz
+  make clean all
+}
+
 # Given a config file specifying a fuzzing engine, download that fuzzing engine
 download_engine() {
   local fengine_config=$1
   [[ ! -e "${fengine_config}" ]] && \
     echo "Error: download_engine() couldn't find ${fengine_config}" && \
     exit 1
-  local fengine_name="$(basename "${fengine_config}")"
-  local fengine_dir="${WORK}/fengine-builds/${fengine_name}"
-
-  echo "Creating fuzzing engine: ${fengine_config}"
-  rm -rf "${fengine_dir}"
-  mkdir "${fengine_dir}"
 
   . "${fengine_config}"
   case "${FUZZING_ENGINE}" in
@@ -50,8 +52,7 @@ download_engine() {
       if [[ ! -d "${LIBFUZZER_SRC}/standalone" ]]; then
         echo "Checking out libFuzzer"
         svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer \
-          "${WORK}/Fuzzer"
-        export LIBFUZZER_SRC="${WORK}/Fuzzer"
+          "${LIBFUZZER_SRC}"
       fi
       ;;
     afl)
@@ -61,14 +62,10 @@ download_engine() {
           http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer/afl \
           "${LIBFUZZER_SRC}/afl"
       fi
-      echo "Building AFL"
-      pushd "${WORK}/fengine-builds"
-      wget http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz
-      tar xf afl-latest.tgz -C "${fengine_dir}" --strip-components=1
-      (cd "${fengine_dir}" && AFL_USE_ASAN=1 make clean all)
-      rm afl-latest.tgz
-      popd
-      export AFL_SRC="${fengine_dir}"
+      if [[ ! -f "${AFL_SRC}/afl-fuzz" ]]; then
+        mkdir -p "${AFL_SRC}"
+        (cd "${AFL_SRC}" && get_afl)
+      fi
       ;;
     fsanitize_fuzzer) ;;
     *)
@@ -287,7 +284,6 @@ measure_coverage() {
 }
 
 main() {
-  mkdir "${WORK}/fengine-builds"
   mkdir "${WORK}/build"
   mkdir "${WORK}/send"
 
@@ -325,9 +321,8 @@ main() {
   done < <(find "${WORK}/fengine-configs" -type f)
   wait
 
-  # TODO here: reset fengine-config env vars (?)
   ############# DONE building
-  rm -rf "${WORK}/send" "${WORK}"/build
+  rm -rf "${WORK}/send" "${WORK}/build"
   ############# NOW wait for experiment results
 
   mkdir -p "${WORK}/coverage-builds"
