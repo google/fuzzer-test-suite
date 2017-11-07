@@ -75,7 +75,7 @@ conduct_experiment() {
 main() {
   # This name used to be the name of the file fengine.cfg. It was renamed in the
   # dispatcher, so it was stored as metadata.
-  local binary="${BENCHMARK}-${FUZZING_ENGINE}"
+  local binary="./${BENCHMARK}-${FUZZING_ENGINE}"
   local fengine_url="http://metadata.google.internal/computeMetadata/v1"
   fengine_url="${fengine_url}/instance/attributes/fengine"
   local fengine_name="$(curl "${fengine_url}" -H "Metadata-Flavor: Google")"
@@ -87,16 +87,17 @@ main() {
 
     # AFL requires some starter input
     [[ ! -d seeds ]] && mkdir seeds
-    [[ ! $(find seeds -type f) ]] && echo "Input" > ./seeds/nil_seed
+    [[ ! $(find seeds -type f) ]] && echo > ./seeds/nil_seed
     # TODO: edit core_pattern in Docker VM
     # https://groups.google.com/forum/m/#!msg/afl-users/7arn66RyNfg/BsnOPViuCAAJ
     export AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
+    export AFL_SKIP_CPUFREQ=1
 
-    local exec_cmd="./afl-fuzz ${BINARY_RUNTIME_OPTIONS} -i ./seeds/ -o corpus"
-    exec_cmd="${exec_cmd} -- ${binary}"
+    local exec_cmd="./afl-fuzz ${BINARY_RUNTIME_OPTIONS} -i seeds -o corpus"
+    exec_cmd="${exec_cmd} -m none -- ${binary}"
   elif [[ "${FUZZING_ENGINE}" == "libfuzzer" || \
     "${FUZZING_ENGINE}" == "fsanitize_fuzzer" ]]; then
-    local exec_cmd="./${binary} ${BINARY_RUNTIME_OPTIONS}"
+    local exec_cmd="${binary} ${BINARY_RUNTIME_OPTIONS}"
     exec_cmd="${exec_cmd} -workers=${JOBS} -jobs=${JOBS} -runs=${RUNS}"
     exec_cmd="${exec_cmd} -max_total_time=${MAX_TOTAL_TIME}"
     exec_cmd="${exec_cmd} -print_final_stats=1 -close_fd_mask=3 corpus"
