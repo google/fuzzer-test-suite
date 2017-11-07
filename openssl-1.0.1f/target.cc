@@ -6,10 +6,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#ifndef CERT_PATH
-# define CERT_PATH
-#endif
-
 SSL_CTX *Init() {
   SSL_library_init();
   SSL_load_error_strings();
@@ -21,9 +17,9 @@ SSL_CTX *Init() {
       openssl req -x509 -newkey rsa:512 -keyout server.key \
      -out server.pem -days 9999 -nodes -subj /CN=a/
   */
-  assert(SSL_CTX_use_certificate_file(sctx, CERT_PATH "server.pem",
+  assert(SSL_CTX_use_certificate_file(sctx, "runtime/server.pem",
                                       SSL_FILETYPE_PEM));
-  assert(SSL_CTX_use_PrivateKey_file(sctx, CERT_PATH "server.key",
+  assert(SSL_CTX_use_PrivateKey_file(sctx, "runtime/server.key",
                                      SSL_FILETYPE_PEM));
   return sctx;
 }

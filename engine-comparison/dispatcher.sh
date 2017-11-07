@@ -106,12 +106,11 @@ build_benchmark() {
 
   echo "BENCHMARK=${benchmark}" > "${SEND_DIR}/benchmark.cfg"
 
-  if [[ -d "${WORK}/FTS/${benchmark}/seeds" ]]; then
-    cp -r "${WORK}/FTS/${benchmark}/seeds" "${SEND_DIR}"
-  fi
-  if [[ "${FUZZING_ENGINE}" == "afl" ]]; then
-    cp "${AFL_SRC}/afl-fuzz" "${SEND_DIR}"
-  fi
+  local bmark_dir="${WORK}/FTS/${benchmark}"
+  [[ -d "${bmark_dir}/seeds" ]] && cp -r "${bmark_dir}/seeds" "${SEND_DIR}"
+  [[ -d "${bmark_dir}/runtime" ]] && cp -r "${bmark_dir}/runtime" "${SEND_DIR}"
+
+  [[ "${FUZZING_ENGINE}" == "afl" ]] && cp "${AFL_SRC}/afl-fuzz" "${SEND_DIR}"
 }
 
 # Starts a runner VM
