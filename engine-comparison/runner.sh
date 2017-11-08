@@ -20,6 +20,12 @@ rsync_no_delete() {
   gsutil -m rsync -rP "${src}" "${dst}"
 }
 
+same_dir_tree() {
+  local dir1=$1
+  local dir2=$2
+  diff <(cd "${dir1}" && find . | sort) <(cd "${dir2}" && find . | sort)
+}
+
 conduct_experiment() {
   local exec_cmd=$1
   local trial_num=$2
@@ -43,7 +49,7 @@ conduct_experiment() {
     # Snapshot
     cp -r corpus corpus-copy
 
-    if diff <(ls corpus-copy) <(ls last-corpus); then
+    if same_dir_tree corpus-copy last-corpus; then
       # Corpus is unchanged; avoid rsyncing it.
       echo "${cycle}" >> results/unchanged-cycles
     else
