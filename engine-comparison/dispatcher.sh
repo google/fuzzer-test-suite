@@ -145,6 +145,8 @@ make_measurer() {
   (cd "${building_dir}" && exec_in_clean_env \
     "FUZZING_ENGINE=coverage ${WORK}/FTS/${benchmark}/build.sh")
   mv "${building_dir}/${benchmark}-coverage" "${WORK}/coverage-binaries/"
+  [[ -d "${building_dir}/runtime" ]] && \
+    cp -r "${building_dir}"/runtime/* "${WORK}/coverage-binaries/runtime/"
   rm -rf "${building_dir}"
 }
 
@@ -256,9 +258,11 @@ measure_coverage() {
       "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz")
 
     # Generate coverage information for new inputs only.
+    cp -r "${WORK}/coverage-binaries/runtime" "${sancov_dir}/"
     (cd "${sancov_dir}" && \
       run_cov_new_inputs "${WORK}/coverage-binaries/${benchmark}-coverage" \
         "${prev_corpus_dir}" "${corpus_dir}")
+    rm -r "${sancov_dir}/runtime"
 
     # Get PCs covered by new inputs and merge with the previous list.
     "${WORK}/coverage-builds/sancov.py" print "${sancov_dir}/*" 2>/dev/null \
@@ -356,7 +360,7 @@ main() {
   fi
 
   # Do coverage builds
-  mkdir -p "${WORK}/coverage-binaries"
+  mkdir -p "${WORK}/coverage-binaries/runtime"
   for benchmark in ${BENCHMARKS}; do
     make_measurer "${benchmark}" &
   done
