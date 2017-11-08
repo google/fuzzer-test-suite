@@ -26,6 +26,18 @@ same_dir_tree() {
   diff <(cd "${dir1}" && find . | sort) <(cd "${dir2}" && find . | sort)
 }
 
+# Exit status 0 if run limit or time limit has been exceeded
+time_run_limits_exceeded() {
+  # Only check for AFL.  LibFuzzer case is handled by flags passed to fuzzer.
+  if [[ "${FUZZING_ENGINE}" == "afl" ]]; then
+    [[ "${SECONDS}" -gt "${MAX_TOTAL_TIME}" ]] && return 0
+    local runs_finished="$(grep execs_done corpus/fuzzer_stats \
+      | grep -o -E "[0-9]+")"
+    [[ "${runs_finished}" -gt "${RUNS}" ]] && return 0
+  fi
+  return 1
+}
+
 conduct_experiment() {
   local exec_cmd=$1
   local trial_num=$2
@@ -62,6 +74,8 @@ conduct_experiment() {
     rm -r last-corpus
     mv corpus-copy last-corpus
     rm "corpus-archives/corpus-archive-${cycle}.tar.gz"
+
+    time_run_limits_exceeded && kill -2 "${process_pid}"
 
     cycle=$((cycle + 1))
     next_sync=$((cycle * WAIT_PERIOD))
