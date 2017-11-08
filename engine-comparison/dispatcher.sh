@@ -148,6 +148,17 @@ make_measurer() {
   rm -rf "${building_dir}"
 }
 
+extract_corpus() {
+  local corpus_tgz=$1
+  tar -xf "${corpus_tgz}" --strip-components=1
+  if [[ -d queue ]]; then
+    # This is an AFL corpus.  Extract inputs from queue directory.
+    find . -mindepth 1 -maxdepth 1 ! -name queue -exec rm -rf {} +
+    mv queue/* .
+    rm -rf queue
+  fi
+}
+
 # Runs a coverage binary on the inputs present in corpus2 but not corpus1.
 run_cov_new_inputs() {
   local coverage_binary=$1
@@ -241,9 +252,8 @@ measure_coverage() {
     echo "  fengine: ${fengine_name}"
     echo "  trial: ${LATEST_TRIAL}"
 
-    (cd "${corpus_dir}" && \
-      tar -xf "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" \
-        --strip-components=1)
+    (cd "${corpus_dir}" && extract_corpus \
+      "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz")
 
     # Generate coverage information for new inputs only.
     (cd "${sancov_dir}" && \
