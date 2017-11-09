@@ -30,10 +30,14 @@ same_dir_tree() {
 time_run_limits_exceeded() {
   # Only check for AFL.  LibFuzzer case is handled by flags passed to fuzzer.
   if [[ "${FUZZING_ENGINE}" == "afl" ]]; then
-    [[ "${SECONDS}" -gt "${MAX_TOTAL_TIME}" ]] && return 0
-    local runs_finished="$(grep execs_done corpus/fuzzer_stats \
-      | grep -o -E "[0-9]+")"
-    [[ "${runs_finished}" -gt "${RUNS}" ]] && return 0
+    if [[ "${MAX_TOTAL_TIME}" -gt 0 ]]; then
+      [[ "${SECONDS}" -gt "${MAX_TOTAL_TIME}" ]] && return 0
+    fi
+    if [[ "${RUNS}" -gt 0 ]]; then
+      local runs_finished="$(grep execs_done corpus/fuzzer_stats \
+        | grep -o -E "[0-9]+")"
+      [[ "${runs_finished}" -gt "${RUNS}" ]] && return 0
+    fi
   fi
   return 1
 }
