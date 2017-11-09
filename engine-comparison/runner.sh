@@ -87,6 +87,10 @@ conduct_experiment() {
     done
   done
 
+  # Sync final corpus
+  tar -czf "corpus-archives/corpus-archive-${cycle}.tar.gz" corpus
+  rsync_no_delete corpus-archives "${sync_dir}/corpus"
+
   # Sync final fuzz log
   mv fuzz-0.log crash* leak* timeout* oom* results/
   mv corpus/crashes corpus/hangs corpus/fuzzer_stats results/
