@@ -89,6 +89,7 @@ conduct_experiment() {
 
   # Sync final fuzz log
   mv fuzz-0.log crash* leak* timeout* oom* results/
+  mv corpus/crashes corpus/hangs corpus/fuzzer_stats results/
   rsync_no_delete results "${sync_dir}/results"
 }
 
