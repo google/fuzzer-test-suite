@@ -18,6 +18,10 @@ readonly FOLDER_NAME="${BENCHMARK}-with-${FENGINE_NAME}"
 mkdir -p ~/input
 gsutil -m rsync -rd "gs://fuzzer-test-suite/binary-folders/${FOLDER_NAME}" \
   ~/input
+
+# Make sure AFL doesn't miss crashes
+echo core | sudo tee /proc/sys/kernel/core_pattern > /dev/null
+
 sudo gcloud docker -- pull gcr.io/fuzzer-test-suite/gcloud-clang-deps
 find ~/input -name "*.sh" -exec chmod 750 {} \;
 sudo docker build -t base-image ~/input

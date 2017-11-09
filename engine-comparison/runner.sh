@@ -113,9 +113,6 @@ main() {
     # AFL requires some starter input
     [[ ! -d seeds ]] && mkdir seeds
     [[ ! $(find seeds -type f) ]] && echo > ./seeds/nil_seed
-    # TODO: edit core_pattern in Docker VM
-    # https://groups.google.com/forum/m/#!msg/afl-users/7arn66RyNfg/BsnOPViuCAAJ
-    export AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
     export AFL_SKIP_CPUFREQ=1
 
     local exec_cmd="./afl-fuzz ${BINARY_RUNTIME_OPTIONS} -i seeds -o corpus"
