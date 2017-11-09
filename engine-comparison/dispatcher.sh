@@ -31,18 +31,20 @@ exec_in_clean_env() {
   env -i bash -c "${set_path_cmd} && ${cmd}"
 }
 
+get_afl() {
+  echo "Building AFL"
+  wget http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz
+  tar xf afl-latest.tgz --strip-components=1
+  rm afl-latest.tgz
+  make clean all
+}
+
 # Given a config file specifying a fuzzing engine, download that fuzzing engine
 download_engine() {
   local fengine_config=$1
   [[ ! -e "${fengine_config}" ]] && \
     echo "Error: download_engine() couldn't find ${fengine_config}" && \
     exit 1
-  local fengine_name="$(basename "${fengine_config}")"
-  local fengine_dir="${WORK}/fengine-builds/${fengine_name}"
-
-  echo "Creating fuzzing engine: ${fengine_config}"
-  rm -rf "${fengine_dir}"
-  mkdir "${fengine_dir}"
 
   . "${fengine_config}"
   case "${FUZZING_ENGINE}" in
@@ -50,8 +52,7 @@ download_engine() {
       if [[ ! -d "${LIBFUZZER_SRC}/standalone" ]]; then
         echo "Checking out libFuzzer"
         svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer \
-          "${WORK}/Fuzzer"
-        export LIBFUZZER_SRC="${WORK}/Fuzzer"
+          "${LIBFUZZER_SRC}"
       fi
       ;;
     afl)
@@ -61,14 +62,10 @@ download_engine() {
           http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer/afl \
           "${LIBFUZZER_SRC}/afl"
       fi
-      echo "Building AFL"
-      pushd "${WORK}/fengine-builds"
-      wget http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz
-      tar xf afl-latest.tgz -C "${fengine_dir}" --strip-components=1
-      (cd "${fengine_dir}" && AFL_USE_ASAN=1 make clean all)
-      rm afl-latest.tgz
-      popd
-      export AFL_SRC="${fengine_dir}"
+      if [[ ! -f "${AFL_SRC}/afl-fuzz" ]]; then
+        mkdir -p "${AFL_SRC}"
+        (cd "${AFL_SRC}" && get_afl)
+      fi
       ;;
     fsanitize_fuzzer) ;;
     *)
@@ -148,7 +145,20 @@ make_measurer() {
   (cd "${building_dir}" && exec_in_clean_env \
     "FUZZING_ENGINE=coverage ${WORK}/FTS/${benchmark}/build.sh")
   mv "${building_dir}/${benchmark}-coverage" "${WORK}/coverage-binaries/"
+  [[ -d "${building_dir}/runtime" ]] && \
+    cp -r "${building_dir}"/runtime/* "${WORK}/coverage-binaries/runtime/"
   rm -rf "${building_dir}"
+}
+
+extract_corpus() {
+  local corpus_tgz=$1
+  tar -xf "${corpus_tgz}" --strip-components=1
+  if [[ -d queue ]]; then
+    # This is an AFL corpus.  Extract inputs from queue directory.
+    find . -mindepth 1 -maxdepth 1 ! -name queue -exec rm -rf {} +
+    mv queue/* .
+    rm -rf queue
+  fi
 }
 
 # Runs a coverage binary on the inputs present in corpus2 but not corpus1.
@@ -244,14 +254,15 @@ measure_coverage() {
     echo "  fengine: ${fengine_name}"
     echo "  trial: ${LATEST_TRIAL}"
 
-    (cd "${corpus_dir}" && \
-      tar -xf "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz" \
-        --strip-components=1)
+    (cd "${corpus_dir}" && extract_corpus \
+      "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz")
 
     # Generate coverage information for new inputs only.
+    cp -r "${WORK}/coverage-binaries/runtime" "${sancov_dir}/"
     (cd "${sancov_dir}" && \
       run_cov_new_inputs "${WORK}/coverage-binaries/${benchmark}-coverage" \
         "${prev_corpus_dir}" "${corpus_dir}")
+    rm -r "${sancov_dir}/runtime"
 
     # Get PCs covered by new inputs and merge with the previous list.
     "${WORK}/coverage-builds/sancov.py" print "${sancov_dir}/*" 2>/dev/null \
@@ -287,7 +298,6 @@ measure_coverage() {
 }
 
 main() {
-  mkdir "${WORK}/fengine-builds"
   mkdir "${WORK}/build"
   mkdir "${WORK}/send"
 
@@ -325,9 +335,8 @@ main() {
   done < <(find "${WORK}/fengine-configs" -type f)
   wait
 
-  # TODO here: reset fengine-config env vars (?)
   ############# DONE building
-  rm -rf "${WORK}/send" "${WORK}"/build
+  rm -rf "${WORK}/send" "${WORK}/build"
   ############# NOW wait for experiment results
 
   mkdir -p "${WORK}/coverage-builds"
@@ -351,7 +360,7 @@ main() {
   fi
 
   # Do coverage builds
-  mkdir -p "${WORK}/coverage-binaries"
+  mkdir -p "${WORK}/coverage-binaries/runtime"
   for benchmark in ${BENCHMARKS}; do
     make_measurer "${benchmark}" &
   done

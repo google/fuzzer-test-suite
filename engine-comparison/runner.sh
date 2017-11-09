@@ -20,6 +20,24 @@ rsync_no_delete() {
   gsutil -m rsync -rP "${src}" "${dst}"
 }
 
+same_dir_tree() {
+  local dir1=$1
+  local dir2=$2
+  diff <(cd "${dir1}" && find . | sort) <(cd "${dir2}" && find . | sort)
+}
+
+# Exit status 0 if run limit or time limit has been exceeded
+time_run_limits_exceeded() {
+  # Only check for AFL.  LibFuzzer case is handled by flags passed to fuzzer.
+  if [[ "${FUZZING_ENGINE}" == "afl" ]]; then
+    [[ "${SECONDS}" -gt "${MAX_TOTAL_TIME}" ]] && return 0
+    local runs_finished="$(grep execs_done corpus/fuzzer_stats \
+      | grep -o -E "[0-9]+")"
+    [[ "${runs_finished}" -gt "${RUNS}" ]] && return 0
+  fi
+  return 1
+}
+
 conduct_experiment() {
   local exec_cmd=$1
   local trial_num=$2
@@ -43,7 +61,7 @@ conduct_experiment() {
     # Snapshot
     cp -r corpus corpus-copy
 
-    if diff <(ls corpus-copy) <(ls last-corpus); then
+    if same_dir_tree corpus-copy last-corpus; then
       # Corpus is unchanged; avoid rsyncing it.
       echo "${cycle}" >> results/unchanged-cycles
     else
@@ -57,6 +75,8 @@ conduct_experiment() {
     mv corpus-copy last-corpus
     rm "corpus-archives/corpus-archive-${cycle}.tar.gz"
 
+    time_run_limits_exceeded && kill -2 "${process_pid}"
+
     cycle=$((cycle + 1))
     next_sync=$((cycle * WAIT_PERIOD))
     # Skip cycle if need be
@@ -67,15 +87,20 @@ conduct_experiment() {
     done
   done
 
+  # Sync final corpus
+  tar -czf "corpus-archives/corpus-archive-${cycle}.tar.gz" corpus
+  rsync_no_delete corpus-archives "${sync_dir}/corpus"
+
   # Sync final fuzz log
   mv fuzz-0.log crash* leak* timeout* oom* results/
+  mv corpus/crashes corpus/hangs corpus/fuzzer_stats results/
   rsync_no_delete results "${sync_dir}/results"
 }
 
 main() {
   # This name used to be the name of the file fengine.cfg. It was renamed in the
   # dispatcher, so it was stored as metadata.
-  local binary="${BENCHMARK}-${FUZZING_ENGINE}"
+  local binary="./${BENCHMARK}-${FUZZING_ENGINE}"
   local fengine_url="http://metadata.google.internal/computeMetadata/v1"
   fengine_url="${fengine_url}/instance/attributes/fengine"
   local fengine_name="$(curl "${fengine_url}" -H "Metadata-Flavor: Google")"
@@ -87,16 +112,14 @@ main() {
 
     # AFL requires some starter input
     [[ ! -d seeds ]] && mkdir seeds
-    [[ ! $(find seeds -type f) ]] && echo "Input" > ./seeds/nil_seed
-    # TODO: edit core_pattern in Docker VM
-    # https://groups.google.com/forum/m/#!msg/afl-users/7arn66RyNfg/BsnOPViuCAAJ
-    export AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
+    [[ ! $(find seeds -type f) ]] && echo > ./seeds/nil_seed
+    export AFL_SKIP_CPUFREQ=1
 
-    local exec_cmd="./afl-fuzz ${BINARY_RUNTIME_OPTIONS} -i ./seeds/ -o corpus"
-    exec_cmd="${exec_cmd} -- ${binary}"
+    local exec_cmd="./afl-fuzz ${BINARY_RUNTIME_OPTIONS} -i seeds -o corpus"
+    exec_cmd="${exec_cmd} -m none -- ${binary}"
   elif [[ "${FUZZING_ENGINE}" == "libfuzzer" || \
     "${FUZZING_ENGINE}" == "fsanitize_fuzzer" ]]; then
-    local exec_cmd="./${binary} ${BINARY_RUNTIME_OPTIONS}"
+    local exec_cmd="${binary} ${BINARY_RUNTIME_OPTIONS}"
     exec_cmd="${exec_cmd} -workers=${JOBS} -jobs=${JOBS} -runs=${RUNS}"
     exec_cmd="${exec_cmd} -max_total_time=${MAX_TOTAL_TIME}"
     exec_cmd="${exec_cmd} -print_final_stats=1 -close_fd_mask=3 corpus"
