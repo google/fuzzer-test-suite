@@ -216,9 +216,9 @@ measure_coverage() {
   while grep "^${this_cycle}$" "${experiment_dir}/results/skipped-cycles" \
     &> /dev/null; do
     # Record empty stats for proper data aggregation later.
-    echo "${this_cycle}" >> "${report_dir}/coverage-graph.csv"
-    echo "${this_cycle}" >> "${report_dir}/corpus-size-graph.csv"
-    echo "${this_cycle}" >> "${report_dir}/corpus-elems-graph.csv"
+    echo "${this_cycle}," >> "${report_dir}/coverage-graph.csv"
+    echo "${this_cycle}," >> "${report_dir}/corpus-size-graph.csv"
+    echo "${this_cycle}," >> "${report_dir}/corpus-elems-graph.csv"
     this_cycle=$((this_cycle + 1))
   done
 
