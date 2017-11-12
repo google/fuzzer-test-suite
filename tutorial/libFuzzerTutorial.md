@@ -20,7 +20,7 @@ You may also use your own Linux machine, but [YMMV](https://en.wiktionary.org/wi
 ### VM on GCE
 * Login into your [GCE](https://cloud.google.com/compute/) account or create one.
 * Create a new VM and ssh to it
-   * Ubuntu 14.04 or 16.04 is recommended, other VMs may or may not work
+   * Ubuntu 16.04 is recommended, other VMs may or may not work
    * Choose as many CPUs as you can
    * Choose "Access scopes" = "Allow full access to all Cloud APIs"
 * Install dependencies: 
