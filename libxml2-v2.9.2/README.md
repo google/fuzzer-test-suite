@@ -25,3 +25,17 @@ Indirect leak of 48 byte(s) in 1 object(s) allocated from:
     #8 0x57fe49 in xmlDoRead parser.c:15298:5
     #9 0x4f0f87 in LLVMFuzzerTestOneInput
 ```
+
+Also finds [bug 756528](https://bugzilla.gnome.org/show_bug.cgi?id=756528)
+(fixed
+[here](https://git.gnome.org/browse/libxml2/commit/?id=6360a31a84efe69d155ed96306b9a931a40beab9)):
+
+```
+ERROR: AddressSanitizer: heap-buffer-overflow ...
+READ of size 1 at 0x61900000007b thread T0
+    #0 0x7712a5 in xmlDictComputeFastQKey dict.c:489:18
+    #1 0x76f037 in xmlDictQLookup dict.c:1093:12
+    #2 0x77bab5 in xmlSAX2StartElementNs SAX2.c:2238:17
+    #3 0x543e73 in xmlParseStartTag2 parser.c:9707:6
+    #4 0x53aecb in xmlParseElement parser.c:10069:16
+```
