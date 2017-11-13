@@ -21,7 +21,8 @@
       var chart = new google.visualization.LineChart(document.getElementById(divName));
       var options = {
         title: filename,
-        legend: {position: 'bottom'}
+        legend: {position: 'bottom'},
+        interpolateNulls: 'true'
       };
       chart.draw(data, options);
     }
