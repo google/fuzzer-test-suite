@@ -25,6 +25,11 @@ Reproducer provided in this directory (`crash-ab3eea077a07a1353f86eea4b6075df2e6
 bignum.c:91: OpenSSL internal error: assertion failed: success
 ```
 
+A very similar bug was found later:
+[bn_sqrx8x_internal carry bug on x86_64 (CVE-2017-3736)](https://www.openssl.org/news/secadv/20171102.txt). 
+It was a bug in assembly implementation targeted at processors with the BMI1, BMI2 and ADX extensions.
+It won't reproduce on other hardware. See also: [fix](https://github.com/openssl/openssl/commit/668a709a8d7ea374ee72ad2d43ac72ec60a80eee), [regression test](https://github.com/openssl/openssl/commit/420b88cec8c6f7c67fad07bf508dcccab094f134).
+
 ## x509
 
 Finds [CVE-2017-3735](https://www.openssl.org/news/secadv/20170828.txt), a heap buffer overflow in `X509v3_addr_get_afi`.
