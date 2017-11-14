@@ -19,11 +19,15 @@
       });
       var data = google.visualization.arrayToDataTable(csvMatrix);
       var chart = new google.visualization.LineChart(document.getElementById(divName));
+      var redArray = [];
+      var greenArray = [];
+      for (i = 0; i < (csvMatrix[0].length - 1) / 2; i++) {
+        redArray.push('red');
+        greenArray.push('green');
+      }
       var options = {
         title: filename,
-        //curveType: 'function',
-        colors: ['red', 'red', 'red', 'red', 'red',
-                 'green', 'green', 'green', 'green', 'green' ],
+        colors: redArray.concat(greenArray),
         legend: {position: 'bottom'},
         interpolateNulls: 'true'
       };
@@ -52,8 +56,8 @@
   </script>
 </head>
 <body>
-  <div id="curve_chart_1" style="width: 1000px; height: 400px"></div>
-  <div id="curve_chart_2" style="width: 1000px; height: 400px"></div>
-  <div id="curve_chart_3" style="width: 1000px; height: 400px"></div>
+  <div id="curve_chart_1" style="width: 1000px; height: 450px"></div>
+  <div id="curve_chart_2" style="width: 1000px; height: 450px"></div>
+  <div id="curve_chart_3" style="width: 1000px; height: 450px"></div>
 </body>
 

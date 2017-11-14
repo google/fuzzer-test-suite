@@ -21,8 +21,8 @@
       var chart = new google.visualization.LineChart(document.getElementById(divName));
       var options = {
         title: filename,
-        curveType: 'function',
-        legend: {position: 'bottom'}
+        legend: {position: 'bottom'},
+        interpolateNulls: 'true'
       };
       chart.draw(data, options);
     }
@@ -48,8 +48,8 @@
   </script>
 </head>
 <body>
-  <div id="curve_chart_1" style="width: 600px; height: 270px"></div>
-  <div id="curve_chart_2" style="width: 600px; height: 270px"></div>
-  <div id="curve_chart_3" style="width: 600px; height: 270px"></div>
+  <div id="curve_chart_1" style="width: 1000px; height: 450px"></div>
+  <div id="curve_chart_2" style="width: 1000px; height: 450px"></div>
+  <div id="curve_chart_3" style="width: 1000px; height: 450px"></div>
 </body>
 
