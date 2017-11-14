@@ -91,9 +91,8 @@ func handleFEngine(fengine os.FileInfo, bmarkPath string, finalReportFName strin
 }
 
 func appendAllTrials(aggregateRecords [][]string, records [][]string) [][]string {
-	if len(aggregateRecords) < len(records) {
-		aggregateRecords = extendRecordsToTime(aggregateRecords, len(records)-1, len(aggregateRecords[0]))
-	}
+	records = extendRecordsToTime(records, len(aggregateRecords)-1, len(records[0]))
+	aggregateRecords = extendRecordsToTime(aggregateRecords, len(records)-1, len(aggregateRecords[0]))
 	for r, row := range records {
 		aggregateRecords[r] = append(aggregateRecords[r], row[1:]...)
 	}
