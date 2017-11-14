@@ -33,6 +33,7 @@ It won't reproduce on other hardware. See also:
 [fix](https://github.com/openssl/openssl/commit/668a709a8d7ea374ee72ad2d43ac72ec60a80eee),
 [regression test](https://github.com/openssl/openssl/commit/420b88cec8c6f7c67fad07bf508dcccab094f134),
 [original report](https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=2905).
+On proper CPU libFuzzer finds this bug in < 1 day. 
 
 ## x509
 
