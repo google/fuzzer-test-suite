@@ -14,7 +14,9 @@
 p_gsutil() {
   local state_dir="/tmp/gsutil.${BASHPID}"
   gsutil -m -o "GSUtil:state_dir=${state_dir}" "$@"
+  local ret=$?
   rm -rf "${state_dir}"
+  return ${ret}
 }
 
 # rsyncs directories recursively, deleting files at dst.
@@ -388,7 +390,7 @@ main() {
     fi
 
     # Prevent calling measure_coverage before runner VM begins
-    if gsutil ls "${GSUTIL_BUCKET}" | grep "experiment-folders" > /dev/null;
+    if p_gsutil ls "${GSUTIL_BUCKET}" | grep "experiment-folders" > /dev/null;
     then
       echo "Doing sync #${sync_num}..."
       rsync_delete "${GSUTIL_BUCKET}/experiment-folders" \
