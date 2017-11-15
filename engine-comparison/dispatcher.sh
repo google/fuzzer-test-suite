@@ -41,6 +41,40 @@ get_afl() {
   make clean all
 }
 
+# Updates web graphs in an infinite loop
+live_graphing_loop() {
+  local report_gen_dir="${WORK}/FTS/engine-comparison/report-gen"
+  local web_dir="${WORK}/reports"
+  rm -rf "${web_dir}" && mkdir "${web_dir}"
+
+  # Wait for main loop to start generating reports
+  while ! p_gsutil ls "${GSUTIL_BUCKET}/reports"; do sleep 5; done
+
+  local wait_period=10
+  local next_sync=${SECONDS}
+  while true; do
+    local sleep_time=$((next_sync - SECONDS))
+    if [[ ${sleep_time} -gt 0 ]]; then
+      sleep ${sleep_time}
+    else
+      next_sync=${SECONDS}
+    fi
+
+    rsync_delete "${GSUTIL_BUCKET}/reports" "${web_dir}"
+    (cd "${WORK}" && go run "${report_gen_dir}/generate-report.go")
+
+    while read bm; do
+      cp "${report_gen_dir}/setOfCharts10.html" "${bm}/"
+      find "${bm}" -maxdepth 1 -mindepth 1 -type d -exec \
+        cp "${report_gen_dir}/setOfCharts.html" {}/ \;
+    done < <(find "${web_dir}" -maxdepth 1 -mindepth 1 -type d)
+
+    rsync_delete "${web_dir}" "${GSUTIL_PUBLIC_BUCKET}/webpage-graphs"
+
+    next_sync=$((next_sync + wait_period))
+  done
+}
+
 # Given a config file specifying a fuzzing engine, download that fuzzing engine
 download_engine() {
   local fengine_config=$1
@@ -372,6 +406,9 @@ main() {
   mkdir -p "${WORK}/measurement-folders"
 
   p_gsutil rm -r "${GSUTIL_BUCKET}/processed-folders"
+
+  # Start detached process to update graphs
+  live_graphing_loop & disown
 
   # wait_period defines how frequently the dispatcher generates new reports for
   # every benchmark with every fengine. For a large number of runner VMs,
