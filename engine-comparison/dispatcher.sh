@@ -48,7 +48,7 @@ live_graphing_loop() {
   rm -rf "${web_dir}" && mkdir "${web_dir}"
 
   # Wait for main loop to start generating reports
-  while ! p_gsutil ls "${GSUTIL_BUCKET}/reports"; do sleep 5; done
+  while ! p_gsutil ls "${GSUTIL_BUCKET}/reports" &> /dev/null; do sleep 5; done
 
   local wait_period=10
   local next_sync=${SECONDS}
@@ -69,7 +69,9 @@ live_graphing_loop() {
         cp "${report_gen_dir}/setOfCharts.html" {}/ \;
     done < <(find "${web_dir}" -maxdepth 1 -mindepth 1 -type d)
 
-    rsync_delete "${web_dir}" "${GSUTIL_PUBLIC_BUCKET}/webpage-graphs"
+    # Set object metadata to prevent caching and always display latest graphs.
+    p_gsutil -h "Cache-Control:public,max-age=0,no-transform" rsync -rd \
+      "${web_dir}" "${GSUTIL_PUBLIC_BUCKET}/webpage-graphs"
 
     next_sync=$((next_sync + wait_period))
   done
