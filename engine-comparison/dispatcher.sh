@@ -60,7 +60,7 @@ live_graphing_loop() {
       next_sync=${SECONDS}
     fi
 
-    rsync_delete "${GSUTIL_BUCKET}/reports" "${web_dir}"
+    rsync_delete "${GSUTIL_BUCKET}/reports" "${web_dir}" &> /dev/null
     (cd "${WORK}" && go run "${report_gen_dir}/generate-report.go")
 
     while read bm; do
@@ -71,7 +71,7 @@ live_graphing_loop() {
 
     # Set object metadata to prevent caching and always display latest graphs.
     p_gsutil -h "Cache-Control:public,max-age=0,no-transform" rsync -rd \
-      "${web_dir}" "${GSUTIL_PUBLIC_BUCKET}/webpage-graphs"
+      "${web_dir}" "${GSUTIL_PUBLIC_BUCKET}/webpage-graphs" &> /dev/null
 
     next_sync=$((next_sync + wait_period))
   done
