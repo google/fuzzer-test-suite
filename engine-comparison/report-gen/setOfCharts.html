@@ -43,6 +43,7 @@
       generateGraph("coverage-graph.csv", graphFromText, "curve_chart_1");
       generateGraph("corpus-size-graph.csv", graphFromText, "curve_chart_2");
       generateGraph("corpus-elems-graph.csv", graphFromText, "curve_chart_3");
+      setTimeout(drawChart, 5000);  // Refresh graphs every 5 seconds
     }
 
   </script>
