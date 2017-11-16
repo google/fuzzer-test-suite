@@ -41,6 +41,32 @@ get_afl() {
   make clean all
 }
 
+# Creates index.html in the specified directory with links to graphs for each
+# benchmark and fuzzing configuration.
+emit_index_page() {
+  local web_dir=$1
+  local dst="${web_dir}/index.html"
+  local url_prefix="/fuzzer-test-suite-public/webpage-graphs"
+  {
+    echo "<!DOCTYPE html>"
+    echo "<meta charset=\"utf-8\">"
+    echo "<title>A/B Experiment Results</title>"
+    echo "<body><h2>A/B Experiment Results</h2><ul>"
+    while read bm_path; do
+      local bm="$(basename "${bm_path}")"
+      local bm_url="${url_prefix}/${bm}/setOfCharts10.html"
+      echo "<li><a href=\"${bm_url}\">${bm}</a>"
+      while read fengine_path; do
+        local fengine="$(basename "${fengine_path}")"
+        local fengine_url="${url_prefix}/${bm}/${fengine}/setOfCharts.html"
+        echo "<a href=\"${fengine_url}\">[${fengine}]</a>"
+      done < <(find "${bm_path}" -maxdepth 1 -mindepth 1 -type d)
+      echo "</li>"
+    done < <(find "${web_dir}" -maxdepth 1 -mindepth 1 -type d | sort)
+    echo "</ul></body>"
+  } > "${dst}"
+}
+
 # Updates web graphs in an infinite loop
 live_graphing_loop() {
   local report_gen_dir="${WORK}/FTS/engine-comparison/report-gen"
@@ -68,6 +94,8 @@ live_graphing_loop() {
       find "${bm}" -maxdepth 1 -mindepth 1 -type d -exec \
         cp "${report_gen_dir}/setOfCharts.html" {}/ \;
     done < <(find "${web_dir}" -maxdepth 1 -mindepth 1 -type d)
+
+    emit_index_page "${web_dir}"
 
     # Set object metadata to prevent caching and always display latest graphs.
     p_gsutil -h "Cache-Control:public,max-age=0,no-transform" rsync -rd \
