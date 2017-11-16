@@ -1,7 +1,6 @@
 
 ## bignum
-
-Finds
+### CVE-2017-3732
 [CVE-2017-3732](https://www.openssl.org/news/secadv/20170126.txt),
 a carry propagating bug in [OpenSSL](https://www.openssl.org/)'s `BN_mod_exp`.
 This was originally
@@ -24,6 +23,17 @@ Reproducer provided in this directory (`crash-ab3eea077a07a1353f86eea4b6075df2e6
 ```
 bignum.c:91: OpenSSL internal error: assertion failed: success
 ```
+
+### CVE-2017-3736
+
+A very similar bug was found later:
+[bn_sqrx8x_internal carry bug on x86_64 (CVE-2017-3736)](https://www.openssl.org/news/secadv/20171102.txt). 
+It was a bug in assembly implementation targeted at processors with the BMI1, BMI2 and ADX extensions.
+It won't reproduce on other hardware. See also:
+[fix](https://github.com/openssl/openssl/commit/668a709a8d7ea374ee72ad2d43ac72ec60a80eee),
+[regression test](https://github.com/openssl/openssl/commit/420b88cec8c6f7c67fad07bf508dcccab094f134),
+[original report](https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=2905).
+On proper CPU libFuzzer finds this bug in < 1 day. 
 
 ## x509
 

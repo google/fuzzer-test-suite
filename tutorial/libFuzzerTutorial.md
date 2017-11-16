@@ -36,7 +36,7 @@ svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer Fuzzer
 Fuzzer/build.sh
 ```
 ### Docker
-*This option is less tested*
+*This option is less tested; besides you will be limited with the number of cores your laptop has*
 * [Install Docker](https://docs.docker.com/engine/installation/)
 * Run `docker run --cap-add SYS_PTRACE -ti libfuzzertutorial/prebuilt`
   

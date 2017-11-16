@@ -7,6 +7,7 @@
 # Define zone to avoid prompt
 declare -xr CLOUDSDK_COMPUTE_ZONE="us-west1-b"
 declare -xr GSUTIL_BUCKET="gs://fuzzer-test-suite"
+declare -xr GSUTIL_PUBLIC_BUCKET="gs://fuzzer-test-suite-public"
 
 # Almost definitely fine to be in the public domain
 declare -xr SERVICE_ACCOUNT="373628893752-compute@developer.gserviceaccount.com"
