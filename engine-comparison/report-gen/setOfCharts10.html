@@ -8,6 +8,14 @@
     google.charts.load('current', {'packages':['corechart']});
     google.charts.setOnLoadCallback(drawChart);
 
+    // Removes the "-trial-X" suffix from column names
+    function removeTrial(colname) {
+      var splitArr = colname.split('-');
+      splitArr.pop();
+      splitArr.pop();
+      return splitArr.join('-');
+    }
+
     function graphFromText(filename, inputText, divName) {
       var csvMatrix = inputText.split("\n").map(function(row){return row.split(",");});
 
@@ -19,15 +27,18 @@
       });
       var data = google.visualization.arrayToDataTable(csvMatrix);
       var chart = new google.visualization.LineChart(document.getElementById(divName));
-      var redArray = [];
-      var greenArray = [];
-      for (i = 0; i < (csvMatrix[0].length - 1) / 2; i++) {
-        redArray.push('red');
-        greenArray.push('green');
+      var colorArray = [];
+      var redColName = removeTrial(csvMatrix[0][1]);
+      for (i = 1; i < csvMatrix[0].length; i++) {
+        var colName = removeTrial(csvMatrix[0][i]);
+        if (colName === redColName)
+          colorArray.push("red");
+        else
+          colorArray.push("green");
       }
       var options = {
         title: filename,
-        colors: redArray.concat(greenArray),
+        colors: colorArray,
         legend: {position: 'bottom'},
         interpolateNulls: 'true'
       };
