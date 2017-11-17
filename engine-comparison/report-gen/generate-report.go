@@ -99,44 +99,6 @@ func appendAllTrials(aggregateRecords [][]string, records [][]string) [][]string
 	return aggregateRecords
 }
 
-// Identify the fastest trial column in records and add it to aggregateRecords
-func appendFastestTrial(aggregateRecords [][]string, records [][]string) [][]string {
-	// Initialized to false: track whether this trial has lasted a long time
-	trials := make([]bool, len(records[0]))
-	// Use int for faster comparisons
-	finishedTrials := len(trials) - 1
-	// Rows in Fastest Trial
-	var rowsInFT int
-	var fastestTrial int
-
-	// Find the fastest trial by working backwards, since data points are sometimes dropped
-	for r := len(records) - 1; r > 0; r-- {
-		for c := 1; c < len(records[r]); c++ {
-			if !trials[c] && (len(records[r][c]) > 0) {
-				trials[c] = true
-				finishedTrials--
-				if finishedTrials == 0 {
-					fastestTrial = c
-					rowsInFT = r
-					break
-				}
-			}
-		}
-		if finishedTrials == 0 {
-			break
-		}
-	}
-
-	// Update aggregateRecords
-	if len(aggregateRecords) < rowsInFT+1 {
-		aggregateRecords = extendRecordsToTime(aggregateRecords, rowsInFT, len(aggregateRecords[0]))
-	}
-	for j := 0; j <= rowsInFT; j++ {
-		aggregateRecords[j] = append(aggregateRecords[j], records[j][fastestTrial])
-	}
-	return aggregateRecords
-}
-
 // Call handleFEngine() for each fengine, then compose all fengine data into a single CSV for comparison
 func handleBmark(bmark os.FileInfo, recordsPath string, finalReportFName string) {
 	bmarkRecords := [][]string{{"time"}}
@@ -147,7 +109,6 @@ func handleBmark(bmark os.FileInfo, recordsPath string, finalReportFName string)
 
 	for _, fengine := range fengines {
 		fengineRecords := handleFEngine(fengine, bmarkPath, finalReportFName)
-		//bmarkRecords = appendFastestTrial(bmarkRecords, fengineRecords)
 		bmarkRecords = appendAllTrials(bmarkRecords, fengineRecords)
 	}
 	bmCSV, err := os.Create(path.Join(bmarkPath, finalReportFName))
