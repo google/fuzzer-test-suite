@@ -24,9 +24,9 @@ gsutil -m rsync -rd "${GSUTIL_BUCKET}/reports" ./reports
 go run generate-report.go
 
 while read bm; do
-  cp setOfCharts10.html "${bm}/"
+  cp comparison-charts.html "${bm}/"
   find "${bm}" -maxdepth 1 -mindepth 1 -type d -exec \
-    cp setOfCharts.html {}/ \;
+    cp fengine-charts.html {}/ \;
 done < <(find reports -maxdepth 1 -mindepth 1 -type d)
 
 gsutil -m rsync -rd ./reports "${GSUTIL_BUCKET}/webpage-graphs"
