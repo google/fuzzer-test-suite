@@ -61,6 +61,22 @@ func max(nums []int) int {
 	return myMax
 }
 
+// Returns the max of a slice of numbers. Input and output are strings.
+func stringNumMax(nums []string) string {
+	intNums := []int{}
+	for _, numStr := range nums {
+		if numStr != "" {
+			num, err := strconv.Atoi(numStr)
+			checkErr(err)
+			intNums = append(intNums, num)
+		}
+	}
+	if len(intNums) == 0 {
+		return ""
+	}
+	return strconv.Itoa(max(intNums))
+}
+
 // Copies previous row's data for any skipped trials.  Does not fill empty cells
 // at the end of the table.
 func fillEmptyCells(records [][]string) [][]string {
@@ -179,10 +195,27 @@ func appendAverages(aggregateRecords [][]string, records [][]string) [][]string 
 	return aggregateRecords
 }
 
+func appendMaxes(aggregateRecords [][]string, records [][]string) [][]string {
+	records = extendRecordsToTime(records, len(aggregateRecords)-1, len(records[0]))
+	aggregateRecords = extendRecordsToTime(aggregateRecords, len(records)-1, len(aggregateRecords[0]))
+
+	// To calculate maxes, we first need to interpolate missing data.
+	records = fillEmptyCells(records)
+
+	colName := stripTrial(records[0][1]) + "-max"
+	aggregateRecords[0] = append(aggregateRecords[0], colName)
+	for i := 1; i < len(records); i++ {
+		max := stringNumMax(records[i][1:])
+		aggregateRecords[i] = append(aggregateRecords[i], max)
+	}
+	return aggregateRecords
+}
+
 // Call handleFEngine() for each fengine, then compose all fengine data into a single CSV for comparison
 func handleBmark(bmark os.FileInfo, recordsPath string, finalReportFName string) {
 	bmarkRecords := [][]string{{"time"}}
 	bmarkAvgRecords := [][]string{{"time"}}
+	bmarkMaxRecords := [][]string{{"time"}}
 	bmarkPath := path.Join(recordsPath, bmark.Name())
 	ls, err := ioutil.ReadDir(bmarkPath)
 	checkErr(err)
@@ -192,6 +225,7 @@ func handleBmark(bmark os.FileInfo, recordsPath string, finalReportFName string)
 		fengineRecords := handleFEngine(fengine, bmarkPath, finalReportFName)
 		bmarkRecords = appendAllTrials(bmarkRecords, fengineRecords)
 		bmarkAvgRecords = appendAverages(bmarkAvgRecords, fengineRecords)
+		bmarkMaxRecords = appendMaxes(bmarkMaxRecords, fengineRecords)
 	}
 	bmCSV, err := os.Create(path.Join(bmarkPath, finalReportFName))
 	checkErr(err)
@@ -203,6 +237,11 @@ func handleBmark(bmark os.FileInfo, recordsPath string, finalReportFName string)
 	bmWriter = csv.NewWriter(bmAvgCSV)
 	bmWriter.WriteAll(bmarkAvgRecords)
 	bmAvgCSV.Close()
+	bmMaxCSV, err := os.Create(path.Join(bmarkPath, "max-"+finalReportFName))
+	checkErr(err)
+	bmWriter = csv.NewWriter(bmMaxCSV)
+	bmWriter.WriteAll(bmarkMaxRecords)
+	bmMaxCSV.Close()
 }
 
 // Enters all report subdirectories, from benchmark to fengine to trial;
