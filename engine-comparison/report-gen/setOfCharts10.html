@@ -59,15 +59,29 @@
     }
 
     function drawChart() {
-      generateGraph("coverage-graph.csv", graphFromText, "curve_chart_1");
-      generateGraph("corpus-size-graph.csv", graphFromText, "curve_chart_2");
-      generateGraph("corpus-elems-graph.csv", graphFromText, "curve_chart_3");
+      if (document.getElementById("allMode").checked) {
+        generateGraph("coverage-graph.csv", graphFromText, "curve_chart_1");
+        generateGraph("corpus-size-graph.csv", graphFromText, "curve_chart_2");
+        generateGraph("corpus-elems-graph.csv", graphFromText, "curve_chart_3");
+      } else if (document.getElementById("averageMode").checked) {
+        generateGraph("avg-coverage-graph.csv", graphFromText, "curve_chart_1");
+        generateGraph("avg-corpus-size-graph.csv", graphFromText, "curve_chart_2");
+        generateGraph("avg-corpus-elems-graph.csv", graphFromText, "curve_chart_3");
+      } else {
+        generateGraph("max-coverage-graph.csv", graphFromText, "curve_chart_1");
+        generateGraph("max-corpus-size-graph.csv", graphFromText, "curve_chart_2");
+        generateGraph("max-corpus-elems-graph.csv", graphFromText, "curve_chart_3");
+      }
       setTimeout(drawChart, 5000);  // Refresh graphs every 5 seconds
     }
 
   </script>
 </head>
 <body>
+  Graphing Mode:
+  <input type="radio" name="mode" id="allMode" value="all" checked>All
+  <input type="radio" name="mode" id="averageMode" value="average">Average
+  <input type="radio" name="mode" id="maxMode" value="max">Max
   <div id="curve_chart_1" style="width: 1000px; height: 450px"></div>
   <div id="curve_chart_2" style="width: 1000px; height: 450px"></div>
   <div id="curve_chart_3" style="width: 1000px; height: 450px"></div>
