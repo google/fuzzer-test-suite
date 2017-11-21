@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 )
 
 func checkErr(e error) {
@@ -24,6 +25,85 @@ func onlyDirectories(inLs []os.FileInfo) (outLs []os.FileInfo) {
 		}
 	}
 	return
+}
+
+// Strips the "-trial-X" suffix from a column name
+func stripTrial(colName string) string {
+	splitStrings := strings.Split(colName, "-")
+	return strings.Join(splitStrings[:len(splitStrings)-2], "-")
+}
+
+// Returns the average of a slice of numbers. Input and output are strings.
+func stringNumAverage(nums []string) string {
+	sum := 0
+	count := 0
+	for _, numStr := range nums {
+		if numStr != "" {
+			num, err := strconv.Atoi(numStr)
+			checkErr(err)
+			sum += num
+			count++
+		}
+	}
+	if count == 0 {
+		return ""
+	}
+	return strconv.Itoa(sum / count)
+}
+
+func max(nums []int) int {
+	myMax := nums[0]
+	for i := 1; i < len(nums); i++ {
+		if nums[i] > myMax {
+			myMax = nums[i]
+		}
+	}
+	return myMax
+}
+
+// Returns the max of a slice of numbers. Input and output are strings.
+func stringNumMax(nums []string) string {
+	intNums := []int{}
+	for _, numStr := range nums {
+		if numStr != "" {
+			num, err := strconv.Atoi(numStr)
+			checkErr(err)
+			intNums = append(intNums, num)
+		}
+	}
+	if len(intNums) == 0 {
+		return ""
+	}
+	return strconv.Itoa(max(intNums))
+}
+
+// Copies previous row's data for any skipped trials.  Does not fill empty cells
+// at the end of the table.
+func fillEmptyCells(records [][]string) [][]string {
+	// Determine where to stop filling data for each column.
+	stoppingPoints := make([]int, len(records[0]))
+	for row := len(records) - 1; row > 0; row-- {
+		for col := 1; col < len(records[row]); col++ {
+			if stoppingPoints[col] == 0 && records[row][col] != "" {
+				stoppingPoints[col] = row
+			}
+		}
+	}
+
+	// Fill empty cells occurring before the stopping points
+	finalStoppingPoint := max(stoppingPoints)
+	for row := 1; row < finalStoppingPoint; row++ {
+		for col := 1; col < len(records[row]); col++ {
+			if row < stoppingPoints[col] && records[row][col] == "" {
+				if row == 1 {
+					records[row][col] = strconv.Itoa(0)
+				} else {
+					records[row][col] = records[row-1][col]
+				}
+			}
+		}
+	}
+	return records
 }
 
 // Extend "records" matrix to have rows until time "desiredTime"
@@ -99,40 +179,34 @@ func appendAllTrials(aggregateRecords [][]string, records [][]string) [][]string
 	return aggregateRecords
 }
 
-// Identify the fastest trial column in records and add it to aggregateRecords
-func appendFastestTrial(aggregateRecords [][]string, records [][]string) [][]string {
-	// Initialized to false: track whether this trial has lasted a long time
-	trials := make([]bool, len(records[0]))
-	// Use int for faster comparisons
-	finishedTrials := len(trials) - 1
-	// Rows in Fastest Trial
-	var rowsInFT int
-	var fastestTrial int
+func appendAverages(aggregateRecords [][]string, records [][]string) [][]string {
+	records = extendRecordsToTime(records, len(aggregateRecords)-1, len(records[0]))
+	aggregateRecords = extendRecordsToTime(aggregateRecords, len(records)-1, len(aggregateRecords[0]))
 
-	// Find the fastest trial by working backwards, since data points are sometimes dropped
-	for r := len(records) - 1; r > 0; r-- {
-		for c := 1; c < len(records[r]); c++ {
-			if !trials[c] && (len(records[r][c]) > 0) {
-				trials[c] = true
-				finishedTrials--
-				if finishedTrials == 0 {
-					fastestTrial = c
-					rowsInFT = r
-					break
-				}
-			}
-		}
-		if finishedTrials == 0 {
-			break
-		}
-	}
+	// To calculate averages, we first need to interpolate missing data.
+	records = fillEmptyCells(records)
 
-	// Update aggregateRecords
-	if len(aggregateRecords) < rowsInFT+1 {
-		aggregateRecords = extendRecordsToTime(aggregateRecords, rowsInFT, len(aggregateRecords[0]))
+	colName := stripTrial(records[0][1]) + "-avg"
+	aggregateRecords[0] = append(aggregateRecords[0], colName)
+	for i := 1; i < len(records); i++ {
+		avg := stringNumAverage(records[i][1:])
+		aggregateRecords[i] = append(aggregateRecords[i], avg)
 	}
-	for j := 0; j <= rowsInFT; j++ {
-		aggregateRecords[j] = append(aggregateRecords[j], records[j][fastestTrial])
+	return aggregateRecords
+}
+
+func appendMaxes(aggregateRecords [][]string, records [][]string) [][]string {
+	records = extendRecordsToTime(records, len(aggregateRecords)-1, len(records[0]))
+	aggregateRecords = extendRecordsToTime(aggregateRecords, len(records)-1, len(aggregateRecords[0]))
+
+	// To calculate maxes, we first need to interpolate missing data.
+	records = fillEmptyCells(records)
+
+	colName := stripTrial(records[0][1]) + "-max"
+	aggregateRecords[0] = append(aggregateRecords[0], colName)
+	for i := 1; i < len(records); i++ {
+		max := stringNumMax(records[i][1:])
+		aggregateRecords[i] = append(aggregateRecords[i], max)
 	}
 	return aggregateRecords
 }
@@ -140,6 +214,8 @@ func appendFastestTrial(aggregateRecords [][]string, records [][]string) [][]str
 // Call handleFEngine() for each fengine, then compose all fengine data into a single CSV for comparison
 func handleBmark(bmark os.FileInfo, recordsPath string, finalReportFName string) {
 	bmarkRecords := [][]string{{"time"}}
+	bmarkAvgRecords := [][]string{{"time"}}
+	bmarkMaxRecords := [][]string{{"time"}}
 	bmarkPath := path.Join(recordsPath, bmark.Name())
 	ls, err := ioutil.ReadDir(bmarkPath)
 	checkErr(err)
@@ -147,14 +223,25 @@ func handleBmark(bmark os.FileInfo, recordsPath string, finalReportFName string)
 
 	for _, fengine := range fengines {
 		fengineRecords := handleFEngine(fengine, bmarkPath, finalReportFName)
-		//bmarkRecords = appendFastestTrial(bmarkRecords, fengineRecords)
 		bmarkRecords = appendAllTrials(bmarkRecords, fengineRecords)
+		bmarkAvgRecords = appendAverages(bmarkAvgRecords, fengineRecords)
+		bmarkMaxRecords = appendMaxes(bmarkMaxRecords, fengineRecords)
 	}
 	bmCSV, err := os.Create(path.Join(bmarkPath, finalReportFName))
 	checkErr(err)
 	bmWriter := csv.NewWriter(bmCSV)
 	bmWriter.WriteAll(bmarkRecords)
 	bmCSV.Close()
+	bmAvgCSV, err := os.Create(path.Join(bmarkPath, "avg-"+finalReportFName))
+	checkErr(err)
+	bmWriter = csv.NewWriter(bmAvgCSV)
+	bmWriter.WriteAll(bmarkAvgRecords)
+	bmAvgCSV.Close()
+	bmMaxCSV, err := os.Create(path.Join(bmarkPath, "max-"+finalReportFName))
+	checkErr(err)
+	bmWriter = csv.NewWriter(bmMaxCSV)
+	bmWriter.WriteAll(bmarkMaxRecords)
+	bmMaxCSV.Close()
 }
 
 // Enters all report subdirectories, from benchmark to fengine to trial;

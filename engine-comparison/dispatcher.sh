@@ -54,11 +54,11 @@ emit_index_page() {
     echo "<body><h2>A/B Experiment Results</h2><ul>"
     while read bm_path; do
       local bm="$(basename "${bm_path}")"
-      local bm_url="${url_prefix}/${bm}/setOfCharts10.html"
+      local bm_url="${url_prefix}/${bm}/comparison-charts.html"
       echo "<li><a href=\"${bm_url}\">${bm}</a>"
       while read fengine_path; do
         local fengine="$(basename "${fengine_path}")"
-        local fengine_url="${url_prefix}/${bm}/${fengine}/setOfCharts.html"
+        local fengine_url="${url_prefix}/${bm}/${fengine}/fengine-charts.html"
         echo "<a href=\"${fengine_url}\">[${fengine}]</a>"
       done < <(find "${bm_path}" -maxdepth 1 -mindepth 1 -type d)
       echo "</li>"
@@ -90,9 +90,9 @@ live_graphing_loop() {
     (cd "${WORK}" && go run "${report_gen_dir}/generate-report.go")
 
     while read bm; do
-      cp "${report_gen_dir}/setOfCharts10.html" "${bm}/"
+      cp "${report_gen_dir}/comparison-charts.html" "${bm}/"
       find "${bm}" -maxdepth 1 -mindepth 1 -type d -exec \
-        cp "${report_gen_dir}/setOfCharts.html" {}/ \;
+        cp "${report_gen_dir}/fengine-charts.html" {}/ \;
     done < <(find "${web_dir}" -maxdepth 1 -mindepth 1 -type d)
 
     emit_index_page "${web_dir}"
