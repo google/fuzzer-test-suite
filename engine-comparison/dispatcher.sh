@@ -435,6 +435,7 @@ main() {
   wait
 
   mkdir -p "${WORK}/experiment-folders"
+  mkdir -p "${WORK}/prev-experiment-folders"
   mkdir -p "${WORK}/measurement-folders"
 
   p_gsutil rm -r "${GSUTIL_BUCKET}/processed-folders"
@@ -448,9 +449,8 @@ main() {
   local wait_period=10
   local next_sync=${SECONDS}
   local sync_num=1
-  # TODO: better "while" condition?
-  # Maybe not: just end dispatcher VM when done
-  while true; do
+  local unchanged_count=0
+  while [[ ${unchanged_count} -lt 20 ]]; do
     local sleep_time=$((next_sync - SECONDS))
     if [[ ${sleep_time} -gt 0 ]]; then
       sleep ${sleep_time}
@@ -469,12 +469,23 @@ main() {
           measure_coverage "${fengine_config}" "${benchmark}" &
         done < <(find "${WORK}/fengine-configs" -type f)
       done
+      if diff -qr "${WORK}/experiment-folders" \
+        "${WORK}/prev-experiment-folders" > /dev/null; then
+        unchanged_count=$((unchanged_count + 1))
+      else
+        unchanged_count=0
+      fi
+      rm -rf "${WORK}/prev-experiment-folders"
+      cp -r "${WORK}/experiment-folders" "${WORK}/prev-experiment-folders"
       wait
       sync_num=$((sync_num + 1))
     fi
 
     next_sync=$((next_sync + wait_period))
   done
+
+  # We're done. Stop this dispatcher to save resources.
+  gcloud compute instances stop --zone us-west1-b -q "${INSTANCE_NAME}"
 }
 
 main "$@"
