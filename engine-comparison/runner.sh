@@ -120,12 +120,20 @@ main() {
     export AFL_SKIP_CPUFREQ=1
 
     local exec_cmd="./afl-fuzz ${BINARY_RUNTIME_OPTIONS} -i seeds -o corpus"
+    if ls ./*.dict; then
+      local dict_path="$(find . -maxdepth 1 -name "*.dict" | head -n 1)"
+      exec_cmd="${exec_cmd} -x ${dict_path}@9"
+    fi
     exec_cmd="${exec_cmd} -m none -- ${binary}"
   elif [[ "${FUZZING_ENGINE}" == "libfuzzer" || \
     "${FUZZING_ENGINE}" == "fsanitize_fuzzer" ]]; then
     local exec_cmd="${binary} ${BINARY_RUNTIME_OPTIONS}"
     exec_cmd="${exec_cmd} -workers=${JOBS} -jobs=${JOBS} -runs=${RUNS}"
     exec_cmd="${exec_cmd} -max_total_time=${MAX_TOTAL_TIME}"
+    if ls ./*.dict; then
+      local dict_path="$(find . -maxdepth 1 -name "*.dict" | head -n 1)"
+      exec_cmd="${exec_cmd} -dict=${dict_path}"
+    fi
     exec_cmd="${exec_cmd} -print_final_stats=1 -close_fd_mask=3 corpus"
     [[ -d seeds ]] && exec_cmd="${exec_cmd} seeds"
   else

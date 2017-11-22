@@ -172,6 +172,8 @@ build_benchmark() {
   local bmark_dir="${WORK}/FTS/${benchmark}"
   [[ -d "${bmark_dir}/seeds" ]] && cp -r "${bmark_dir}/seeds" "${SEND_DIR}"
   [[ -d "${bmark_dir}/runtime" ]] && cp -r "${bmark_dir}/runtime" "${SEND_DIR}"
+  ls "${bmark_dir}"/*.dict > /dev/null 2>&1 && \
+    cp "${bmark_dir}"/*.dict "${SEND_DIR}"
 
   [[ "${FUZZING_ENGINE}" == "afl" ]] && cp "${AFL_SRC}/afl-fuzz" "${SEND_DIR}"
 }
