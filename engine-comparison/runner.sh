@@ -48,7 +48,7 @@ conduct_experiment() {
   local bmark_fengine_dir=$3
   local next_sync=${WAIT_PERIOD}
   local cycle=1
-  local sync_dir="gs://fuzzer-test-suite/experiment-folders"
+  local sync_dir="gs://fuzzer-test-suite/${EXPERIMENT}/experiment-folders"
   sync_dir="${sync_dir}/${bmark_fengine_dir}/trial-${trial_num}"
 
   rm -rf corpus last-corpus corpus-archives results

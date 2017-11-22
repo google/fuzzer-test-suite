@@ -8,6 +8,7 @@
 
 . "$(dirname "$0")/../common.sh"
 . "${SCRIPT_DIR}/common-harness.sh"
+. "${WORK}/FTS/engine-comparison/config/parameters.cfg"
 
 # Runs the specified gsutil command with its own state directory to avoid race
 # conditions.
@@ -46,7 +47,7 @@ get_afl() {
 emit_index_page() {
   local web_dir=$1
   local dst="${web_dir}/index.html"
-  local url_prefix="/fuzzer-test-suite-public/webpage-graphs"
+  local url_prefix="/fuzzer-test-suite-public/${EXPERIMENT}"
   {
     echo "<!DOCTYPE html>"
     echo "<meta charset=\"utf-8\">"
@@ -74,7 +75,7 @@ live_graphing_loop() {
   rm -rf "${web_dir}" && mkdir "${web_dir}"
 
   # Wait for main loop to start generating reports
-  while ! p_gsutil ls "${GSUTIL_BUCKET}/reports" &> /dev/null; do sleep 5; done
+  while ! p_gsutil ls "${EXP_BUCKET}/reports" &> /dev/null; do sleep 5; done
 
   local wait_period=10
   local next_sync=${SECONDS}
@@ -86,7 +87,7 @@ live_graphing_loop() {
       next_sync=${SECONDS}
     fi
 
-    rsync_delete "${GSUTIL_BUCKET}/reports" "${web_dir}" &> /dev/null
+    rsync_delete "${EXP_BUCKET}/reports" "${web_dir}" &> /dev/null
     (cd "${WORK}" && go run "${report_gen_dir}/generate-report.go")
 
     while read bm; do
@@ -99,7 +100,7 @@ live_graphing_loop() {
 
     # Set object metadata to prevent caching and always display latest graphs.
     p_gsutil -h "Cache-Control:public,max-age=0,no-transform" rsync -rd \
-      "${web_dir}" "${GSUTIL_PUBLIC_BUCKET}/webpage-graphs" &> /dev/null
+      "${web_dir}" "${WEB_BUCKET}" &> /dev/null
 
     next_sync=$((next_sync + wait_period))
   done
@@ -184,7 +185,7 @@ create_or_start_runner() {
   local benchmark=$2
   local fengine_name=$3
   create_or_start "${instance_name}" \
-    "benchmark=${benchmark},fengine=${fengine_name}" \
+    "benchmark=${benchmark},fengine=${fengine_name},experiment=${EXPERIMENT}" \
     "startup-script=${WORK}/FTS/engine-comparison/startup-runner.sh"
 }
 
@@ -197,10 +198,10 @@ handle_benchmark() {
   local bmark_with_fengine="${benchmark}-with-${fengine_name}"
   build_benchmark "${benchmark}" "${fengine_config}" "${bmark_with_fengine}"
   rsync_delete "${SEND_DIR}" \
-    "${GSUTIL_BUCKET}/binary-folders/${bmark_with_fengine}"
+    "${EXP_BUCKET}/binary-folders/${bmark_with_fengine}"
   # GCloud instance names must match the following regular expression:
   # '[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?'
-  local instance_name="$(echo "fts-runner-${bmark_with_fengine}" | \
+  local instance_name="$(echo "run-${EXPERIMENT}-${bmark_with_fengine}" | \
     tr '[:upper:]' '[:lower:]' | tr -d '.')"
   create_or_start_runner "${instance_name}" "${benchmark}" "${fengine_name}"
 }
@@ -349,9 +350,9 @@ measure_coverage() {
     # Move this corpus archive to the processed folder so that rsync doesn't
     # need to check it anymore.
     local bmark_trial="${benchmark}-${fengine_name}/trial-${LATEST_TRIAL}"
-    local src_archive="${GSUTIL_BUCKET}/experiment-folders/${bmark_trial}"
+    local src_archive="${EXP_BUCKET}/experiment-folders/${bmark_trial}"
     src_archive="${src_archive}/corpus/corpus-archive-${this_cycle}.tar.gz"
-    local dst_archive="${GSUTIL_BUCKET}/processed-folders/${bmark_trial}"
+    local dst_archive="${EXP_BUCKET}/processed-folders/${bmark_trial}"
     dst_archive="${dst_archive}/corpus-archive-${this_cycle}.tar.gz"
     p_gsutil mv "${src_archive}" "${dst_archive}"
   fi
@@ -362,10 +363,13 @@ measure_coverage() {
   echo "${this_cycle},${corpus_elems}" >> "${report_dir}/corpus-elems-graph.csv"
 
   echo "LATEST_CYCLE=${this_cycle}" > "${report_dir}/latest-cycle"
-  rsync_delete "${rep_base_dir}" "${GSUTIL_BUCKET}/reports/${bmark_fengine_dir}"
+  rsync_delete "${rep_base_dir}" "${EXP_BUCKET}/reports/${bmark_fengine_dir}"
 }
 
 main() {
+  declare -xr EXP_BUCKET="${GSUTIL_BUCKET}/${EXPERIMENT}"
+  declare -xr WEB_BUCKET="${GSUTIL_PUBLIC_BUCKET}/${EXPERIMENT}"
+
   mkdir "${WORK}/build"
   mkdir "${WORK}/send"
 
@@ -391,8 +395,7 @@ main() {
   readonly BENCHMARKS
 
   # Reset google cloud results before doing experiments
-  p_gsutil rm -r "${GSUTIL_BUCKET}/experiment-folders" \
-    "${GSUTIL_BUCKET}/reports"
+  p_gsutil rm -r "${EXP_BUCKET}/experiment-folders" "${EXP_BUCKET}/reports"
 
   # Outermost loops
   while read fengine_config; do
@@ -438,7 +441,7 @@ main() {
   mkdir -p "${WORK}/prev-experiment-folders"
   mkdir -p "${WORK}/measurement-folders"
 
-  p_gsutil rm -r "${GSUTIL_BUCKET}/processed-folders"
+  p_gsutil rm -r "${EXP_BUCKET}/processed-folders"
 
   # Start detached process to update graphs
   live_graphing_loop & disown
@@ -459,10 +462,9 @@ main() {
     fi
 
     # Prevent calling measure_coverage before runner VM begins
-    if p_gsutil ls "${GSUTIL_BUCKET}" | grep "experiment-folders" > /dev/null;
-    then
+    if p_gsutil ls "${EXP_BUCKET}" | grep "experiment-folders" > /dev/null; then
       echo "Doing sync #${sync_num}..."
-      rsync_delete "${GSUTIL_BUCKET}/experiment-folders" \
+      rsync_delete "${EXP_BUCKET}/experiment-folders" \
         "${WORK}/experiment-folders"
       for benchmark in ${BENCHMARKS}; do
         while read fengine_config; do

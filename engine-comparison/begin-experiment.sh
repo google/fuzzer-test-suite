@@ -15,6 +15,7 @@ fi
 
 # Write bmarks to file for dispatcher to read.
 readonly CONFIG_DIR="${SCRIPT_DIR}/config"
+. "${CONFIG_DIR}/parameters.cfg"
 echo "BMARKS=$1" > "${CONFIG_DIR}/bmarks.cfg"
 
 # Copy fuzzing configs to single directory for sending to dispatcher.
@@ -35,21 +36,21 @@ fi
 
 # -m parallelizes operation; -r sets recursion, -d syncs deletion of files
 gsutil -m rsync -rd "${FENGINE_CONFIG_DIR}" \
-  "${GSUTIL_BUCKET}/dispatcher-input/fengine-configs"
+  "${GSUTIL_BUCKET}/${EXPERIMENT}/input/fengine-configs"
 rm -rf "${FENGINE_CONFIG_DIR}"
 
 # Send the entire local FTS repository to the dispatcher;
 # Local changes to any file will propagate
 gsutil -m rsync -rd -x ".git/*" "$(dirname "${SCRIPT_DIR}")" \
-  "${GSUTIL_BUCKET}/dispatcher-input/FTS"
+  "${GSUTIL_BUCKET}/${EXPERIMENT}/input/FTS"
 
 #gsutil -m acl ch -r -u ${SERVICE_ACCOUNT}:O ${GSUTIL_BUCKET}
 
 # Set up dispatcher and run its startup script.
-readonly INSTANCE_NAME="dispatcher-$(date +%d)-$(date +%m)"
+readonly INSTANCE_NAME="dispatcher-${EXPERIMENT}"
 create_or_start "${INSTANCE_NAME}"
 robust_begin_gcloud_ssh "${INSTANCE_NAME}"
 cmd="mkdir -p ~/input"
-cmd="${cmd} && gsutil -m rsync -rd ${GSUTIL_BUCKET}/dispatcher-input ~/input"
+cmd="${cmd} && gsutil -m rsync -rd ${GSUTIL_BUCKET}/${EXPERIMENT}/input ~/input"
 cmd="${cmd} && bash ~/input/FTS/engine-comparison/startup-dispatcher.sh"
 gcloud compute ssh "${INSTANCE_NAME}" --command="${cmd}"

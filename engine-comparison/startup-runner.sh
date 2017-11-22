@@ -13,11 +13,13 @@ readonly BENCHMARK="$(curl "${METADATA_URL}/benchmark" -H \
   "Metadata-Flavor: Google")"
 readonly FENGINE_NAME="$(curl "${METADATA_URL}/fengine" -H \
   "Metadata-Flavor: Google")"
+readonly EXPERIMENT="$(curl "${METADATA_URL}/experiment" -H \
+  "Metadata-Flavor: Google")"
+readonly EXP_BUCKET="gs://fuzzer-test-suite/${EXPERIMENT}"
 readonly FOLDER_NAME="${BENCHMARK}-with-${FENGINE_NAME}"
 
 mkdir -p ~/input
-gsutil -m rsync -rd "gs://fuzzer-test-suite/binary-folders/${FOLDER_NAME}" \
-  ~/input
+gsutil -m rsync -rd "${EXP_BUCKET}/binary-folders/${FOLDER_NAME}" ~/input
 
 # Make sure AFL doesn't miss crashes
 echo core | sudo tee /proc/sys/kernel/core_pattern > /dev/null
