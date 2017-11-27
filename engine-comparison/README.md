@@ -91,9 +91,9 @@ following meanings:
   indefinitely.
 
 ## Usage
-
-`${FTS}/engine-comparison/begin-experiment.sh benchmark1[,benchmark2,...]
-fuzz-config1 [fuzz-config2 ...]`
+```shell
+${FTS}/engine-comparison/begin-experiment.sh benchmark1[,benchmark2,...] fuzz-config1 [fuzz-config2 ...]
+```
 
 Each benchmark in the comma-separated list must be the name of a benchmark
 folder in this repository.  Alternatively, the word `all` can be used to run on
@@ -108,6 +108,6 @@ Suppose you would like to compare two fuzzing configurations located at
 `./config/afl` and `./config/libfuzzer` on the boringssl, freetype, and guetzli
 benchmarks.  The corresponding script invocation would be:
 
-`${FTS}/engine-comparison/begin-experiment.sh
-boringssl-2016-02-12,freetype2-2017,guetzli-2017-3-30 ./config/afl
-./config/libfuzzer`
+```shell
+${FTS}/engine-comparison/begin-experiment.sh boringssl-2016-02-12,freetype2-2017,guetzli-2017-3-30 ./config/afl ./config/libfuzzer
+```
