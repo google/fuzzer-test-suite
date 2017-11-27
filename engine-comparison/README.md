@@ -1,98 +1,113 @@
 # Engine Comparison
 
-This is a set of scripts to run A/B testing among different fuzzing engines.
+Tool for executing A/B tests between different fuzzing configurations.
 
-## Gcloud
+## Design
 
-Currently, these scripts only run on Google Cloud, but support for alternatives will be incorporated.
+Given a set of benchmarks from this repository and a set of fuzzing
+configurations (fuzzing engine, runtime flags, etc.), this tool fuzzes the
+benchmarks under each fuzzing configuration and produces a comparison report
+with coverage graphs for each benchmark.
 
-### Gcloud Usage
+![diagram](../docs/images/ab-testing.png?raw=true)
 
-Before running experiments, an initial VM has to be made. You can use
-`gcloud-creator.sh` to create the initial VM, or `begin-experiment` can
-automatically create this VM.
-Creating a VM can take 45-60 seconds, but `gcloud-creator.sh` doesn't exit until google
-cloud is ready for `begin-experiment.sh` to run; one needs only to wait for the
-"Instance Created" output message.
+The tool first spawns a **dispatcher** VM in Google Cloud which begins building
+each benchmark with each fuzzing configuration.  As builds finish, the
+dispatcher spawns **runner** VMs and copies the built fuzzers to them.
 
-In general, `gcloud` commands don't complete until the task is fully finished,
-but there is sometimes a small latency.
+The runners then execute the fuzzers and capture periodic snapshots of the
+produced corpus, uploading those snapshots to a Google Storage bucket.
 
-VM status can also be found on [the gcloud
-console](https://pantheon.corp.google.com/compute/instances?project=fuzzer-test-suite)
+Once the dispatcher has finished building all the fuzzers, it starts pulling the
+snapshots from Google Cloud Storage and measuring the coverage produced by each
+corpus snapshot.  It also creates a live web report with coverage graphs for
+each benchmark.  As new data becomes available, the web report is automatically
+updated.
 
-VM naming is automatic, so only one argument is used. To create the initial VM
-manually, first call as follows:
+After a user-specified number of fuzzer iterations or time limit, each runner
+kills its fuzzer and sends a final snapshot to Google Cloud Storage.  Included
+in the final snapshot are summary statistics and any crash reproducers.  If the
+user has specified multiple trials to be executed, the runner will run the
+fuzzer again, uploading new snapshots, until all trials have been completed.
+Runners automatically shut down and delete themselves when finished with all
+trials.
 
+When all runners are finished executing and the dispatcher has processed all of
+their snapshots, the dispatcher also shuts itself down.
+
+## Prerequisites
+
+- Install [Google Cloud SDK](https://cloud.google.com/sdk/downloads).
+
+## Configuration
+
+Before starting an experiment, you first need to specify the fuzzing
+configurations you wish to compare and the experiment parameters.
+
+### Fuzzing Configurations
+
+Fuzzing configurations are simply text files containing environment variables to
+be exported.  Any variables defined in a configuration will be exported prior to
+building and executing the corresponding benchmark fuzzers.  This means that you
+can specify both build flags (e.g. `CC`, `CFLAGS`, `CXXFLAGS`) and runtime flags
+(see `BINARY_RUNTIME_OPTIONS` below) in fuzzing configurations.
+
+The following two environment variables have special meaning in fuzzing
+configurations:
+
+- `FUZZING_ENGINE` - Currently `afl` and `libfuzzer` are supported.
+- `BINARY_RUNTIME_OPTIONS` - Flags to pass to the fuzzer binary.
+
+**Note that the names of configuration files must contain alphanumeric
+characters and dashes only.**  This restriction is due to GCP allowing only
+those characters for VM names.
+
+#### Example
+
+Suppose you would like to run AFL with default build flags and an input timeout
+of 25 seconds.  Then you could define a configuration file called `afl-config`
+with the following contents:
 ```
-${FTS}/engine-comparison/gcloud-creator.sh create
-```
-Again, this step is optional, and `begin-experiment` will call this automatically.
-
-Similarly, when done for the day, one should call
-
-```
-${FTS}/engine-comparison/gcloud-creator.sh delete
+export FUZZING_ENGINE="afl"
+export BINARY_RUNTIME_OPTIONS="-t 25000"
 ```
 
-Deleting is not optional, and should be done to avoid excessive charges
-### Installation
+### Experiment Parameters
 
-The `gcloud` CLI is a part of the [Google Cloud SDK](https://cloud.google.com/sdk/gcloud/),
-which can be installed [here](https://cloud.google.com/sdk/downloads).
+Experiment parameters are defined in
+[engine-comparison/config/parameters.cfg](config/parameters.cfg) and have the
+following meanings:
 
+- `EXPERIMENT` - The name of this experiment.  Used to create unique links to
+  web reports and storage locations for this experiment's data.  Must contain
+  only alphanumeric characters and dashes.
+- `N_ITERATIONS` - The number of trials to perform (i.e. how many times to run
+  each fuzzer). Must be at least 1.
+- `JOBS` - How many threads to run for each fuzzer.  Currently `JOBS=1` is the
+  only supported mode.
+- `RUNS` - How many individual inputs to run before killing a fuzzer. If
+  -1, run indefinitely.
+- `MAX_TOTAL_TIME` - How long to run each fuzzer before killing it.  If 0, run
+  indefinitely.
 
-## Script usage
+## Usage
 
-From one's local computer, call ` ${FTS}/engine-comparison/begin-experiment.sh
-<list of benchmarks> <fuzz-engine-1 config> <fuzz-engine-2 config>...<fuzz-engine-K config>`
+`${FTS}/engine-comparison/begin-experiment.sh benchmark1[,benchmark2,...]
+fuzz-config1 [fuzz-config2 ...]`
 
-These arguments specify benchmarks and fuzzing engines, and the harness will build
-each benchmark with each fuzzing engine. Therefore, choosing `B` benchmarks
-and `K` unique fuzzing engines will build `B * K` fuzzing binaries.
+Each benchmark in the comma-separated list must be the name of a benchmark
+folder in this repository.  Alternatively, the word `all` can be used to run on
+all benchmarks.
 
-### Specify Benchmarks
+Each fuzzing configuration is specified by a path to its
+[configuration file](#fuzzing-configurations).
 
-The first argument, the list of benchmarks, should be a comma-separated list of names,
-or an alias such as `all`. Specifically, the name of an individual benchmark is the name of
-the directory which contains that benchmark's build script (in the root of this repo).
+### Example
 
-### Specify Fuzzing Engines
+Suppose you would like to compare two fuzzing configurations located at
+`./config/afl` and `./config/libfuzzer` on the boringssl, freetype, and guetzli
+benchmarks.  The corresponding script invocation would be:
 
-All arguments succeeding the first specify unique fuzzing engines. In particular,
-each of these arguments should be the path to a bash script; the script then
-configures a particular fuzzing engine exclusively by defining environment variables.
-
-The name of each file is used in naming VMs which run the fuzzing engine, so to
-follow gcloud naming conventions, please restrict these filenames to numbers,
-letters, and dashes only.
-
-The following environment variables are "magic", so they have special meaning in
-the comparison harness:
-
-- `$FUZZING_ENGINE`, which should be either `"afl"` or `"libfuzzer"`
-- `$BINARY_RUNTIME_OPTIONS`, which will be evaluated for use on the command
-  line with the fuzzing
-  binary when the binary is called and fuzzing begins. For example, one could
-  define `BINARY_RUNTIME_OPTIONS="-use-value-profile=1"` when using libfuzzer.
-
-Any other (non-magic) environment variables which are declared in a fuzzing engine
-configuration will not be accessed by the experiment harness, but they will
-propagate directly to the environments for
-
-1. Building this particular fuzzing engine
-2. Building the binaries which fuzz each benchmark using this particular fuzzing engine.
-3. Running each of these binaries
-
-
-## Parameters
-
-Script behavior can be modified through a set of parameters which are defined in
-`parameters.cfg`. They are assigned with default values, but they can be changed
-by the user before running `begin-experiment.sh`. These parameters are:
-
-- `N_ITERATIONS`, the number of times each binary will be run (and measured).
-Each iteration will be run until the benchmark is completed, except with regards
-to time limits.
-- `JOBS` specifies how many threads to use in running each binary.
-
+`${FTS}/engine-comparison/begin-experiment.sh
+boringssl-2016-02-12,freetype2-2017,guetzli-2017-3-30 ./config/afl
+./config/libfuzzer`
