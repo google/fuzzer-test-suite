@@ -9,7 +9,7 @@ configurations (fuzzing engine, runtime flags, etc.), this tool fuzzes the
 benchmarks under each fuzzing configuration and produces a comparison report
 with coverage graphs for each benchmark.
 
-![diagram](../docs/images/ab-testing.png?raw=true)
+![diagram](../docs/images/ab-design.png?raw=true)
 
 The tool first spawns a **dispatcher** VM in Google Cloud which begins building
 each benchmark with each fuzzing configuration.  As builds finish, the
