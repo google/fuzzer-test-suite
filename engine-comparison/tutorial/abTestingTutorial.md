@@ -39,7 +39,7 @@ Now take a look at the `lf-vanilla` configuration.
 cat FTS/engine-comparison/tutorial/config/lf-vanilla
 ```
 This configuration sets libFuzzer as the fuzzing engine and also instructs the
-testing framework to run libFuzzer with the `-timeout=25` option.  `timeout=25`
+testing framework to run libFuzzer with the `-timeout=25` option.  `-timeout=25`
 is analogous to AFL's `-t 25000`.
 
 ### Experiment Parameters
@@ -55,7 +55,7 @@ This file defines the parameters of our experiment as follows.
 - `N_ITERATIONS=2` - Specifies 2 trials to be performed per fuzzer.
 - `JOBS=1` - Each fuzzer will run single-threaded.
 - `RUNS=-1` - Trials will not be limited by number of inputs run.
-- `TIME=300` - Trials will end after 300 seconds (5 minutes).
+- `MAX_TOTAL_TIME=300` - Trials will end after 300 seconds (5 minutes).
 
 To set these parameters for our experiment, copy `afl-lf.cfg` to
 `engine-comparison/config/parameters.cfg`.
