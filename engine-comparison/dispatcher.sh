@@ -471,8 +471,8 @@ main() {
   local wait_period=10
   local next_sync=${SECONDS}
   local sync_num=1
-  local unchanged_count=0
-  while [[ ${unchanged_count} -lt 20 ]]; do
+  local keep_going=true
+  while [[ "${keep_going}" = true ]]; do
     local sleep_time=$((next_sync - SECONDS))
     if [[ ${sleep_time} -gt 0 ]]; then
       sleep ${sleep_time}
@@ -494,14 +494,14 @@ main() {
           fi
         done < <(find "${WORK}/fengine-configs" -type f)
       done
-      if [[ ${active_runners} -eq 0 ]]; then
+      if [[ ${active_runners} -eq 0 && $((sync_num % 10)) -eq 0 ]]; then
         # Only compute diffs when all runners are finished.  Until that point,
         # this operation is unnecessary overhead.
+        # Also only check diffs every 10 syncs to avoid unnecessarily slowing
+        # down this loop.
         if diff -qr "${WORK}/experiment-folders" \
           "${WORK}/prev-experiment-folders" > /dev/null; then
-          unchanged_count=$((unchanged_count + 1))
-        else
-          unchanged_count=0
+          keep_going=false
         fi
         rm -rf "${WORK}/prev-experiment-folders"
         cp -r "${WORK}/experiment-folders" "${WORK}/prev-experiment-folders"
