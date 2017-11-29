@@ -26,11 +26,13 @@ robust_begin_gcloud_ssh() {
 
 create_or_start() {
   local instance_name=$1
-  local metadata=$2
-  local metadata_from_file=$3
-  gcloud compute instances describe "${instance_name}" 2>&1 | grep "ERROR" \
-    > /dev/null
-  if [[ $? == 0 ]]; then
+  local metadata=""
+  [[ -n ${2+x} ]] && metadata=$2
+  local metadata_from_file=""
+  [[ -n ${3+x} ]] && metadata_from_file=$3
+
+  if gcloud compute instances describe "${instance_name}" 2>&1 | grep "ERROR" \
+    > /dev/null; then
     echo "${instance_name} doesn't exist yet. Now creating VM."
     gcloud_create "${instance_name}" "${metadata}" "${metadata_from_file}"
   else
@@ -40,8 +42,10 @@ create_or_start() {
 
 gcloud_create() {
   local instance_name=$1
-  [[ -n $2 ]] && local metadata_cmd="--metadata $2"
-  [[ -n $3 ]] && local metadata_ff_cmd="--metadata-from-file $3"
+  local metadata_cmd=""
+  [[ -n $2 ]] && metadata_cmd="--metadata $2"
+  local metadata_ff_cmd=""
+  [[ -n $3 ]] && metadata_ff_cmd="--metadata-from-file $3"
 
   # The dispatcher should be more powerful
   if echo "${instance_name}" | grep "dispatcher" > /dev/null; then
