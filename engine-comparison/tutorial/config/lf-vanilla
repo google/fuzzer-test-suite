@@ -1,0 +1,2 @@
+export FUZZING_ENGINE="libfuzzer"
+export BINARY_RUNTIME_OPTIONS="-timeout=25"

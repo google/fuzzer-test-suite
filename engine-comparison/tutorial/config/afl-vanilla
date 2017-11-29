@@ -1,0 +1,2 @@
+export FUZZING_ENGINE="afl"
+export BINARY_RUNTIME_OPTIONS="-t 25000"
