@@ -16,12 +16,18 @@ declare -xr SERVICE_ACCOUNT="373628893752-compute@developer.gserviceaccount.com"
 # repeatedly tries to connect until the ssh succeeds.
 robust_begin_gcloud_ssh() {
   local instance_name=$1
-  while true; do
+  local tries=0
+  while [[ ${tries} -lt 10 ]]; do
     gcloud compute ssh "${instance_name}" --command="echo ping" 2>&1 \
       | grep "ERROR" > /dev/null || break
-    echo "GCloud VM isn't ready yet. Rerunning SSH momentarily."
+    echo "GCP instance isn't ready yet. Rerunning SSH momentarily."
     sleep 5
+    tries=$((tries + 1))
   done
+  if [[ ${tries} -ge 10 ]]; then
+    echo "Error: Couldn't SSH to instance"
+    exit 1
+  fi
 }
 
 create_or_start() {

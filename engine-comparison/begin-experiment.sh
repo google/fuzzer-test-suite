@@ -8,7 +8,7 @@
 . "$(dirname "$0")/../common.sh"
 . "${SCRIPT_DIR}/common-harness.sh"
 
-set -eux
+set -eu
 
 if [[ -z $1 || -z $2 ]]; then
   echo "Usage: $0 benchmark1[,benchmark2,...] fuzz-config1 [fuzz-config2 ...]"
