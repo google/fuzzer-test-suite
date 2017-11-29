@@ -148,7 +148,11 @@ main() {
     trial=$((trial + 1))
   done
 
-  # We're done. Delete this runner to save resources.
+  # We're done. Notify dispatcher and delete this runner to save resources.
+  touch finished
+  local sync_dir="gs://fuzzer-test-suite/${EXPERIMENT}/experiment-folders"
+  sync_dir="${sync_dir}/${bmark_fengine_dir}"
+  gsutil -m mv finished "${sync_dir}/"
   gcloud compute instances delete --zone us-west1-b -q "${INSTANCE_NAME}"
 }
 

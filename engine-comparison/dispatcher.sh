@@ -173,7 +173,7 @@ build_benchmark() {
   local bmark_dir="${WORK}/FTS/${benchmark}"
   [[ -d "${bmark_dir}/seeds" ]] && cp -r "${bmark_dir}/seeds" "${SEND_DIR}"
   [[ -d "${bmark_dir}/runtime" ]] && cp -r "${bmark_dir}/runtime" "${SEND_DIR}"
-  ls "${bmark_dir}"/*.dict > /dev/null 2>&1 && \
+  ls "${bmark_dir}"/*.dict &> /dev/null && \
     cp "${bmark_dir}"/*.dict "${SEND_DIR}"
 
   [[ "${FUZZING_ENGINE}" == "afl" ]] && cp "${AFL_SRC}/afl-fuzz" "${SEND_DIR}"
@@ -366,6 +366,23 @@ measure_coverage() {
   rsync_delete "${rep_base_dir}" "${EXP_BUCKET}/reports/${bmark_fengine_dir}"
 }
 
+# Returns 0 if the given fuzzer has just finished producing results, and removes
+# the finished file so we don't return 0 next time.
+check_finished() {
+  local fengine_config=$1
+  local benchmark=$2
+  local fengine_name="$(basename "${fengine_config}")"
+  local finished_dir="${WORK}/experiment-folders/${benchmark}-${fengine_name}"
+  if ls "${finished_dir}/finished" &> /dev/null; then
+    echo "Runner ${benchmark}-${fengine_name} has finished"
+    p_gsutil rm \
+      "${EXP_BUCKET}/experiment-folders/${benchmark}-${fengine_name}/finished"
+    rm "${finished_dir}/finished"
+    return 0
+  fi
+  return 1
+}
+
 main() {
   declare -xr EXP_BUCKET="${GSUTIL_BUCKET}/${EXPERIMENT}"
   declare -xr WEB_BUCKET="${GSUTIL_PUBLIC_BUCKET}/${EXPERIMENT}"
@@ -398,10 +415,12 @@ main() {
   p_gsutil rm -r "${EXP_BUCKET}/experiment-folders" "${EXP_BUCKET}/reports"
 
   # Outermost loops
+  local active_runners=0
   while read fengine_config; do
     download_engine "${fengine_config}"
     for benchmark in ${BENCHMARKS}; do
       handle_benchmark "${benchmark}" "${fengine_config}" &
+      active_runners=$((active_runners + 1))
     done
   done < <(find "${WORK}/fengine-configs" -type f)
   wait
@@ -469,16 +488,24 @@ main() {
       for benchmark in ${BENCHMARKS}; do
         while read fengine_config; do
           measure_coverage "${fengine_config}" "${benchmark}" &
+          if check_finished "${fengine_config}" "${benchmark}"; then
+            active_runners=$((active_runners - 1))
+            echo "Active Runners: ${active_runners}"
+          fi
         done < <(find "${WORK}/fengine-configs" -type f)
       done
-      if diff -qr "${WORK}/experiment-folders" \
-        "${WORK}/prev-experiment-folders" > /dev/null; then
-        unchanged_count=$((unchanged_count + 1))
-      else
-        unchanged_count=0
+      if [[ ${active_runners} -eq 0 ]]; then
+        # Only compute diffs when all runners are finished.  Until that point,
+        # this operation is unnecessary overhead.
+        if diff -qr "${WORK}/experiment-folders" \
+          "${WORK}/prev-experiment-folders" > /dev/null; then
+          unchanged_count=$((unchanged_count + 1))
+        else
+          unchanged_count=0
+        fi
+        rm -rf "${WORK}/prev-experiment-folders"
+        cp -r "${WORK}/experiment-folders" "${WORK}/prev-experiment-folders"
       fi
-      rm -rf "${WORK}/prev-experiment-folders"
-      cp -r "${WORK}/experiment-folders" "${WORK}/prev-experiment-folders"
       wait
       sync_num=$((sync_num + 1))
     fi
