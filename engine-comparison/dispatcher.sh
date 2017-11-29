@@ -282,13 +282,15 @@ measure_coverage() {
   # Decide which cycle to report on
   # First, check if the runner documented that it skipped any cycles
   local this_cycle=$((LATEST_CYCLE + 1))
+  local this_time=$((this_cycle * 20))
   while grep "^${this_cycle}$" "${experiment_dir}/results/skipped-cycles" \
     &> /dev/null; do
     # Record empty stats for proper data aggregation later.
-    echo "${this_cycle}," >> "${report_dir}/coverage-graph.csv"
-    echo "${this_cycle}," >> "${report_dir}/corpus-size-graph.csv"
-    echo "${this_cycle}," >> "${report_dir}/corpus-elems-graph.csv"
+    echo "${this_time}," >> "${report_dir}/coverage-graph.csv"
+    echo "${this_time}," >> "${report_dir}/corpus-size-graph.csv"
+    echo "${this_time}," >> "${report_dir}/corpus-elems-graph.csv"
     this_cycle=$((this_cycle + 1))
+    this_time=$((this_cycle * 20))
   done
 
   if [[ ! -f \
@@ -358,9 +360,9 @@ measure_coverage() {
   fi
 
   # Finish generating human readable report
-  echo "${this_cycle},${coverage}" >> "${report_dir}/coverage-graph.csv"
-  echo "${this_cycle},${corpus_size}" >> "${report_dir}/corpus-size-graph.csv"
-  echo "${this_cycle},${corpus_elems}" >> "${report_dir}/corpus-elems-graph.csv"
+  echo "${this_time},${coverage}" >> "${report_dir}/coverage-graph.csv"
+  echo "${this_time},${corpus_size}" >> "${report_dir}/corpus-size-graph.csv"
+  echo "${this_time},${corpus_elems}" >> "${report_dir}/corpus-elems-graph.csv"
 
   echo "LATEST_CYCLE=${this_cycle}" > "${report_dir}/latest-cycle"
   rsync_delete "${rep_base_dir}" "${EXP_BUCKET}/reports/${bmark_fengine_dir}"
