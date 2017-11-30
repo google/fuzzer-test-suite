@@ -147,6 +147,13 @@ build_benchmark() {
   local fengine_config=$2
   local output_dirname=$3
 
+  # Special case for OpenSSL x509 fuzzer
+  local is_x509_fuzzer=false
+  if [[ "${benchmark}" = "openssl-1.1.0c-x509" ]]; then
+    is_x509_fuzzer=true
+    benchmark="openssl-1.1.0c"
+  fi
+
   local building_dir="${WORK}/build/${output_dirname}"
   echo "Building in ${building_dir}"
   rm -rf "${building_dir}"
@@ -160,7 +167,12 @@ build_benchmark() {
   mkdir "${SEND_DIR}"
 
   # Copy the executable and delete build directory
-  cp "${building_dir}/${benchmark}-${FUZZING_ENGINE}" "${SEND_DIR}/"
+  if [[ "${is_x509_fuzzer}" = true ]]; then
+    cp "${building_dir}/${benchmark}-${FUZZING_ENGINE}-x509" \
+      "${SEND_DIR}/openssl-1.1.0c-x509-${FUZZING_ENGINE}"
+  else
+    cp "${building_dir}/${benchmark}-${FUZZING_ENGINE}" "${SEND_DIR}/"
+  fi
   rm -rf "${building_dir}"
 
   cp "${WORK}/FTS/engine-comparison/Dockerfile-runner" "${SEND_DIR}/Dockerfile"
@@ -168,7 +180,11 @@ build_benchmark() {
   cp "${WORK}/FTS/engine-comparison/config/parameters.cfg" "${SEND_DIR}/"
   cp "${fengine_config}" "${SEND_DIR}/fengine.cfg"
 
-  echo "BENCHMARK=${benchmark}" > "${SEND_DIR}/benchmark.cfg"
+  if [[ "${is_x509_fuzzer}" = true ]]; then
+    echo "BENCHMARK=openssl-1.1.0c-x509" > "${SEND_DIR}/benchmark.cfg"
+  else
+    echo "BENCHMARK=${benchmark}" > "${SEND_DIR}/benchmark.cfg"
+  fi
 
   local bmark_dir="${WORK}/FTS/${benchmark}"
   [[ -d "${bmark_dir}/seeds" ]] && cp -r "${bmark_dir}/seeds" "${SEND_DIR}"
@@ -210,10 +226,25 @@ handle_benchmark() {
 make_measurer() {
   local benchmark=$1
   local building_dir="${WORK}/coverage-builds/${benchmark}"
+
+  # Special case for OpenSSL x509 fuzzer
+  local is_x509_fuzzer=false
+  if [[ "${benchmark}" = "openssl-1.1.0c-x509" ]]; then
+    is_x509_fuzzer=true
+    benchmark="openssl-1.1.0c"
+  fi
+
   mkdir -p "${building_dir}"
   (cd "${building_dir}" && exec_in_clean_env \
     "FUZZING_ENGINE=coverage ${WORK}/FTS/${benchmark}/build.sh")
-  mv "${building_dir}/${benchmark}-coverage" "${WORK}/coverage-binaries/"
+
+  if [[ "${is_x509_fuzzer}" = true ]]; then
+    mv "${building_dir}/${benchmark}-coverage-x509" \
+      "${WORK}/coverage-binaries/openssl-1.1.0c-x509-coverage"
+  else
+    mv "${building_dir}/${benchmark}-coverage" "${WORK}/coverage-binaries/"
+  fi
+
   [[ -d "${building_dir}/runtime" ]] && \
     cp -r "${building_dir}"/runtime/* "${WORK}/coverage-binaries/runtime/"
   rm -rf "${building_dir}"
@@ -411,6 +442,9 @@ main() {
     three) BENCHMARKS="libssh-2017-1272 json-2017-02-12 proj4-2017-08-14" ;;
     *) BENCHMARKS="$(echo "${BMARKS}" | tr ',' ' ')" ;;
   esac
+  if echo "${BENCHMARKS}" | grep "openssl-1.1.0c" > /dev/null; then
+    BENCHMARKS="${BENCHMARKS} openssl-1.1.0c-x509"
+  fi
   readonly BENCHMARKS
 
   # Reset google cloud results before doing experiments
