@@ -147,6 +147,13 @@ build_benchmark() {
   local fengine_config=$2
   local output_dirname=$3
 
+  # Special case for OpenSSL x509 fuzzer
+  local is_x509_fuzzer=false
+  if [[ "${benchmark}" = "openssl-1.1.0c-x509" ]]; then
+    is_x509_fuzzer=true
+    benchmark="openssl-1.1.0c"
+  fi
+
   local building_dir="${WORK}/build/${output_dirname}"
   echo "Building in ${building_dir}"
   rm -rf "${building_dir}"
@@ -160,7 +167,12 @@ build_benchmark() {
   mkdir "${SEND_DIR}"
 
   # Copy the executable and delete build directory
-  cp "${building_dir}/${benchmark}-${FUZZING_ENGINE}" "${SEND_DIR}/"
+  if [[ "${is_x509_fuzzer}" = true ]]; then
+    cp "${building_dir}/${benchmark}-${FUZZING_ENGINE}-x509" \
+      "${SEND_DIR}/openssl-1.1.0c-x509-${FUZZING_ENGINE}"
+  else
+    cp "${building_dir}/${benchmark}-${FUZZING_ENGINE}" "${SEND_DIR}/"
+  fi
   rm -rf "${building_dir}"
 
   cp "${WORK}/FTS/engine-comparison/Dockerfile-runner" "${SEND_DIR}/Dockerfile"
@@ -168,12 +180,16 @@ build_benchmark() {
   cp "${WORK}/FTS/engine-comparison/config/parameters.cfg" "${SEND_DIR}/"
   cp "${fengine_config}" "${SEND_DIR}/fengine.cfg"
 
-  echo "BENCHMARK=${benchmark}" > "${SEND_DIR}/benchmark.cfg"
+  if [[ "${is_x509_fuzzer}" = true ]]; then
+    echo "BENCHMARK=openssl-1.1.0c-x509" > "${SEND_DIR}/benchmark.cfg"
+  else
+    echo "BENCHMARK=${benchmark}" > "${SEND_DIR}/benchmark.cfg"
+  fi
 
   local bmark_dir="${WORK}/FTS/${benchmark}"
   [[ -d "${bmark_dir}/seeds" ]] && cp -r "${bmark_dir}/seeds" "${SEND_DIR}"
   [[ -d "${bmark_dir}/runtime" ]] && cp -r "${bmark_dir}/runtime" "${SEND_DIR}"
-  ls "${bmark_dir}"/*.dict > /dev/null 2>&1 && \
+  ls "${bmark_dir}"/*.dict &> /dev/null && \
     cp "${bmark_dir}"/*.dict "${SEND_DIR}"
 
   [[ "${FUZZING_ENGINE}" == "afl" ]] && cp "${AFL_SRC}/afl-fuzz" "${SEND_DIR}"
@@ -210,10 +226,25 @@ handle_benchmark() {
 make_measurer() {
   local benchmark=$1
   local building_dir="${WORK}/coverage-builds/${benchmark}"
+
+  # Special case for OpenSSL x509 fuzzer
+  local is_x509_fuzzer=false
+  if [[ "${benchmark}" = "openssl-1.1.0c-x509" ]]; then
+    is_x509_fuzzer=true
+    benchmark="openssl-1.1.0c"
+  fi
+
   mkdir -p "${building_dir}"
   (cd "${building_dir}" && exec_in_clean_env \
     "FUZZING_ENGINE=coverage ${WORK}/FTS/${benchmark}/build.sh")
-  mv "${building_dir}/${benchmark}-coverage" "${WORK}/coverage-binaries/"
+
+  if [[ "${is_x509_fuzzer}" = true ]]; then
+    mv "${building_dir}/${benchmark}-coverage-x509" \
+      "${WORK}/coverage-binaries/openssl-1.1.0c-x509-coverage"
+  else
+    mv "${building_dir}/${benchmark}-coverage" "${WORK}/coverage-binaries/"
+  fi
+
   [[ -d "${building_dir}/runtime" ]] && \
     cp -r "${building_dir}"/runtime/* "${WORK}/coverage-binaries/runtime/"
   rm -rf "${building_dir}"
@@ -282,13 +313,15 @@ measure_coverage() {
   # Decide which cycle to report on
   # First, check if the runner documented that it skipped any cycles
   local this_cycle=$((LATEST_CYCLE + 1))
+  local this_time=$((this_cycle * 20))
   while grep "^${this_cycle}$" "${experiment_dir}/results/skipped-cycles" \
     &> /dev/null; do
     # Record empty stats for proper data aggregation later.
-    echo "${this_cycle}," >> "${report_dir}/coverage-graph.csv"
-    echo "${this_cycle}," >> "${report_dir}/corpus-size-graph.csv"
-    echo "${this_cycle}," >> "${report_dir}/corpus-elems-graph.csv"
+    echo "${this_time}," >> "${report_dir}/coverage-graph.csv"
+    echo "${this_time}," >> "${report_dir}/corpus-size-graph.csv"
+    echo "${this_time}," >> "${report_dir}/corpus-elems-graph.csv"
     this_cycle=$((this_cycle + 1))
+    this_time=$((this_cycle * 20))
   done
 
   if [[ ! -f \
@@ -358,12 +391,29 @@ measure_coverage() {
   fi
 
   # Finish generating human readable report
-  echo "${this_cycle},${coverage}" >> "${report_dir}/coverage-graph.csv"
-  echo "${this_cycle},${corpus_size}" >> "${report_dir}/corpus-size-graph.csv"
-  echo "${this_cycle},${corpus_elems}" >> "${report_dir}/corpus-elems-graph.csv"
+  echo "${this_time},${coverage}" >> "${report_dir}/coverage-graph.csv"
+  echo "${this_time},${corpus_size}" >> "${report_dir}/corpus-size-graph.csv"
+  echo "${this_time},${corpus_elems}" >> "${report_dir}/corpus-elems-graph.csv"
 
   echo "LATEST_CYCLE=${this_cycle}" > "${report_dir}/latest-cycle"
   rsync_delete "${rep_base_dir}" "${EXP_BUCKET}/reports/${bmark_fengine_dir}"
+}
+
+# Returns 0 if the given fuzzer has just finished producing results, and removes
+# the finished file so we don't return 0 next time.
+check_finished() {
+  local fengine_config=$1
+  local benchmark=$2
+  local fengine_name="$(basename "${fengine_config}")"
+  local finished_dir="${WORK}/experiment-folders/${benchmark}-${fengine_name}"
+  if ls "${finished_dir}/finished" &> /dev/null; then
+    echo "Runner ${benchmark}-${fengine_name} has finished"
+    p_gsutil rm \
+      "${EXP_BUCKET}/experiment-folders/${benchmark}-${fengine_name}/finished"
+    rm "${finished_dir}/finished"
+    return 0
+  fi
+  return 1
 }
 
 main() {
@@ -392,16 +442,21 @@ main() {
     three) BENCHMARKS="libssh-2017-1272 json-2017-02-12 proj4-2017-08-14" ;;
     *) BENCHMARKS="$(echo "${BMARKS}" | tr ',' ' ')" ;;
   esac
+  if echo "${BENCHMARKS}" | grep "openssl-1.1.0c" > /dev/null; then
+    BENCHMARKS="${BENCHMARKS} openssl-1.1.0c-x509"
+  fi
   readonly BENCHMARKS
 
   # Reset google cloud results before doing experiments
   p_gsutil rm -r "${EXP_BUCKET}/experiment-folders" "${EXP_BUCKET}/reports"
 
   # Outermost loops
+  local active_runners=0
   while read fengine_config; do
     download_engine "${fengine_config}"
     for benchmark in ${BENCHMARKS}; do
       handle_benchmark "${benchmark}" "${fengine_config}" &
+      active_runners=$((active_runners + 1))
     done
   done < <(find "${WORK}/fengine-configs" -type f)
   wait
@@ -452,8 +507,8 @@ main() {
   local wait_period=10
   local next_sync=${SECONDS}
   local sync_num=1
-  local unchanged_count=0
-  while [[ ${unchanged_count} -lt 20 ]]; do
+  local keep_going=true
+  while [[ "${keep_going}" = true ]]; do
     local sleep_time=$((next_sync - SECONDS))
     if [[ ${sleep_time} -gt 0 ]]; then
       sleep ${sleep_time}
@@ -469,16 +524,24 @@ main() {
       for benchmark in ${BENCHMARKS}; do
         while read fengine_config; do
           measure_coverage "${fengine_config}" "${benchmark}" &
+          if check_finished "${fengine_config}" "${benchmark}"; then
+            active_runners=$((active_runners - 1))
+            echo "Active Runners: ${active_runners}"
+          fi
         done < <(find "${WORK}/fengine-configs" -type f)
       done
-      if diff -qr "${WORK}/experiment-folders" \
-        "${WORK}/prev-experiment-folders" > /dev/null; then
-        unchanged_count=$((unchanged_count + 1))
-      else
-        unchanged_count=0
+      if [[ ${active_runners} -eq 0 && $((sync_num % 10)) -eq 0 ]]; then
+        # Only compute diffs when all runners are finished.  Until that point,
+        # this operation is unnecessary overhead.
+        # Also only check diffs every 10 syncs to avoid unnecessarily slowing
+        # down this loop.
+        if diff -qr "${WORK}/experiment-folders" \
+          "${WORK}/prev-experiment-folders" > /dev/null; then
+          keep_going=false
+        fi
+        rm -rf "${WORK}/prev-experiment-folders"
+        cp -r "${WORK}/experiment-folders" "${WORK}/prev-experiment-folders"
       fi
-      rm -rf "${WORK}/prev-experiment-folders"
-      cp -r "${WORK}/experiment-folders" "${WORK}/prev-experiment-folders"
       wait
       sync_num=$((sync_num + 1))
     fi

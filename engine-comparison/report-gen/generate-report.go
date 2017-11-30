@@ -106,16 +106,16 @@ func fillEmptyCells(records [][]string) [][]string {
 	return records
 }
 
-// Extend "records" matrix to have rows until time "desiredTime"
-// Return: Extended version of record
-func extendRecordsToTime(records [][]string, desiredTime int, recordCols int) [][]string {
-	lenr := len(records)
+// Extend "mat" matrix to have desiredRows rows.
+// Return: Extended version of mat
+func extendRecordsToRow(mat [][]string, desiredRows int, matCols int) [][]string {
+	matLen := len(mat)
 	// records[1] stores cycle [1], as records[0] is column names
-	for j := lenr; j < desiredTime+1; j++ {
-		records = append(records, make([]string, recordCols))
-		records[j][0] = strconv.Itoa(j)
+	for i := matLen; i < desiredRows; i++ {
+		mat = append(mat, make([]string, matCols))
+		mat[i][0] = strconv.Itoa(i * 20)
 	}
-	return records
+	return mat
 }
 
 // Handles the CSV Reader for a single trial, and updates records[][] accordingly. Returns the updated records
@@ -126,17 +126,15 @@ func handleTrialCSV(trialReader *csv.Reader, records [][]string, colName string,
 	// Add the name of this new column to records[0]
 	records[0] = append(records[0], colName)
 
-	finalTime, err := strconv.Atoi(trialRecords[len(trialRecords)-1][0])
-	checkErr(err)
-	//If this test went longer than all of the others, so far
-	if len(records) < finalTime+1 {
-		records = extendRecordsToTime(records, finalTime, totalCols)
+	// Ensure records has 1 more row than trialRecords.
+	// This extra row is needed for column headers.
+	trialRows := len(trialRecords)
+	if len(records) < trialRows+1 {
+		records = extendRecordsToRow(records, trialRows+1, totalCols)
 	}
-	for _, row := range trialRecords {
-		// row[0] is time, on the x-axis; row[1] is value, on the y-axis
-		time, err := strconv.Atoi(row[0])
-		checkErr(err)
-		records[time][trialNum+1] = row[1]
+	for i, vals := range trialRecords {
+		// Note index i+1 since trialRecords has no column headers.
+		records[i+1][trialNum+1] = vals[1]
 	}
 	return records
 }
@@ -171,8 +169,8 @@ func handleFEngine(fengine os.FileInfo, bmarkPath string, finalReportFName strin
 }
 
 func appendAllTrials(aggregateRecords [][]string, records [][]string) [][]string {
-	records = extendRecordsToTime(records, len(aggregateRecords)-1, len(records[0]))
-	aggregateRecords = extendRecordsToTime(aggregateRecords, len(records)-1, len(aggregateRecords[0]))
+	records = extendRecordsToRow(records, len(aggregateRecords), len(records[0]))
+	aggregateRecords = extendRecordsToRow(aggregateRecords, len(records), len(aggregateRecords[0]))
 	for r, row := range records {
 		aggregateRecords[r] = append(aggregateRecords[r], row[1:]...)
 	}
@@ -180,8 +178,8 @@ func appendAllTrials(aggregateRecords [][]string, records [][]string) [][]string
 }
 
 func appendAverages(aggregateRecords [][]string, records [][]string) [][]string {
-	records = extendRecordsToTime(records, len(aggregateRecords)-1, len(records[0]))
-	aggregateRecords = extendRecordsToTime(aggregateRecords, len(records)-1, len(aggregateRecords[0]))
+	records = extendRecordsToRow(records, len(aggregateRecords), len(records[0]))
+	aggregateRecords = extendRecordsToRow(aggregateRecords, len(records), len(aggregateRecords[0]))
 
 	// To calculate averages, we first need to interpolate missing data.
 	records = fillEmptyCells(records)
@@ -196,8 +194,8 @@ func appendAverages(aggregateRecords [][]string, records [][]string) [][]string 
 }
 
 func appendMaxes(aggregateRecords [][]string, records [][]string) [][]string {
-	records = extendRecordsToTime(records, len(aggregateRecords)-1, len(records[0]))
-	aggregateRecords = extendRecordsToTime(aggregateRecords, len(records)-1, len(aggregateRecords[0]))
+	records = extendRecordsToRow(records, len(aggregateRecords), len(records[0]))
+	aggregateRecords = extendRecordsToRow(aggregateRecords, len(records), len(aggregateRecords[0]))
 
 	// To calculate maxes, we first need to interpolate missing data.
 	records = fillEmptyCells(records)
