@@ -52,7 +52,7 @@ This file defines the parameters of our experiment as follows.
 
 - `EXPERIMENT="afl-libfuzzer"` - Names the experiment `afl-libfuzzer`.  This
   determines the URL at which results will be displayed.
-- `N_ITERATIONS=2` - Specifies 2 trials to be performed per fuzzer.
+- `RUNNERS=2` - 2 runners will be spawned per fuzzer.
 - `JOBS=1` - Each fuzzer will run single-threaded.
 - `MAX_RUNS=-1` - Trials will not be limited by number of inputs run.
 - `MAX_TOTAL_TIME=300` - Trials will end after 300 seconds (5 minutes).
@@ -79,7 +79,7 @@ and process the corpus snapshots produced by the runners.  At this point, you
 can start monitoring the coverage graphs produced by the dispatcher at
 <https://storage.googleapis.com/fuzzer-test-suite-public/afl-libfuzzer/index.html>.
 
-When all trials have completed and the dispatcher is finished processing all
+When all runners have finished and the dispatcher is finished processing all
 snapshots, the dispatcher will automatically shut down, and the pipe to your
 terminal will be closed.  When this happens, you'll see an error message similar
 to:

@@ -198,10 +198,8 @@ build_benchmark() {
 # Starts a runner VM
 create_or_start_runner() {
   local instance_name=$1
-  local benchmark=$2
-  local fengine_name=$3
-  create_or_start "${instance_name}" \
-    "benchmark=${benchmark},fengine=${fengine_name},experiment=${EXPERIMENT}" \
+  local metadata="benchmark=$2,fengine=$3,trial=$4,experiment=${EXPERIMENT}"
+  create_or_start "${instance_name}" "${metadata}" \
     "startup-script=${WORK}/FTS/engine-comparison/startup-runner.sh"
 }
 
@@ -219,7 +217,10 @@ handle_benchmark() {
   # '[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?'
   local instance_name="$(echo "run-${EXPERIMENT}-${bmark_with_fengine}" | \
     tr '[:upper:]' '[:lower:]' | tr -d '.')"
-  create_or_start_runner "${instance_name}" "${benchmark}" "${fengine_name}"
+  for (( i=0; i < RUNNERS; i++ )); do
+    create_or_start_runner "${instance_name}-${i}" "${benchmark}" \
+      "${fengine_name}" "${i}"
+  done
 }
 
 # Make a "plain" coverage build for a benchmark
@@ -276,31 +277,21 @@ run_cov_new_inputs() {
 measure_coverage() {
   local fengine_config=$1
   local benchmark=$2
+  local trial=$3
   local fengine_name="$(basename "${fengine_config}")"
-  local bmark_fengine_dir="${benchmark}/${fengine_name}"
-  local measurement_dir="${WORK}/measurement-folders/${bmark_fengine_dir}"
+  local bmark_fengine_trial_dir="${benchmark}/${fengine_name}/trial-${trial}"
+  local bmark_trial="${benchmark}-${fengine_name}/trial-${trial}"
+  local measurement_dir="${WORK}/measurement-folders/${bmark_fengine_trial_dir}"
   local corpus_dir="${measurement_dir}/corpus"
   local prev_corpus_dir="${measurement_dir}/last-corpus"
   local sancov_dir="${measurement_dir}/sancovs"
-  local rep_base_dir="${measurement_dir}/reports"
-  local exp_base_dir="${WORK}/experiment-folders/${benchmark}-${fengine_name}"
+  local report_dir="${measurement_dir}/reports"
+  local experiment_dir="${WORK}/experiment-folders/${bmark_trial}"
 
   rm -rf "${corpus_dir}" "${sancov_dir}"
-  mkdir -p "${corpus_dir}" "${sancov_dir}" "${rep_base_dir}" \
-    "${prev_corpus_dir}"
+  mkdir -p "${corpus_dir}" "${sancov_dir}" "${report_dir}" "${prev_corpus_dir}"
 
-  # Recall which trial
-  if [[ -f "${rep_base_dir}/latest-trial" ]]; then
-    . "${rep_base_dir}/latest-trial"
-  else
-    LATEST_TRIAL=0
-  fi
-
-  # Append trial directories
-  local experiment_dir="${exp_base_dir}/trial-${LATEST_TRIAL}"
-  local report_dir="${rep_base_dir}/trial-${LATEST_TRIAL}"
   local covered_pcs_file="${report_dir}/covered-pcs.txt"
-  mkdir -p "${report_dir}"
   [[ -f "${covered_pcs_file}" ]] || touch "${covered_pcs_file}"
 
   # Use the corpus-archive directly succeeding the last one to be processed
@@ -339,13 +330,7 @@ measure_coverage() {
       local corpus_size="${corpus_size_line##*,}"
       local corpus_elems="${corpus_elems_line##*,}"
     else
-      if [[ -d "${exp_base_dir}/trial-$((LATEST_TRIAL + 1))" ]]; then
-        # No corpus archive because we've already analyzed all corpora for this
-        # trial.
-        echo "LATEST_TRIAL=$((LATEST_TRIAL + 1))" > \
-          "${rep_base_dir}/latest-trial"
-        rm -rf "${prev_corpus_dir}"
-      fi
+      # No corpus archive because runner hasn't uploaded yet.
       return
     fi
   else
@@ -354,7 +339,7 @@ measure_coverage() {
     echo "Corpus #${this_cycle} found for:"
     echo "  benchmark: ${benchmark}"
     echo "  fengine: ${fengine_name}"
-    echo "  trial: ${LATEST_TRIAL}"
+    echo "  trial: ${trial}"
 
     (cd "${corpus_dir}" && extract_corpus \
       "${experiment_dir}/corpus/corpus-archive-${this_cycle}.tar.gz")
@@ -382,7 +367,6 @@ measure_coverage() {
 
     # Move this corpus archive to the processed folder so that rsync doesn't
     # need to check it anymore.
-    local bmark_trial="${benchmark}-${fengine_name}/trial-${LATEST_TRIAL}"
     local src_archive="${EXP_BUCKET}/experiment-folders/${bmark_trial}"
     src_archive="${src_archive}/corpus/corpus-archive-${this_cycle}.tar.gz"
     local dst_archive="${EXP_BUCKET}/processed-folders/${bmark_trial}"
@@ -396,7 +380,8 @@ measure_coverage() {
   echo "${this_time},${corpus_elems}" >> "${report_dir}/corpus-elems-graph.csv"
 
   echo "LATEST_CYCLE=${this_cycle}" > "${report_dir}/latest-cycle"
-  rsync_delete "${rep_base_dir}" "${EXP_BUCKET}/reports/${bmark_fengine_dir}"
+  rsync_delete "${report_dir}" \
+    "${EXP_BUCKET}/reports/${bmark_fengine_trial_dir}"
 }
 
 # Returns 0 if the given fuzzer has just finished producing results, and removes
@@ -404,13 +389,17 @@ measure_coverage() {
 check_finished() {
   local fengine_config=$1
   local benchmark=$2
+  local trial=$3
   local fengine_name="$(basename "${fengine_config}")"
-  local finished_dir="${WORK}/experiment-folders/${benchmark}-${fengine_name}"
-  if ls "${finished_dir}/finished" &> /dev/null; then
-    echo "Runner ${benchmark}-${fengine_name} has finished"
-    p_gsutil rm \
-      "${EXP_BUCKET}/experiment-folders/${benchmark}-${fengine_name}/finished"
-    rm "${finished_dir}/finished"
+  local finished_file="${WORK}/experiment-folders/${benchmark}-${fengine_name}"
+  finished_file="${finished_file}/trial-${trial}/finished"
+  if ls "${finished_file}" &> /dev/null; then
+    echo "Runner ${benchmark}-${fengine_name}-${trial} has finished"
+    local remote_finished="${EXP_BUCKET}/experiment-folders"
+    remote_finished="${remote_finished}/${benchmark}-${fengine_name}"
+    remote_finished="${remote_finished}/trial-${trial}/finished"
+    p_gsutil rm "${remote_finished}"
+    rm "${finished_file}"
     return 0
   fi
   return 1
@@ -456,7 +445,7 @@ main() {
     download_engine "${fengine_config}"
     for benchmark in ${BENCHMARKS}; do
       handle_benchmark "${benchmark}" "${fengine_config}" &
-      active_runners=$((active_runners + 1))
+      active_runners=$((active_runners + RUNNERS))
     done
   done < <(find "${WORK}/fengine-configs" -type f)
   wait
@@ -523,11 +512,13 @@ main() {
         "${WORK}/experiment-folders"
       for benchmark in ${BENCHMARKS}; do
         while read fengine_config; do
-          measure_coverage "${fengine_config}" "${benchmark}" &
-          if check_finished "${fengine_config}" "${benchmark}"; then
-            active_runners=$((active_runners - 1))
-            echo "Active Runners: ${active_runners}"
-          fi
+          for (( i=0; i < RUNNERS; i++ )); do
+            measure_coverage "${fengine_config}" "${benchmark}" "${i}" &
+            if check_finished "${fengine_config}" "${benchmark}" "${i}"; then
+              active_runners=$((active_runners - 1))
+              echo "Active Runners: ${active_runners}"
+            fi
+          done
         done < <(find "${WORK}/fengine-configs" -type f)
       done
       if [[ ${active_runners} -eq 0 && $((sync_num % 10)) -eq 0 ]]; then

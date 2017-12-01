@@ -105,9 +105,11 @@ main() {
   # This name used to be the name of the file fengine.cfg. It was renamed in the
   # dispatcher, so it was stored as metadata.
   local binary="./${BENCHMARK}-${FUZZING_ENGINE}"
-  local fengine_url="http://metadata.google.internal/computeMetadata/v1"
-  fengine_url="${fengine_url}/instance/attributes/fengine"
+  local metadata_url="http://metadata.google.internal/computeMetadata/v1"
+  local fengine_url="${metadata_url}/instance/attributes/fengine"
   local fengine_name="$(curl "${fengine_url}" -H "Metadata-Flavor: Google")"
+  local trial_url="${metadata_url}/instance/attributes/trial"
+  local trial="$(curl "${trial_url}" -H "Metadata-Flavor: Google")"
 
   chmod 750 "${binary}"
 
@@ -142,16 +144,12 @@ main() {
   fi
 
   local bmark_fengine_dir="${BENCHMARK}-${fengine_name}"
-  local trial=0
-  while [[ "${trial}" != "${N_ITERATIONS}" ]]; do
-    conduct_experiment "${exec_cmd}" "${trial}" "${bmark_fengine_dir}"
-    trial=$((trial + 1))
-  done
+  conduct_experiment "${exec_cmd}" "${trial}" "${bmark_fengine_dir}"
 
   # We're done. Notify dispatcher and delete this runner to save resources.
   touch finished
   local sync_dir="gs://fuzzer-test-suite/${EXPERIMENT}/experiment-folders"
-  sync_dir="${sync_dir}/${bmark_fengine_dir}"
+  sync_dir="${sync_dir}/${bmark_fengine_dir}/trial-${trial}"
   gsutil -m mv finished "${sync_dir}/"
   gcloud compute instances delete --zone us-west1-b -q "${INSTANCE_NAME}"
 }

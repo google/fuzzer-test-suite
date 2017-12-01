@@ -26,11 +26,9 @@ updated.
 
 After a user-specified number of fuzzer iterations or time limit, each runner
 kills its fuzzer and sends a final snapshot to Google Cloud Storage.  Included
-in the final snapshot are summary statistics and any crash reproducers.  If the
-user has specified multiple trials to be executed, the runner will run the
-fuzzer again, uploading new snapshots, until all trials have been completed.
-Runners automatically shut down and delete themselves when finished with all
-trials.
+in the final snapshot are summary statistics and any crash reproducers.  After
+all summary data is uploaded, runners automatically shut down and delete
+themselves.
 
 When all runners are finished executing and the dispatcher has processed all of
 their snapshots, the dispatcher also shuts itself down.
@@ -81,8 +79,7 @@ Experiment parameters are defined in a configuration file as follows:
 - `EXPERIMENT` - The name of this experiment.  Used to create unique links to
   web reports and storage locations for this experiment's data.  Must contain
   only alphanumeric characters and dashes.
-- `N_ITERATIONS` - The number of trials to perform (i.e. how many times to run
-  each fuzzer). Must be at least 1.
+- `RUNNERS` - The number of runners to spawn per fuzzer.  Must be at least 1.
 - `JOBS` - How many threads to run for each fuzzer.  Currently `JOBS=1` is the
   only supported mode.
 - `MAX_RUNS` - How many individual inputs to run before killing a fuzzer. If
