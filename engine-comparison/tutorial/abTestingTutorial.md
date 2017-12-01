@@ -57,19 +57,14 @@ This file defines the parameters of our experiment as follows.
 - `RUNS=-1` - Trials will not be limited by number of inputs run.
 - `MAX_TOTAL_TIME=300` - Trials will end after 300 seconds (5 minutes).
 
-To set these parameters for our experiment, copy `afl-lf.cfg` to
-`engine-comparison/config/parameters.cfg`.
-```shell
-cp FTS/engine-comparison/tutorial/param/afl-lf.cfg FTS/engine-comparison/config/parameters.cfg
-```
-
 ### Starting the Experiment
 
 To run a comparison between the `afl-vanilla` and `lf-vanilla` configurations,
 select a few benchmarks from the root of this repository and pass them to the
-`begin-experiment.sh` script along with the two fuzzing configuration files.
+`begin-experiment.sh` script along with the experiment parameters file and the
+two fuzzing configuration files.
 ```shell
-FTS/engine-comparison/begin-experiment.sh boringssl-2016-02-12,freetype2-2017,harfbuzz-1.3.2 FTS/engine-comparison/tutorial/config/afl-vanilla FTS/engine-comparison/tutorial/config/lf-vanilla
+FTS/engine-comparison/begin-experiment.sh boringssl-2016-02-12,freetype2-2017,harfbuzz-1.3.2 FTS/engine-comparison/tutorial/param/afl-lf.cfg FTS/engine-comparison/tutorial/config/afl-vanilla FTS/engine-comparison/tutorial/config/lf-vanilla
 ```
 
 Observe the script output as it creates a dispatcher VM, copies the necessary

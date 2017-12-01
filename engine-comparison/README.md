@@ -55,7 +55,9 @@ can specify both build flags (e.g. `CC`, `CFLAGS`, `CXXFLAGS`) and runtime flags
 The following two environment variables have special meaning in fuzzing
 configurations:
 
-- `FUZZING_ENGINE` - Currently `afl` and `libfuzzer` are supported.
+- `FUZZING_ENGINE` - Currently `afl, `libfuzzer`, and `fsanitize_fuzzer` are
+  supported.  `fsanitize_fuzzer` is libFuzzer built using the new
+  `-fsanitize=fuzzer` flag.
 - `BINARY_RUNTIME_OPTIONS` - Flags to pass to the fuzzer binary.
 
 **Note that the names of configuration files must contain alphanumeric
@@ -74,9 +76,7 @@ export BINARY_RUNTIME_OPTIONS="-t 25000"
 
 ### Experiment Parameters
 
-Experiment parameters are defined in
-[engine-comparison/config/parameters.cfg](config/parameters.cfg) and have the
-following meanings:
+Experiment parameters are defined in a configuration file as follows:
 
 - `EXPERIMENT` - The name of this experiment.  Used to create unique links to
   web reports and storage locations for this experiment's data.  Must contain
@@ -93,12 +93,15 @@ following meanings:
 ## Usage
 
 ```shell
-${FTS}/engine-comparison/begin-experiment.sh benchmark1[,benchmark2,...] fuzz-config1 [fuzz-config2 ...]
+${FTS}/engine-comparison/begin-experiment.sh benchmark1[,benchmark2,...] experiment-config fuzz-config1 [fuzz-config2 ...]
 ```
 
 Each benchmark in the comma-separated list must be the name of a benchmark
 folder in this repository.  Alternatively, the word `all` can be used to run on
 all benchmarks.
+
+Experiment configuration is specified by a path to an
+[experiment parameters file](#experiment-parameters)
 
 Each fuzzing configuration is specified by a path to its
 [configuration file](#fuzzing-configurations).
