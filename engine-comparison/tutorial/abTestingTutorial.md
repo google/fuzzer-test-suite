@@ -54,7 +54,7 @@ This file defines the parameters of our experiment as follows.
   determines the URL at which results will be displayed.
 - `N_ITERATIONS=2` - Specifies 2 trials to be performed per fuzzer.
 - `JOBS=1` - Each fuzzer will run single-threaded.
-- `RUNS=-1` - Trials will not be limited by number of inputs run.
+- `MAX_RUNS=-1` - Trials will not be limited by number of inputs run.
 - `MAX_TOTAL_TIME=300` - Trials will end after 300 seconds (5 minutes).
 
 ### Starting the Experiment

@@ -33,10 +33,10 @@ time_run_limits_exceeded() {
     if [[ "${MAX_TOTAL_TIME}" -gt 0 ]]; then
       [[ "${SECONDS}" -gt "${MAX_TOTAL_TIME}" ]] && return 0
     fi
-    if [[ "${RUNS}" -gt 0 ]]; then
+    if [[ "${MAX_RUNS}" -gt 0 ]]; then
       local runs_finished="$(grep execs_done corpus/fuzzer_stats \
         | grep -o -E "[0-9]+")"
-      [[ "${runs_finished}" -gt "${RUNS}" ]] && return 0
+      [[ "${runs_finished}" -gt "${MAX_RUNS}" ]] && return 0
     fi
   fi
   return 1
@@ -128,7 +128,7 @@ main() {
   elif [[ "${FUZZING_ENGINE}" == "libfuzzer" || \
     "${FUZZING_ENGINE}" == "fsanitize_fuzzer" ]]; then
     local exec_cmd="${binary} ${BINARY_RUNTIME_OPTIONS}"
-    exec_cmd="${exec_cmd} -workers=${JOBS} -jobs=${JOBS} -runs=${RUNS}"
+    exec_cmd="${exec_cmd} -workers=${JOBS} -jobs=${JOBS} -runs=${MAX_RUNS}"
     exec_cmd="${exec_cmd} -max_total_time=${MAX_TOTAL_TIME}"
     if ls ./*.dict; then
       local dict_path="$(find . -maxdepth 1 -name "*.dict" | head -n 1)"

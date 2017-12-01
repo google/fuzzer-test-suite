@@ -85,7 +85,7 @@ Experiment parameters are defined in a configuration file as follows:
   each fuzzer). Must be at least 1.
 - `JOBS` - How many threads to run for each fuzzer.  Currently `JOBS=1` is the
   only supported mode.
-- `RUNS` - How many individual inputs to run before killing a fuzzer. If
+- `MAX_RUNS` - How many individual inputs to run before killing a fuzzer. If
   -1, run indefinitely.
 - `MAX_TOTAL_TIME` - How long to run each fuzzer before killing it.  If 0, run
   indefinitely.
