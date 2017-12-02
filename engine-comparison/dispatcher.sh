@@ -219,7 +219,7 @@ handle_benchmark() {
     tr '[:upper:]' '[:lower:]' | tr -d '.')"
   for (( i=0; i < RUNNERS; i++ )); do
     create_or_start_runner "${instance_name}-${i}" "${benchmark}" \
-      "${fengine_name}" "${i}"
+      "${fengine_name}" "${i}" &
   done
 }
 
