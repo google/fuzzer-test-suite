@@ -96,7 +96,8 @@ conduct_experiment() {
   rsync_no_delete corpus-archives "${sync_dir}/corpus"
 
   # Sync final fuzz log
-  mv fuzz-0.log crash* leak* timeout* oom* results/
+  echo "${exec_cmd}" > command-line.txt
+  mv fuzz-0.log command-line.txt crash* leak* timeout* oom* results/
   mv corpus/crashes corpus/hangs corpus/fuzzer_stats results/
   rsync_no_delete results "${sync_dir}/results"
 }
