@@ -27,6 +27,8 @@
       });
       var data = google.visualization.arrayToDataTable(csvMatrix);
       var chart = new google.visualization.LineChart(document.getElementById(divName));
+
+      // Set line colors based on column headers
       var colorArray = [];
       var redColName = removeTrial(csvMatrix[0][1]);
       for (i = 1; i < csvMatrix[0].length; i++) {
@@ -36,11 +38,17 @@
         else
           colorArray.push("green");
       }
+
+      // Ignore first 1% of data for better auto-scaling on rest of graph.
+      var maxTime = parseInt(csvMatrix[csvMatrix.length - 1][0]);
+      var minTime = maxTime / 100;
+
       var options = {
         title: filename,
         colors: colorArray,
         legend: {position: 'bottom'},
-        interpolateNulls: 'true'
+        interpolateNulls: 'true',
+        hAxis: {viewWindow: {min: minTime}}
       };
 
       chart.draw(data, options);
