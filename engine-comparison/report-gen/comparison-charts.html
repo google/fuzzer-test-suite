@@ -6,7 +6,17 @@
   <script>
     // Based on examples at https://developers.google.com/chart/interactive/docs/gallery/linechart
     google.charts.load('current', {'packages':['corechart']});
-    google.charts.setOnLoadCallback(drawChart);
+    google.charts.setOnLoadCallback(init);
+
+    var chart1;
+    var chart2;
+    var chart3;
+    function init() {
+      chart1 = new google.visualization.LineChart(document.getElementById("chart1"));
+      chart2 = new google.visualization.LineChart(document.getElementById("chart2"));
+      chart3 = new google.visualization.LineChart(document.getElementById("chart3"));
+      drawChart();
+    }
 
     // Removes the "-trial-X" suffix from column names
     function removeTrial(colname) {
@@ -16,22 +26,21 @@
       return splitArr.join('-');
     }
 
-    function graphFromText(filename, inputText, divName) {
+    function graphFromText(filename, inputText, chart) {
       var csvMatrix = inputText.split("\n").map(function(row){return row.split(",");});
 
       csvMatrix = csvMatrix.slice(0,csvMatrix.length - 1);
-      csvMatrix.forEach( function(row, index) {
+      csvMatrix.forEach( function(row, index, mat) {
         if (index != 0) {
-          csvMatrix[index] = row.map(function(num)  { return parseInt(num); });
+          mat[index] = row.map(function(num)  { return parseInt(num); });
         }
       });
       var data = google.visualization.arrayToDataTable(csvMatrix);
-      var chart = new google.visualization.LineChart(document.getElementById(divName));
 
       // Set line colors based on column headers
       var colorArray = [];
       var redColName = removeTrial(csvMatrix[0][1]);
-      for (i = 1; i < csvMatrix[0].length; i++) {
+      for (var i = 1; i < csvMatrix[0].length; i++) {
         var colName = removeTrial(csvMatrix[0][i]);
         if (colName === redColName)
           colorArray.push("red");
@@ -49,31 +58,40 @@
       chart.draw(data, options);
     }
 
-    // Totall generic AJAX: fetch string from file
-    function generateGraph(filename, handleText, divName) {
+    // Query CSV file via AJAX.
+    function generateGraph(filename, handleText, chart) {
       var xhr = new XMLHttpRequest();
       xhr.onreadystatechange = function() {
         if ((xhr.readyState == 4) && (xhr.status == 200)) {
-          graphFromText(filename, xhr.responseText, divName);
+          handleText(filename, xhr.responseText, chart);
+          xhr.onreadystatechange = null;
+        } else if (xhr.status >= 400) {
+          xhr.onreadystatechange = null;
         }
       }
       xhr.open("GET", filename);
       xhr.send();
     }
 
+    var lastTimer = 0;
+    function callAfterSec(func, seconds) {
+      clearTimeout(lastTimer);
+      lastTimer = setTimeout(func, 1000 * seconds);
+    }
+
     function drawChart() {
       if (document.getElementById("allMode").checked) {
-        generateGraph("coverage-graph.csv", graphFromText, "curve_chart_1");
-        generateGraph("corpus-size-graph.csv", graphFromText, "curve_chart_2");
-        generateGraph("corpus-elems-graph.csv", graphFromText, "curve_chart_3");
+        generateGraph("coverage-graph.csv", graphFromText, chart1);
+        generateGraph("corpus-size-graph.csv", graphFromText, chart2);
+        generateGraph("corpus-elems-graph.csv", graphFromText, chart3);
       } else if (document.getElementById("averageMode").checked) {
-        generateGraph("avg-coverage-graph.csv", graphFromText, "curve_chart_1");
-        generateGraph("avg-corpus-size-graph.csv", graphFromText, "curve_chart_2");
-        generateGraph("avg-corpus-elems-graph.csv", graphFromText, "curve_chart_3");
+        generateGraph("avg-coverage-graph.csv", graphFromText, chart1);
+        generateGraph("avg-corpus-size-graph.csv", graphFromText, chart2);
+        generateGraph("avg-corpus-elems-graph.csv", graphFromText, chart3);
       } else {
-        generateGraph("max-coverage-graph.csv", graphFromText, "curve_chart_1");
-        generateGraph("max-corpus-size-graph.csv", graphFromText, "curve_chart_2");
-        generateGraph("max-corpus-elems-graph.csv", graphFromText, "curve_chart_3");
+        generateGraph("max-coverage-graph.csv", graphFromText, chart1);
+        generateGraph("max-corpus-size-graph.csv", graphFromText, chart2);
+        generateGraph("max-corpus-elems-graph.csv", graphFromText, chart3);
       }
       setTimeout(drawChart, 5000);  // Refresh graphs every 5 seconds
     }
@@ -85,8 +103,8 @@
   <input type="radio" name="mode" id="allMode" value="all" checked>All
   <input type="radio" name="mode" id="averageMode" value="average">Average
   <input type="radio" name="mode" id="maxMode" value="max">Max
-  <div id="curve_chart_1" style="width: 1000px; height: 450px"></div>
-  <div id="curve_chart_2" style="width: 1000px; height: 450px"></div>
-  <div id="curve_chart_3" style="width: 1000px; height: 450px"></div>
+  <div id="chart1" style="width: 1000px; height: 450px"></div>
+  <div id="chart2" style="width: 1000px; height: 450px"></div>
+  <div id="chart3" style="width: 1000px; height: 450px"></div>
 </body>
 
