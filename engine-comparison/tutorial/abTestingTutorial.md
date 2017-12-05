@@ -52,24 +52,19 @@ This file defines the parameters of our experiment as follows.
 
 - `EXPERIMENT="afl-libfuzzer"` - Names the experiment `afl-libfuzzer`.  This
   determines the URL at which results will be displayed.
-- `N_ITERATIONS=2` - Specifies 2 trials to be performed per fuzzer.
+- `RUNNERS=2` - 2 runners will be spawned per fuzzer.
 - `JOBS=1` - Each fuzzer will run single-threaded.
-- `RUNS=-1` - Trials will not be limited by number of inputs run.
+- `MAX_RUNS=-1` - Trials will not be limited by number of inputs run.
 - `MAX_TOTAL_TIME=300` - Trials will end after 300 seconds (5 minutes).
-
-To set these parameters for our experiment, copy `afl-lf.cfg` to
-`engine-comparison/config/parameters.cfg`.
-```shell
-cp FTS/engine-comparison/tutorial/param/afl-lf.cfg FTS/engine-comparison/config/parameters.cfg
-```
 
 ### Starting the Experiment
 
 To run a comparison between the `afl-vanilla` and `lf-vanilla` configurations,
 select a few benchmarks from the root of this repository and pass them to the
-`begin-experiment.sh` script along with the two fuzzing configuration files.
+`begin-experiment.sh` script along with the experiment parameters file and the
+two fuzzing configuration files.
 ```shell
-FTS/engine-comparison/begin-experiment.sh boringssl-2016-02-12,freetype2-2017,harfbuzz-1.3.2 FTS/engine-comparison/tutorial/config/afl-vanilla FTS/engine-comparison/tutorial/config/lf-vanilla
+FTS/engine-comparison/begin-experiment.sh boringssl-2016-02-12,freetype2-2017,harfbuzz-1.3.2 FTS/engine-comparison/tutorial/param/afl-lf.cfg FTS/engine-comparison/tutorial/config/afl-vanilla FTS/engine-comparison/tutorial/config/lf-vanilla
 ```
 
 Observe the script output as it creates a dispatcher VM, copies the necessary
@@ -84,7 +79,7 @@ and process the corpus snapshots produced by the runners.  At this point, you
 can start monitoring the coverage graphs produced by the dispatcher at
 <https://storage.googleapis.com/fuzzer-test-suite-public/afl-libfuzzer/index.html>.
 
-When all trials have completed and the dispatcher is finished processing all
+When all runners have finished and the dispatcher is finished processing all
 snapshots, the dispatcher will automatically shut down, and the pipe to your
 terminal will be closed.  When this happens, you'll see an error message similar
 to:

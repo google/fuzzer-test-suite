@@ -33,10 +33,10 @@ time_run_limits_exceeded() {
     if [[ "${MAX_TOTAL_TIME}" -gt 0 ]]; then
       [[ "${SECONDS}" -gt "${MAX_TOTAL_TIME}" ]] && return 0
     fi
-    if [[ "${RUNS}" -gt 0 ]]; then
+    if [[ "${MAX_RUNS}" -gt 0 ]]; then
       local runs_finished="$(grep execs_done corpus/fuzzer_stats \
         | grep -o -E "[0-9]+")"
-      [[ "${runs_finished}" -gt "${RUNS}" ]] && return 0
+      [[ "${runs_finished}" -gt "${MAX_RUNS}" ]] && return 0
     fi
   fi
   return 1
@@ -105,9 +105,11 @@ main() {
   # This name used to be the name of the file fengine.cfg. It was renamed in the
   # dispatcher, so it was stored as metadata.
   local binary="./${BENCHMARK}-${FUZZING_ENGINE}"
-  local fengine_url="http://metadata.google.internal/computeMetadata/v1"
-  fengine_url="${fengine_url}/instance/attributes/fengine"
+  local metadata_url="http://metadata.google.internal/computeMetadata/v1"
+  local fengine_url="${metadata_url}/instance/attributes/fengine"
   local fengine_name="$(curl "${fengine_url}" -H "Metadata-Flavor: Google")"
+  local trial_url="${metadata_url}/instance/attributes/trial"
+  local trial="$(curl "${trial_url}" -H "Metadata-Flavor: Google")"
 
   chmod 750 "${binary}"
 
@@ -128,7 +130,7 @@ main() {
   elif [[ "${FUZZING_ENGINE}" == "libfuzzer" || \
     "${FUZZING_ENGINE}" == "fsanitize_fuzzer" ]]; then
     local exec_cmd="${binary} ${BINARY_RUNTIME_OPTIONS}"
-    exec_cmd="${exec_cmd} -workers=${JOBS} -jobs=${JOBS} -runs=${RUNS}"
+    exec_cmd="${exec_cmd} -workers=${JOBS} -jobs=${JOBS} -runs=${MAX_RUNS}"
     exec_cmd="${exec_cmd} -max_total_time=${MAX_TOTAL_TIME}"
     if ls ./*.dict; then
       local dict_path="$(find . -maxdepth 1 -name "*.dict" | head -n 1)"
@@ -142,16 +144,12 @@ main() {
   fi
 
   local bmark_fengine_dir="${BENCHMARK}-${fengine_name}"
-  local trial=0
-  while [[ "${trial}" != "${N_ITERATIONS}" ]]; do
-    conduct_experiment "${exec_cmd}" "${trial}" "${bmark_fengine_dir}"
-    trial=$((trial + 1))
-  done
+  conduct_experiment "${exec_cmd}" "${trial}" "${bmark_fengine_dir}"
 
   # We're done. Notify dispatcher and delete this runner to save resources.
   touch finished
   local sync_dir="gs://fuzzer-test-suite/${EXPERIMENT}/experiment-folders"
-  sync_dir="${sync_dir}/${bmark_fengine_dir}"
+  sync_dir="${sync_dir}/${bmark_fengine_dir}/trial-${trial}"
   gsutil -m mv finished "${sync_dir}/"
   gcloud compute instances delete --zone us-west1-b -q "${INSTANCE_NAME}"
 }
