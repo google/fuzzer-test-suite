@@ -39,16 +39,11 @@
           colorArray.push("green");
       }
 
-      // Ignore first 1% of data for better auto-scaling on rest of graph.
-      var maxTime = parseInt(csvMatrix[csvMatrix.length - 1][0]);
-      var minTime = maxTime / 100;
-
       var options = {
         title: filename,
         colors: colorArray,
         legend: {position: 'bottom'},
-        interpolateNulls: 'true',
-        hAxis: {viewWindow: {min: minTime}}
+        interpolateNulls: 'true'
       };
 
       chart.draw(data, options);
