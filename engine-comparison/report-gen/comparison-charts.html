@@ -18,10 +18,20 @@
       drawChart();
     }
 
-    // Removes the "-trial-X" suffix from column names
-    function removeTrial(colname) {
+    var graphColors = ['#cc2529', '#3e9651', '#396ab1', '#da7c30', '#535154',
+      '#6b4c9a', '#922428', '#948b3d'];
+    var colorCounter = 0;
+    function resetColors() {
+      colorCounter = 0;
+    }
+    function getNextColor() {
+      return graphColors[colorCounter++ % graphColors.length];
+    }
+
+
+    // Removes the "-ZZZ" suffix from column names
+    function removeSuffix(colname) {
       var splitArr = colname.split('-');
-      splitArr.pop();
       splitArr.pop();
       return splitArr.join('-');
     }
@@ -39,13 +49,13 @@
 
       // Set line colors based on column headers
       var colorArray = [];
-      var redColName = removeTrial(csvMatrix[0][1]);
+      var colorMap = new Map();
+      resetColors();
       for (var i = 1; i < csvMatrix[0].length; i++) {
-        var colName = removeTrial(csvMatrix[0][i]);
-        if (colName === redColName)
-          colorArray.push("red");
-        else
-          colorArray.push("green");
+        var colName = removeSuffix(csvMatrix[0][i]);
+        if (!colorMap.has(colName))
+          colorMap.set(colName, getNextColor());
+        colorArray.push(colorMap.get(colName));
       }
 
       var options = {
