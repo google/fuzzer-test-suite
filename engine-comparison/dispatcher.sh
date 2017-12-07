@@ -356,7 +356,8 @@ measure_coverage() {
       | sort -o "${covered_pcs_file}" -m -u - "${covered_pcs_file}"
 
     local coverage="$(wc -w < "${covered_pcs_file}")"
-    local corpus_size="$(wc -c $(find "${corpus_dir}" -maxdepth 1 -type f) \
+    local corpus_size="$(find "${corpus_dir}" -maxdepth 1 -type f -print0 \
+      | wc -c --files0-from=- \
       | tail --lines=1 \
       | grep -o "[0-9]*")"
     local corpus_elems="$(find "${corpus_dir}" -maxdepth 1 -type f | wc -l)"
