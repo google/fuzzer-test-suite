@@ -330,8 +330,8 @@ measure_coverage() {
       local corpus_size="${corpus_size_line##*,}"
       local corpus_elems="${corpus_elems_line##*,}"
     else
-      # No corpus archive because runner hasn't uploaded yet.
-      return
+      # No corpus archive because we've processed all our archives already.
+      return 1
     fi
   else
     # We have a new corpus archive.  Collect stats on it.
@@ -382,6 +382,12 @@ measure_coverage() {
   echo "LATEST_CYCLE=${this_cycle}" > "${report_dir}/latest-cycle"
   rsync_delete "${report_dir}" \
     "${EXP_BUCKET}/reports/${bmark_fengine_trial_dir}"
+  return 0
+}
+
+# Processes all synced corpora for a given fuzzer.
+process_corpora() {
+  while measure_coverage "$1" "$2" "$3"; do :; done
 }
 
 # Returns 0 if the given fuzzer has just finished producing results, and removes
@@ -513,7 +519,7 @@ main() {
       for benchmark in ${BENCHMARKS}; do
         while read fengine_config; do
           for (( i=0; i < RUNNERS; i++ )); do
-            measure_coverage "${fengine_config}" "${benchmark}" "${i}" &
+            process_corpora "${fengine_config}" "${benchmark}" "${i}" &
             if check_finished "${fengine_config}" "${benchmark}" "${i}"; then
               active_runners=$((active_runners - 1))
               echo "Active Runners: ${active_runners}"

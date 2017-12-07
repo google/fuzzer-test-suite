@@ -28,16 +28,13 @@ same_dir_tree() {
 
 # Exit status 0 if run limit or time limit has been exceeded
 time_run_limits_exceeded() {
-  # Only check for AFL.  LibFuzzer case is handled by flags passed to fuzzer.
-  if [[ "${FUZZING_ENGINE}" == "afl" ]]; then
-    if [[ "${MAX_TOTAL_TIME}" -gt 0 ]]; then
-      [[ "${SECONDS}" -gt "${MAX_TOTAL_TIME}" ]] && return 0
-    fi
-    if [[ "${MAX_RUNS}" -gt 0 ]]; then
-      local runs_finished="$(grep execs_done corpus/fuzzer_stats \
-        | grep -o -E "[0-9]+")"
-      [[ "${runs_finished}" -gt "${MAX_RUNS}" ]] && return 0
-    fi
+  if [[ "${MAX_TOTAL_TIME}" -gt 0 ]]; then
+    [[ "${SECONDS}" -gt "${MAX_TOTAL_TIME}" ]] && return 0
+  fi
+  if [[ "${MAX_RUNS}" -gt 0 ]]; then
+    local runs_finished="$(grep execs_done corpus/fuzzer_stats \
+      | grep -o -E "[0-9]+")"
+    [[ "${runs_finished}" -gt "${MAX_RUNS}" ]] && return 0
   fi
   return 1
 }
@@ -79,7 +76,7 @@ conduct_experiment() {
     mv corpus-copy last-corpus
     rm "corpus-archives/corpus-archive-${cycle}.tar.gz"
 
-    time_run_limits_exceeded && kill -2 "${process_pid}"
+    time_run_limits_exceeded && kill -15 "${process_pid}"
 
     cycle=$((cycle + 1))
     next_sync=$((cycle * WAIT_PERIOD))
@@ -96,7 +93,8 @@ conduct_experiment() {
   rsync_no_delete corpus-archives "${sync_dir}/corpus"
 
   # Sync final fuzz log
-  mv fuzz-0.log crash* leak* timeout* oom* results/
+  echo "${exec_cmd}" > command-line.txt
+  mv fuzz-0.log command-line.txt crash* leak* timeout* oom* results/
   mv corpus/crashes corpus/hangs corpus/fuzzer_stats results/
   rsync_no_delete results "${sync_dir}/results"
 }
@@ -130,7 +128,7 @@ main() {
   elif [[ "${FUZZING_ENGINE}" == "libfuzzer" || \
     "${FUZZING_ENGINE}" == "fsanitize_fuzzer" ]]; then
     local exec_cmd="${binary} ${BINARY_RUNTIME_OPTIONS}"
-    exec_cmd="${exec_cmd} -workers=${JOBS} -jobs=${JOBS} -runs=${MAX_RUNS}"
+    exec_cmd="${exec_cmd} -workers=${JOBS} -jobs=100000000 -runs=${MAX_RUNS}"
     exec_cmd="${exec_cmd} -max_total_time=${MAX_TOTAL_TIME}"
     if ls ./*.dict; then
       local dict_path="$(find . -maxdepth 1 -name "*.dict" | head -n 1)"
