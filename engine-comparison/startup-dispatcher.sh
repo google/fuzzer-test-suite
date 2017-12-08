@@ -5,9 +5,17 @@
 # Script to run on creation of the dispatcher VM.
 # Configures dispatcher container and runs the dispatcher script.
 
-sudo gcloud docker -- pull gcr.io/fuzzer-test-suite/gcloud-clang-deps:latest
 find ~/input/FTS/ -name "*.sh" -exec chmod 750 {} \;
-sudo docker build -t base-image \
-  -f ~/input/FTS/engine-comparison/Dockerfile-dispatcher ~/input
-sudo docker run -e INSTANCE_NAME="${HOSTNAME}" --cap-add SYS_PTRACE base-image \
-  /work/FTS/engine-comparison/dispatcher.sh
+
+# Start container with necessary environment.
+sudo docker run --rm -d --cap-add SYS_PTRACE -e INSTANCE_NAME="${HOSTNAME}" \
+  --name=dispatcher-container gcr.io/fuzzer-test-suite/dispatcher \
+  tail -f /dev/null
+
+# Copy input files to container
+for f in ~/input/*; do
+  sudo docker cp "${f}" dispatcher-container:/work/
+done
+
+# Start dispatcher script in container
+sudo docker exec dispatcher-container /work/FTS/engine-comparison/dispatcher.sh
