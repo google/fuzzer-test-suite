@@ -56,7 +56,8 @@ gcloud_create() {
   # The dispatcher should be more powerful
   if echo "${instance_name}" | grep "dispatcher" > /dev/null; then
     gcloud compute instances create "${instance_name}" \
-      --image-family="docker-ubuntu" --service-account="${SERVICE_ACCOUNT}" \
+      --image-family="cos-stable" --image-project="cos-cloud" \
+      --service-account="${SERVICE_ACCOUNT}" \
       --machine-type="n1-standard-16" --scopes="compute-rw,storage-rw,default" \
       --boot-disk-size=200GB ${metadata_cmd} ${metadata_ff_cmd}
   else
