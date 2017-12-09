@@ -57,7 +57,15 @@ gsutil -m rsync -rd "${CONFIG_DIR}" \
 readonly INSTANCE_NAME="dispatcher-${EXPERIMENT}"
 create_or_start "${INSTANCE_NAME}"
 robust_begin_gcloud_ssh "${INSTANCE_NAME}"
-cmd="mkdir -p ~/input"
-cmd="${cmd} && gsutil -m rsync -rd ${GSUTIL_BUCKET}/${EXPERIMENT}/input ~/input"
-cmd="${cmd} && bash ~/input/FTS/engine-comparison/startup-dispatcher.sh"
+
+gcloud compute scp "${SCRIPT_DIR}/startup-dispatcher.sh" \
+  "${INSTANCE_NAME}:~/" --zone us-west1-b
+
+cmd="chmod 750 ~/startup-dispatcher.sh"
+cmd="${cmd} && docker run --rm -d -e INSTANCE_NAME=${INSTANCE_NAME}"
+cmd="${cmd}   -e EXPERIMENT=${EXPERIMENT} --cap-add SYS_PTRACE"
+cmd="${cmd}   --name=dispatcher-container gcr.io/fuzzer-test-suite/dispatcher"
+cmd="${cmd}   tail -f /dev/null"
+cmd="${cmd} && docker cp startup-dispatcher.sh dispatcher-container:/work/"
+cmd="${cmd} && docker exec dispatcher-container /work/startup-dispatcher.sh"
 gcloud compute ssh "${INSTANCE_NAME}" --command="${cmd}"

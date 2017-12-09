@@ -146,14 +146,18 @@ func handleFEngine(fengine os.FileInfo, bmarkPath string, finalReportFName strin
 	// Enter sub-directories
 	fenginePath := path.Join(bmarkPath, fengine.Name())
 	ls, err := ioutil.ReadDir(fenginePath)
-	checkErr(err)
+	if err != nil {
+		return nil
+	}
 	trials := onlyDirectories(ls)
 
 	totalCols := len(trials) + 1
 	for j, trial := range trials {
 		// Create fds
 		trialCSV, err := os.Open(path.Join(fenginePath, trial.Name(), finalReportFName))
-		checkErr(err)
+		if err != nil {
+			continue
+		}
 		trialReader := csv.NewReader(trialCSV)
 
 		records = handleTrialCSV(trialReader, records, fengine.Name()+"-"+trial.Name(), totalCols, j)
@@ -231,11 +235,16 @@ func handleBmark(bmark os.FileInfo, recordsPath string, finalReportFName string)
 	bmarkMaxRecords := [][]string{{"time"}}
 	bmarkPath := path.Join(recordsPath, bmark.Name())
 	ls, err := ioutil.ReadDir(bmarkPath)
-	checkErr(err)
+	if err != nil {
+		return
+	}
 	fengines := onlyDirectories(ls)
 
 	for _, fengine := range fengines {
 		fengineRecords := handleFEngine(fengine, bmarkPath, finalReportFName)
+		if fengineRecords == nil {
+			continue
+		}
 		bmarkRecords = appendAllTrials(bmarkRecords, fengineRecords)
 		bmarkAvgRecords = appendAverages(bmarkAvgRecords, fengineRecords)
 		bmarkMaxRecords = appendMaxes(bmarkMaxRecords, fengineRecords)
