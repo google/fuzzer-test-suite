@@ -48,8 +48,8 @@ conduct_experiment() {
   local sync_dir="gs://fuzzer-test-suite/${EXPERIMENT}/experiment-folders"
   sync_dir="${sync_dir}/${bmark_fengine_dir}/trial-${trial_num}"
 
-  rm -rf corpus last-corpus corpus-archives results
-  mkdir -p corpus last-corpus corpus-archives results
+  rm -rf corpus last-corpus corpus-archives results crashes
+  mkdir -p corpus last-corpus corpus-archives results crashes
 
   ${exec_cmd} &
   local process_pid=$!
@@ -78,6 +78,14 @@ conduct_experiment() {
 
     time_run_limits_exceeded && kill -15 "${process_pid}"
 
+    # Delete most crashes and logs to save disk space.
+    find . -name "fuzz-[1-9]*.log" -delete
+    if [[ -z "$(ls -A crashes)" ]]; then
+      mv crash-* leak* timeout* oom* crashes/
+    else
+      rm -rf crash-* leak* timeout* oom*
+    fi
+
     cycle=$((cycle + 1))
     next_sync=$((cycle * WAIT_PERIOD))
     # Skip cycle if need be
@@ -94,7 +102,7 @@ conduct_experiment() {
 
   # Sync final fuzz log
   echo "${exec_cmd}" > command-line.txt
-  mv fuzz-0.log command-line.txt crash* leak* timeout* oom* results/
+  mv fuzz-0.log command-line.txt crashes/* results/
   mv corpus/crashes corpus/hangs corpus/fuzzer_stats results/
   rsync_no_delete results "${sync_dir}/results"
 }
