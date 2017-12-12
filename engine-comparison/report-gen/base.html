@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>A/B Experiment Results</title>
+<head>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script>
+    // Based on examples at https://developers.google.com/chart/interactive/docs/gallery/linechart
+    google.charts.load('current', {'packages':['corechart']});
+    google.charts.setOnLoadCallback(init);
+
+    var graphColors = ['#cc2529', '#3e9651', '#396ab1', '#da7c30', '#535154',
+      '#6b4c9a', '#922428', '#948b3d'];
+    var colorCounter = 0;
+    function resetColors() {
+      colorCounter = 0;
+    }
+    function getNextColor() {
+      return graphColors[colorCounter++ % graphColors.length];
+    }
+
+    // Removes the "-ZZZ" suffix from column names
+    function removeSuffix(colname) {
+      var splitArr = colname.split('-');
+      splitArr.pop();
+      return splitArr.join('-');
+    }
+
+    function graphFromText(filename, inputText, chart) {
+      var csvMatrix = inputText.split("\n").map(function(row){return row.split(",");});
+
+      csvMatrix = csvMatrix.slice(0,csvMatrix.length - 1);
+      csvMatrix.forEach( function(row, index, mat) {
+        if (index != 0) {
+          mat[index] = row.map(function(num)  { return parseInt(num); });
+        }
+      });
+      var data = google.visualization.arrayToDataTable(csvMatrix);
+
+      // Set line colors based on column headers
+      var colorArray = [];
+      var colorMap = new Map();
+      resetColors();
+      for (var i = 1; i < csvMatrix[0].length; i++) {
+        var colName = removeSuffix(csvMatrix[0][i]);
+        if (!colorMap.has(colName))
+          colorMap.set(colName, getNextColor());
+        colorArray.push(colorMap.get(colName));
+      }
+
+      var options = {
+        title: filename,
+        colors: colorArray,
+        width: 750,
+        height: 400,
+        chartArea: {width: '80%', height: '80%'},
+        legend: {position: 'bottom'},
+        interpolateNulls: 'true'
+      };
+
+      chart.draw(data, options);
+    }
+
+    // Query CSV file via AJAX.
+    function generateGraph(filename, handleText, chart) {
+      var xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function() {
+        if ((xhr.readyState == 4) && (xhr.status == 200)) {
+          handleText(filename, xhr.responseText, chart);
+          xhr.onreadystatechange = null;
+        } else if (xhr.status >= 400) {
+          xhr.onreadystatechange = null;
+        }
+      }
+      xhr.open("GET", filename);
+      xhr.send();
+    }
+
+    function drawRow(benchmark, prefix, row) {
+      var bPrefix = benchmark + '/' + prefix;
+      generateGraph(bPrefix + 'coverage-graph.csv', graphFromText, row[0]);
+      generateGraph(bPrefix + 'corpus-size-graph.csv', graphFromText, row[1]);
+      generateGraph(bPrefix + 'corpus-elems-graph.csv', graphFromText, row[2]);
+    }
+
+    function drawChart() {
+      if (document.getElementById("allMode").checked) {
+        charts.forEach(function(row, benchmark) {
+          drawRow(benchmark, '', row);
+        });
+      } else if (document.getElementById("averageMode").checked) {
+        charts.forEach(function(row, benchmark) {
+          drawRow(benchmark, 'avg-', row);
+        });
+      } else {
+        charts.forEach(function(row, benchmark) {
+          drawRow(benchmark, 'max-', row);
+        });
+      }
+      setTimeout(drawChart, 5000);  // Refresh graphs every 5 seconds
+    }
+
+    var charts = new Map();
+    function init() {
+      var spans = document.getElementsByClassName('chart');
+      for (var i = 0; i < spans.length - 2; i += 3) {
+        var benchmark = removeSuffix(spans[i].id);
+        charts.set(benchmark, [
+            new google.visualization.LineChart(spans[i]),
+            new google.visualization.LineChart(spans[i+1]),
+            new google.visualization.LineChart(spans[i+2])
+        ]);
+      }
+      drawChart();
+    }
+  </script>
+</head>
+<body>
+  Graphing Mode:
+  <input type="radio" name="mode" id="allMode" value="all" checked>All
+  <input type="radio" name="mode" id="averageMode" value="average">Average
+  <input type="radio" name="mode" id="maxMode" value="max">Max

@@ -45,31 +45,31 @@ get_afl() {
 # Creates index.html in the specified directory with links to graphs for each
 # benchmark and fuzzing configuration.
 emit_index_page() {
-  local web_dir=$1
+  local benchmarks=$1
+  local web_dir=$2
   local dst="${web_dir}/index.html"
-  local url_prefix="/fuzzer-test-suite-public/${EXPERIMENT}"
   {
-    echo "<!DOCTYPE html>"
-    echo "<meta charset=\"utf-8\">"
-    echo "<title>A/B Experiment Results</title>"
-    echo "<body><h2>A/B Experiment Results</h2><ul>"
-    while read bm_path; do
-      local bm="$(basename "${bm_path}")"
-      local bm_url="${url_prefix}/${bm}/comparison-charts.html"
-      echo "<li><a href=\"${bm_url}\">${bm}</a>"
-      while read fengine_path; do
-        local fengine="$(basename "${fengine_path}")"
-        local fengine_url="${url_prefix}/${bm}/${fengine}/fengine-charts.html"
-        echo "<a href=\"${fengine_url}\">[${fengine}]</a>"
-      done < <(find "${bm_path}" -maxdepth 1 -mindepth 1 -type d)
-      echo "</li>"
-    done < <(find "${web_dir}" -maxdepth 1 -mindepth 1 -type d | sort)
-    echo "</ul></body>"
-  } > "${dst}"
+    echo "<table><tr>"
+    echo "<th></th>"
+    echo "<th>Coverage</th>"
+    echo "<th>Corpus Size</th>"
+    echo "<th>Corpus Elements</th></tr>"
+    while read bm; do
+      echo "<tr><th>${bm}</th>"
+      local span_prefix="<td><span class=\"chart\" id=\"${bm}-"
+      local span_suffix="\" style=\"display: inline-block\"></span></td>"
+      echo "${span_prefix}0${span_suffix}"
+      echo "${span_prefix}1${span_suffix}"
+      echo "${span_prefix}2${span_suffix}"
+      echo "</tr>"
+    done < <(echo "${benchmarks}" | tr " " "\n" | grep . | sort)
+    echo "</table></body>"
+  } >> "${dst}"
 }
 
 # Updates web graphs in an infinite loop
 live_graphing_loop() {
+  local benchmarks=$1
   local report_gen_dir="${WORK}/FTS/engine-comparison/report-gen"
   local web_dir="${WORK}/reports"
   rm -rf "${web_dir}" && mkdir "${web_dir}"
@@ -90,13 +90,8 @@ live_graphing_loop() {
     rsync_delete "${EXP_BUCKET}/reports" "${web_dir}" &> /dev/null
     (cd "${WORK}" && go run "${report_gen_dir}/generate-report.go")
 
-    while read bm; do
-      cp "${report_gen_dir}/comparison-charts.html" "${bm}/"
-      find "${bm}" -maxdepth 1 -mindepth 1 -type d -exec \
-        cp "${report_gen_dir}/fengine-charts.html" {}/ \;
-    done < <(find "${web_dir}" -maxdepth 1 -mindepth 1 -type d)
-
-    emit_index_page "${web_dir}"
+    cp "${report_gen_dir}/base.html" "${web_dir}/index.html"
+    emit_index_page "${benchmarks}" "${web_dir}"
 
     # Set object metadata to prevent caching and always display latest graphs.
     p_gsutil -h "Cache-Control:public,max-age=0,no-transform" rsync -rd \
@@ -495,7 +490,7 @@ main() {
   p_gsutil rm -r "${EXP_BUCKET}/processed-folders"
 
   # Start detached process to update graphs
-  live_graphing_loop & disown
+  live_graphing_loop "${BENCHMARKS}" & disown
 
   # wait_period defines how frequently the dispatcher generates new reports for
   # every benchmark with every fengine. For a large number of runner VMs,
