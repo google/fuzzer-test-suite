@@ -41,6 +41,10 @@ if [[ ! -e "./autogen-PRIVATE-key.json" ]]; then
 fi
 cp autogen-PRIVATE-key.json "${CONFIG_DIR}/"
 
+# Create dispatcher in the background.
+readonly INSTANCE_NAME="dispatcher-${EXPERIMENT}"
+create_or_start "${INSTANCE_NAME}" &
+
 gsutil -m rsync -rd "${FENGINE_CONFIG_DIR}" \
   "${GSUTIL_BUCKET}/${EXPERIMENT}/input/fengine-configs"
 
@@ -53,14 +57,11 @@ gsutil -m rsync -rd -x ".git/*" "$(dirname "${SCRIPT_DIR}")" \
 gsutil -m rsync -rd "${CONFIG_DIR}" \
   "${GSUTIL_BUCKET}/${EXPERIMENT}/input/FTS/engine-comparison/config"
 
-# Set up dispatcher and run its startup script.
-readonly INSTANCE_NAME="dispatcher-${EXPERIMENT}"
-create_or_start "${INSTANCE_NAME}"
+# Configure dispatcher and run startup script.
+wait
 robust_begin_gcloud_ssh "${INSTANCE_NAME}"
-
 gcloud compute scp "${SCRIPT_DIR}/startup-dispatcher.sh" \
   "${INSTANCE_NAME}:~/" --zone us-west1-b
-
 cmd="chmod 750 ~/startup-dispatcher.sh"
 cmd="${cmd} && docker run --rm -d -e INSTANCE_NAME=${INSTANCE_NAME}"
 cmd="${cmd}   -e EXPERIMENT=${EXPERIMENT} --cap-add SYS_PTRACE"
