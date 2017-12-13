@@ -3,7 +3,6 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 . $(dirname $0)/../common.sh
 
-CFLAGS="${CFLAGS} -std=gnu++98"
 CXXFLAGS="${CXXFLAGS} -std=gnu++98"
 
 build_lib() {
