@@ -59,7 +59,8 @@ gcloud_create() {
       --image-family="cos-stable" --image-project="cos-cloud" \
       --service-account="${SERVICE_ACCOUNT}" \
       --machine-type="n1-standard-16" --scopes="compute-rw,storage-rw,default" \
-      --boot-disk-size=500GB ${metadata_cmd} ${metadata_ff_cmd}
+      --boot-disk-type="pd-ssd" --boot-disk-size="500GB" \
+      ${metadata_cmd} ${metadata_ff_cmd}
   else
     gcloud compute instances create "${instance_name}" \
       --image-family="docker-ubuntu" --service-account="${SERVICE_ACCOUNT}" \
