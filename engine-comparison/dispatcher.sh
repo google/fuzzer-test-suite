@@ -77,6 +77,9 @@ live_graphing_loop() {
   # Wait for main loop to start generating reports
   while ! p_gsutil ls "${EXP_BUCKET}/reports" &> /dev/null; do sleep 5; done
 
+  # Give this loop priority for more up-to-date web reports.
+  renice -n -10 ${BASHPID}
+
   local wait_period=10
   local next_sync=${SECONDS}
   while true; do
