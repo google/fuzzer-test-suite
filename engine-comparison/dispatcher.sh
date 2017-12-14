@@ -79,6 +79,7 @@ live_graphing_loop() {
 
   # Give this loop priority for more up-to-date web reports.
   renice -n -10 ${BASHPID}
+  ionice -n 0 -p ${BASHPID}
 
   local wait_period=10
   local next_sync=${SECONDS}
