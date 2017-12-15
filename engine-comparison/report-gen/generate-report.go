@@ -129,9 +129,7 @@ func handleTrialCSV(trialReader *csv.Reader, records [][]string, colName string,
 	// Ensure records has 1 more row than trialRecords.
 	// This extra row is needed for column headers.
 	trialRows := len(trialRecords)
-	if len(records) < trialRows+1 {
-		records = extendRecordsToRow(records, trialRows+1, totalCols)
-	}
+	records = extendRecordsToRow(records, trialRows+1, totalCols)
 	for i, vals := range trialRecords {
 		// Note index i+1 since trialRecords has no column headers.
 		records[i+1][trialNum+1] = vals[1]
@@ -156,7 +154,7 @@ func handleFEngine(fengine os.FileInfo, bmarkPath string, finalReportFName strin
 		// Create fds
 		trialCSV, err := os.Open(path.Join(fenginePath, trial.Name(), finalReportFName))
 		if err != nil {
-			continue
+			return nil
 		}
 		trialReader := csv.NewReader(trialCSV)
 
@@ -243,7 +241,7 @@ func handleBmark(bmark os.FileInfo, recordsPath string, finalReportFName string)
 	for _, fengine := range fengines {
 		fengineRecords := handleFEngine(fengine, bmarkPath, finalReportFName)
 		if fengineRecords == nil {
-			continue
+			return
 		}
 		bmarkRecords = appendAllTrials(bmarkRecords, fengineRecords)
 		bmarkAvgRecords = appendAverages(bmarkAvgRecords, fengineRecords)
@@ -286,6 +284,4 @@ func main() {
 	composeAllNamed("coverage-graph.csv")
 	composeAllNamed("corpus-size-graph.csv")
 	composeAllNamed("corpus-elems-graph.csv")
-	// createIFramesFor("setOfFrames.html")
-	// <iframe width="960" height="500" src="benchmarkN/report.html" frameborder="0"></iframe>
 }

@@ -73,6 +73,7 @@ live_graphing_loop() {
   local report_gen_dir="${WORK}/FTS/engine-comparison/report-gen"
   local web_dir="${WORK}/reports"
   rm -rf "${web_dir}" && mkdir "${web_dir}"
+  p_gsutil rm -r "${WEB_BUCKET}"
 
   # Wait for main loop to start generating reports
   while ! p_gsutil ls "${EXP_BUCKET}/reports" &> /dev/null; do sleep 5; done
@@ -98,7 +99,7 @@ live_graphing_loop() {
     emit_index_page "${benchmarks}" "${web_dir}"
 
     # Set object metadata to prevent caching and always display latest graphs.
-    p_gsutil -h "Cache-Control:public,max-age=0,no-transform" rsync -rd \
+    p_gsutil -h "Cache-Control:public,max-age=0,no-transform" rsync -r \
       "${web_dir}" "${WEB_BUCKET}" &> /dev/null
 
     next_sync=$((next_sync + wait_period))
