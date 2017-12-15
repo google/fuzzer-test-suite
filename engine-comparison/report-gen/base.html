@@ -67,7 +67,7 @@
         if ((xhr.readyState == 4) && (xhr.status == 200)) {
           handleText(filename, xhr.responseText, chart);
           xhr.onreadystatechange = null;
-        } else if (xhr.status >= 400) {
+        } else if (xhr.readyState == 4) {
           xhr.onreadystatechange = null;
         }
       }
@@ -82,21 +82,26 @@
       generateGraph(bPrefix + 'corpus-elems-graph.csv', graphFromText, row[2]);
     }
 
-    function drawChart() {
-      if (document.getElementById("allMode").checked) {
-        charts.forEach(function(row, benchmark) {
-          drawRow(benchmark, '', row);
-        });
-      } else if (document.getElementById("averageMode").checked) {
-        charts.forEach(function(row, benchmark) {
-          drawRow(benchmark, 'avg-', row);
-        });
-      } else {
-        charts.forEach(function(row, benchmark) {
-          drawRow(benchmark, 'max-', row);
-        });
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function drawChart(prefix) {
+      for (var benchmark of charts.keys()) {
+        drawRow(benchmark, prefix, charts.get(benchmark));
+        await sleep(1000);
       }
-      setTimeout(drawChart, 5000);  // Refresh graphs every 5 seconds
+    }
+
+    function drawMode() {
+      if (document.getElementById("allMode").checked) {
+        drawChart('');
+      } else if (document.getElementById("averageMode").checked) {
+        drawChart('avg-');
+      } else {
+        drawChart('max-');
+      }
+      setTimeout(drawMode, 1000 * charts.size + 5000);
     }
 
     var charts = new Map();
@@ -110,7 +115,7 @@
             new google.visualization.LineChart(spans[i+2])
         ]);
       }
-      drawChart();
+      drawMode();
     }
   </script>
 </head>
