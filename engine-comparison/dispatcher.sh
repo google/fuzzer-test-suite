@@ -416,8 +416,7 @@ main() {
   declare -xr EXP_BUCKET="${GSUTIL_BUCKET}/${EXPERIMENT}"
   declare -xr WEB_BUCKET="${GSUTIL_PUBLIC_BUCKET}/${EXPERIMENT}"
 
-  mkdir "${WORK}/build"
-  mkdir "${WORK}/send"
+  mkdir "${WORK}/build" "${WORK}/send" "${WORK}/build-logs"
 
   # Stripped down equivalent of "gcloud init"
   gcloud auth activate-service-account "${SERVICE_ACCOUNT}" \
@@ -459,7 +458,9 @@ main() {
   while read fengine_config; do
     download_engine "${fengine_config}"
     for benchmark in ${BENCHMARKS}; do
-      handle_benchmark "${benchmark}" "${fengine_config}" &
+      local fengine_name="$(basename "${fengine_config}")"
+      handle_benchmark "${benchmark}" "${fengine_config}" 2>&1 \
+        | tee "${WORK}/build-logs/${benchmark}-${fengine_name}.txt" &
       active_runners=$((active_runners + RUNNERS))
     done
   done < <(find "${WORK}/fengine-configs" -type f)
@@ -492,9 +493,12 @@ main() {
   # Do coverage builds
   mkdir -p "${WORK}/coverage-binaries/runtime"
   for benchmark in ${BENCHMARKS}; do
-    make_measurer "${benchmark}" &
+    make_measurer "${benchmark}" 2>&1 \
+      | tee "${WORK}/build-logs/${benchmark}-cov.txt" &
   done
   wait
+
+  rsync_delete "${WORK}/build-logs" "${EXP_BUCKET}/build-logs"
 
   mkdir -p "${WORK}/experiment-folders"
   mkdir -p "${WORK}/prev-experiment-folders"
