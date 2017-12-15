@@ -432,6 +432,14 @@ main() {
         BENCHMARKS="${BENCHMARKS} $(basename "$(dirname "${benchmark}")")"
       done < <(find "${SCRIPT_DIR}/.." -name "build.sh")
       ;;
+    most)
+      while read benchmark; do
+        local bmark_name="$(basename "$(dirname "${benchmark}")")"
+        if [[ "${bmark_name}" != "c-ares-CVE-2016-5180" ]]; then
+          BENCHMARKS="${BENCHMARKS} ${bmark_name}"
+        fi
+      done < <(find "${SCRIPT_DIR}/.." -name "build.sh")
+      ;;
     small) BENCHMARKS="c-ares-CVE-2016-5180 re2-2014-12-09" ;;
     none) BENCHMARKS="" ;;
     three) BENCHMARKS="libssh-2017-1272 json-2017-02-12 proj4-2017-08-14" ;;
