@@ -45,37 +45,58 @@ get_afl() {
 # Creates index.html in the specified directory with links to graphs for each
 # benchmark and fuzzing configuration.
 emit_index_page() {
-  local web_dir=$1
+  local benchmarks=$1
+  local web_dir=$2
   local dst="${web_dir}/index.html"
-  local url_prefix="/fuzzer-test-suite-public/${EXPERIMENT}"
   {
-    echo "<!DOCTYPE html>"
-    echo "<meta charset=\"utf-8\">"
-    echo "<title>A/B Experiment Results</title>"
-    echo "<body><h2>A/B Experiment Results</h2><ul>"
-    while read bm_path; do
-      local bm="$(basename "${bm_path}")"
-      local bm_url="${url_prefix}/${bm}/comparison-charts.html"
-      echo "<li><a href=\"${bm_url}\">${bm}</a>"
-      while read fengine_path; do
-        local fengine="$(basename "${fengine_path}")"
-        local fengine_url="${url_prefix}/${bm}/${fengine}/fengine-charts.html"
-        echo "<a href=\"${fengine_url}\">[${fengine}]</a>"
-      done < <(find "${bm_path}" -maxdepth 1 -mindepth 1 -type d)
-      echo "</li>"
-    done < <(find "${web_dir}" -maxdepth 1 -mindepth 1 -type d | sort)
-    echo "</ul></body>"
-  } > "${dst}"
+    echo "<ul><li>$(date)</li>"
+    echo "<li>Clang revision: ${CLANG_REVISION}</li>"
+    [[ -n "${AFL_REVISION}" ]] && echo "<li>AFL revision: ${AFL_REVISION}</li>"
+    [[ -n "${LIBFUZZER_REVISION}" ]] && \
+      echo "<li>libFuzzer revision: ${LIBFUZZER_REVISION}</li>"
+    while read fengine_config; do
+      echo "<li><a href="${fengine_config}">${fengine_config}</a></li>"
+    done < <(ls "${WORK}/fengine-configs")
+    echo "</ul>"
+
+    echo "Graphing Mode:"
+    local input_prefix="<input type=\"radio\" name=\"mode\""
+    echo "${input_prefix} id=\"allMode\" value=\"all\" checked>All"
+    echo "${input_prefix} id=\"averageMode\" value=\"average\">Average"
+    echo "${input_prefix} id=\"maxMode\" value=\"max\">Max"
+
+    echo "<table><tr>"
+    echo "<th></th>"
+    echo "<th>Coverage</th>"
+    echo "<th>Corpus Size</th>"
+    echo "<th>Corpus Elements</th></tr>"
+    while read bm; do
+      echo "<tr><th>${bm}</th>"
+      local span_prefix="<td><span class=\"chart\" id=\"${bm}-"
+      local span_suffix="\" style=\"display: inline-block\"></span></td>"
+      echo "${span_prefix}0${span_suffix}"
+      echo "${span_prefix}1${span_suffix}"
+      echo "${span_prefix}2${span_suffix}"
+      echo "</tr>"
+    done < <(echo "${benchmarks}" | tr " " "\n" | grep . | sort)
+    echo "</table></body>"
+  } >> "${dst}"
 }
 
 # Updates web graphs in an infinite loop
 live_graphing_loop() {
+  local benchmarks=$1
   local report_gen_dir="${WORK}/FTS/engine-comparison/report-gen"
   local web_dir="${WORK}/reports"
   rm -rf "${web_dir}" && mkdir "${web_dir}"
+  p_gsutil rm -r "${WEB_BUCKET}"
 
   # Wait for main loop to start generating reports
   while ! p_gsutil ls "${EXP_BUCKET}/reports" &> /dev/null; do sleep 5; done
+
+  # Give this loop priority for more up-to-date web reports.
+  renice -n -10 ${BASHPID}
+  ionice -n 0 -p ${BASHPID}
 
   local wait_period=10
   local next_sync=${SECONDS}
@@ -90,16 +111,12 @@ live_graphing_loop() {
     rsync_delete "${EXP_BUCKET}/reports" "${web_dir}" &> /dev/null
     (cd "${WORK}" && go run "${report_gen_dir}/generate-report.go")
 
-    while read bm; do
-      cp "${report_gen_dir}/comparison-charts.html" "${bm}/"
-      find "${bm}" -maxdepth 1 -mindepth 1 -type d -exec \
-        cp "${report_gen_dir}/fengine-charts.html" {}/ \;
-    done < <(find "${web_dir}" -maxdepth 1 -mindepth 1 -type d)
-
-    emit_index_page "${web_dir}"
+    cp "${report_gen_dir}/base.html" "${web_dir}/index.html"
+    cp "${WORK}"/fengine-configs/* "${web_dir}/"
+    emit_index_page "${benchmarks}" "${web_dir}"
 
     # Set object metadata to prevent caching and always display latest graphs.
-    p_gsutil -h "Cache-Control:public,max-age=0,no-transform" rsync -rd \
+    p_gsutil -h "Cache-Control:public,max-age=0,no-transform" rsync -r \
       "${web_dir}" "${WEB_BUCKET}" &> /dev/null
 
     next_sync=$((next_sync + wait_period))
@@ -118,8 +135,11 @@ download_engine() {
     libfuzzer)
       if [[ ! -d "${LIBFUZZER_SRC}/standalone" ]]; then
         echo "Checking out libFuzzer"
-        svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer \
-          "${LIBFUZZER_SRC}"
+        export LIBFUZZER_REVISION="$( \
+          svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer \
+          "${LIBFUZZER_SRC}" \
+          | grep "Checked out revision" \
+          | grep -o "[0-9]*")"
       fi
       ;;
     afl)
@@ -132,6 +152,10 @@ download_engine() {
       if [[ ! -f "${AFL_SRC}/afl-fuzz" ]]; then
         mkdir -p "${AFL_SRC}"
         (cd "${AFL_SRC}" && get_afl)
+        export AFL_REVISION="$("${AFL_SRC}/afl-fuzz" \
+          | grep "afl-fuzz.*by" \
+          | cut -d " " -f 2 \
+          | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")"
       fi
       ;;
     fsanitize_fuzzer) ;;
@@ -267,7 +291,7 @@ run_cov_new_inputs() {
   local coverage_binary=$1
   local corpus1=$2
   local corpus2=$3
-  UBSAN_OPTIONS=coverage=1 "${coverage_binary}" \
+  UBSAN_OPTIONS=coverage=1 timeout 5m "${coverage_binary}" \
     $(comm -13 <(ls "${corpus1}") <(ls "${corpus2}") \
       | while read line; do echo "${corpus2}/${line}"; done)
 }
@@ -416,8 +440,7 @@ main() {
   declare -xr EXP_BUCKET="${GSUTIL_BUCKET}/${EXPERIMENT}"
   declare -xr WEB_BUCKET="${GSUTIL_PUBLIC_BUCKET}/${EXPERIMENT}"
 
-  mkdir "${WORK}/build"
-  mkdir "${WORK}/send"
+  mkdir "${WORK}/build" "${WORK}/send" "${WORK}/build-logs"
 
   # Stripped down equivalent of "gcloud init"
   gcloud auth activate-service-account "${SERVICE_ACCOUNT}" \
@@ -433,6 +456,14 @@ main() {
         BENCHMARKS="${BENCHMARKS} $(basename "$(dirname "${benchmark}")")"
       done < <(find "${SCRIPT_DIR}/.." -name "build.sh")
       ;;
+    most)
+      while read benchmark; do
+        local bmark_name="$(basename "$(dirname "${benchmark}")")"
+        if [[ "${bmark_name}" != "c-ares-CVE-2016-5180" ]]; then
+          BENCHMARKS="${BENCHMARKS} ${bmark_name}"
+        fi
+      done < <(find "${SCRIPT_DIR}/.." -name "build.sh")
+      ;;
     small) BENCHMARKS="c-ares-CVE-2016-5180 re2-2014-12-09" ;;
     none) BENCHMARKS="" ;;
     three) BENCHMARKS="libssh-2017-1272 json-2017-02-12 proj4-2017-08-14" ;;
@@ -446,12 +477,20 @@ main() {
   # Reset google cloud results before doing experiments
   p_gsutil rm -r "${EXP_BUCKET}/experiment-folders" "${EXP_BUCKET}/reports"
 
+  # Record Clang revision before build.
+  export CLANG_REVISION="$(clang --version \
+    | grep "clang version" \
+    | grep -o "svn[0-9]*" \
+    | grep -o "[0-9]*")"
+
   # Outermost loops
   local active_runners=0
   while read fengine_config; do
     download_engine "${fengine_config}"
     for benchmark in ${BENCHMARKS}; do
-      handle_benchmark "${benchmark}" "${fengine_config}" &
+      local fengine_name="$(basename "${fengine_config}")"
+      handle_benchmark "${benchmark}" "${fengine_config}" 2>&1 \
+        | tee "${WORK}/build-logs/${benchmark}-${fengine_name}.txt" &
       active_runners=$((active_runners + RUNNERS))
     done
   done < <(find "${WORK}/fengine-configs" -type f)
@@ -484,9 +523,12 @@ main() {
   # Do coverage builds
   mkdir -p "${WORK}/coverage-binaries/runtime"
   for benchmark in ${BENCHMARKS}; do
-    make_measurer "${benchmark}" &
+    make_measurer "${benchmark}" 2>&1 \
+      | tee "${WORK}/build-logs/${benchmark}-cov.txt" &
   done
   wait
+
+  rsync_delete "${WORK}/build-logs" "${EXP_BUCKET}/build-logs"
 
   mkdir -p "${WORK}/experiment-folders"
   mkdir -p "${WORK}/prev-experiment-folders"
@@ -495,7 +537,7 @@ main() {
   p_gsutil rm -r "${EXP_BUCKET}/processed-folders"
 
   # Start detached process to update graphs
-  live_graphing_loop & disown
+  live_graphing_loop "${BENCHMARKS}" & disown
 
   # wait_period defines how frequently the dispatcher generates new reports for
   # every benchmark with every fengine. For a large number of runner VMs,

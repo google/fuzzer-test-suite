@@ -41,6 +41,10 @@ if [[ ! -e "./autogen-PRIVATE-key.json" ]]; then
 fi
 cp autogen-PRIVATE-key.json "${CONFIG_DIR}/"
 
+# Create dispatcher in the background.
+readonly INSTANCE_NAME="dispatcher-${EXPERIMENT}"
+create_or_start "${INSTANCE_NAME}" &
+
 gsutil -m rsync -rd "${FENGINE_CONFIG_DIR}" \
   "${GSUTIL_BUCKET}/${EXPERIMENT}/input/fengine-configs"
 
@@ -53,19 +57,16 @@ gsutil -m rsync -rd -x ".git/*" "$(dirname "${SCRIPT_DIR}")" \
 gsutil -m rsync -rd "${CONFIG_DIR}" \
   "${GSUTIL_BUCKET}/${EXPERIMENT}/input/FTS/engine-comparison/config"
 
-# Set up dispatcher and run its startup script.
-readonly INSTANCE_NAME="dispatcher-${EXPERIMENT}"
-create_or_start "${INSTANCE_NAME}"
+# Configure dispatcher and run startup script.
+wait
 robust_begin_gcloud_ssh "${INSTANCE_NAME}"
-
 gcloud compute scp "${SCRIPT_DIR}/startup-dispatcher.sh" \
   "${INSTANCE_NAME}:~/" --zone us-west1-b
-
 cmd="chmod 750 ~/startup-dispatcher.sh"
 cmd="${cmd} && docker run --rm -d -e INSTANCE_NAME=${INSTANCE_NAME}"
-cmd="${cmd}   -e EXPERIMENT=${EXPERIMENT} --cap-add SYS_PTRACE"
-cmd="${cmd}   --name=dispatcher-container gcr.io/fuzzer-test-suite/dispatcher"
-cmd="${cmd}   tail -f /dev/null"
+cmd="${cmd}   -e EXPERIMENT=${EXPERIMENT} --cap-add=SYS_PTRACE"
+cmd="${cmd}   --cap-add=SYS_NICE --name=dispatcher-container"
+cmd="${cmd}   gcr.io/fuzzer-test-suite/dispatcher tail -f /dev/null"
 cmd="${cmd} && docker cp startup-dispatcher.sh dispatcher-container:/work/"
 cmd="${cmd} && docker exec dispatcher-container /work/startup-dispatcher.sh"
 gcloud compute ssh "${INSTANCE_NAME}" --command="${cmd}"

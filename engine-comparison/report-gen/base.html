@@ -8,16 +8,6 @@
     google.charts.load('current', {'packages':['corechart']});
     google.charts.setOnLoadCallback(init);
 
-    var chart1;
-    var chart2;
-    var chart3;
-    function init() {
-      chart1 = new google.visualization.LineChart(document.getElementById("chart1"));
-      chart2 = new google.visualization.LineChart(document.getElementById("chart2"));
-      chart3 = new google.visualization.LineChart(document.getElementById("chart3"));
-      drawChart();
-    }
-
     var graphColors = ['#cc2529', '#3e9651', '#396ab1', '#da7c30', '#535154',
       '#6b4c9a', '#922428', '#948b3d'];
     var colorCounter = 0;
@@ -27,7 +17,6 @@
     function getNextColor() {
       return graphColors[colorCounter++ % graphColors.length];
     }
-
 
     // Removes the "-ZZZ" suffix from column names
     function removeSuffix(colname) {
@@ -61,6 +50,9 @@
       var options = {
         title: filename,
         colors: colorArray,
+        width: 750,
+        height: 400,
+        chartArea: {width: '80%', height: '80%'},
         legend: {position: 'bottom'},
         interpolateNulls: 'true'
       };
@@ -75,7 +67,7 @@
         if ((xhr.readyState == 4) && (xhr.status == 200)) {
           handleText(filename, xhr.responseText, chart);
           xhr.onreadystatechange = null;
-        } else if (xhr.status >= 400) {
+        } else if (xhr.readyState == 4) {
           xhr.onreadystatechange = null;
         }
       }
@@ -83,38 +75,48 @@
       xhr.send();
     }
 
-    var lastTimer = 0;
-    function callAfterSec(func, seconds) {
-      clearTimeout(lastTimer);
-      lastTimer = setTimeout(func, 1000 * seconds);
+    function drawRow(benchmark, prefix, row) {
+      var bPrefix = benchmark + '/' + prefix;
+      generateGraph(bPrefix + 'coverage-graph.csv', graphFromText, row[0]);
+      generateGraph(bPrefix + 'corpus-size-graph.csv', graphFromText, row[1]);
+      generateGraph(bPrefix + 'corpus-elems-graph.csv', graphFromText, row[2]);
     }
 
-    function drawChart() {
-      if (document.getElementById("allMode").checked) {
-        generateGraph("coverage-graph.csv", graphFromText, chart1);
-        generateGraph("corpus-size-graph.csv", graphFromText, chart2);
-        generateGraph("corpus-elems-graph.csv", graphFromText, chart3);
-      } else if (document.getElementById("averageMode").checked) {
-        generateGraph("avg-coverage-graph.csv", graphFromText, chart1);
-        generateGraph("avg-corpus-size-graph.csv", graphFromText, chart2);
-        generateGraph("avg-corpus-elems-graph.csv", graphFromText, chart3);
-      } else {
-        generateGraph("max-coverage-graph.csv", graphFromText, chart1);
-        generateGraph("max-corpus-size-graph.csv", graphFromText, chart2);
-        generateGraph("max-corpus-elems-graph.csv", graphFromText, chart3);
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function drawChart(prefix) {
+      for (var benchmark of charts.keys()) {
+        drawRow(benchmark, prefix, charts.get(benchmark));
+        await sleep(1000);
       }
-      setTimeout(drawChart, 5000);  // Refresh graphs every 5 seconds
     }
 
+    function drawMode() {
+      if (document.getElementById("allMode").checked) {
+        drawChart('');
+      } else if (document.getElementById("averageMode").checked) {
+        drawChart('avg-');
+      } else {
+        drawChart('max-');
+      }
+      setTimeout(drawMode, 1000 * charts.size + 5000);
+    }
+
+    var charts = new Map();
+    function init() {
+      var spans = document.getElementsByClassName('chart');
+      for (var i = 0; i < spans.length - 2; i += 3) {
+        var benchmark = removeSuffix(spans[i].id);
+        charts.set(benchmark, [
+            new google.visualization.LineChart(spans[i]),
+            new google.visualization.LineChart(spans[i+1]),
+            new google.visualization.LineChart(spans[i+2])
+        ]);
+      }
+      drawMode();
+    }
   </script>
 </head>
 <body>
-  Graphing Mode:
-  <input type="radio" name="mode" id="allMode" value="all" checked>All
-  <input type="radio" name="mode" id="averageMode" value="average">Average
-  <input type="radio" name="mode" id="maxMode" value="max">Max
-  <div id="chart1" style="width: 1000px; height: 450px"></div>
-  <div id="chart2" style="width: 1000px; height: 450px"></div>
-  <div id="chart3" style="width: 1000px; height: 450px"></div>
-</body>
-
