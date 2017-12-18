@@ -291,7 +291,7 @@ run_cov_new_inputs() {
   local coverage_binary=$1
   local corpus1=$2
   local corpus2=$3
-  UBSAN_OPTIONS=coverage=1 "${coverage_binary}" \
+  UBSAN_OPTIONS=coverage=1 timeout 5m "${coverage_binary}" \
     $(comm -13 <(ls "${corpus1}") <(ls "${corpus2}") \
       | while read line; do echo "${corpus2}/${line}"; done)
 }
