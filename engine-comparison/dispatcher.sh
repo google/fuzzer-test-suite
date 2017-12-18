@@ -49,6 +49,22 @@ emit_index_page() {
   local web_dir=$2
   local dst="${web_dir}/index.html"
   {
+    echo "<ul><li>$(date)</li>"
+    echo "<li>Clang revision: ${CLANG_REVISION}</li>"
+    [[ -n "${AFL_REVISION}" ]] && echo "<li>AFL revision: ${AFL_REVISION}</li>"
+    [[ -n "${LIBFUZZER_REVISION}" ]] && \
+      echo "<li>libFuzzer revision: ${LIBFUZZER_REVISION}</li>"
+    while read fengine_config; do
+      echo "<li><a href="${fengine_config}">${fengine_config}</a></li>"
+    done < <(ls "${WORK}/fengine-configs")
+    echo "</ul>"
+
+    echo "Graphing Mode:"
+    local input_prefix="<input type=\"radio\" name=\"mode\""
+    echo "${input_prefix} id=\"allMode\" value=\"all\" checked>All"
+    echo "${input_prefix} id=\"averageMode\" value=\"average\">Average"
+    echo "${input_prefix} id=\"maxMode\" value=\"max\">Max"
+
     echo "<table><tr>"
     echo "<th></th>"
     echo "<th>Coverage</th>"
@@ -96,6 +112,7 @@ live_graphing_loop() {
     (cd "${WORK}" && go run "${report_gen_dir}/generate-report.go")
 
     cp "${report_gen_dir}/base.html" "${web_dir}/index.html"
+    cp "${WORK}"/fengine-configs/* "${web_dir}/"
     emit_index_page "${benchmarks}" "${web_dir}"
 
     # Set object metadata to prevent caching and always display latest graphs.
@@ -118,8 +135,11 @@ download_engine() {
     libfuzzer)
       if [[ ! -d "${LIBFUZZER_SRC}/standalone" ]]; then
         echo "Checking out libFuzzer"
-        svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer \
-          "${LIBFUZZER_SRC}"
+        export LIBFUZZER_REVISION="$( \
+          svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer \
+          "${LIBFUZZER_SRC}" \
+          | grep "Checked out revision" \
+          | grep -o "[0-9]*")"
       fi
       ;;
     afl)
@@ -132,6 +152,10 @@ download_engine() {
       if [[ ! -f "${AFL_SRC}/afl-fuzz" ]]; then
         mkdir -p "${AFL_SRC}"
         (cd "${AFL_SRC}" && get_afl)
+        export AFL_REVISION="$("${AFL_SRC}/afl-fuzz" \
+          | grep "afl-fuzz.*by" \
+          | cut -d " " -f 2 \
+          | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")"
       fi
       ;;
     fsanitize_fuzzer) ;;
@@ -452,6 +476,12 @@ main() {
 
   # Reset google cloud results before doing experiments
   p_gsutil rm -r "${EXP_BUCKET}/experiment-folders" "${EXP_BUCKET}/reports"
+
+  # Record Clang revision before build.
+  export CLANG_REVISION="$(clang --version \
+    | grep "clang version" \
+    | grep -o "svn[0-9]*" \
+    | grep -o "[0-9]*")"
 
   # Outermost loops
   local active_runners=0
