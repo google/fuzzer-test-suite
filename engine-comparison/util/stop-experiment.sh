@@ -7,6 +7,6 @@ readonly EXPERIMENT_CONFIG="$1"
 
 gcloud compute instances delete -q $(gcloud compute instances list \
   | cut -d " " -f 1 \
-  | grep "run-${EXPERIMENT}-") &
+  | grep "^r-${EXPERIMENT}") &
 
 gcloud compute instances delete -q "dispatcher-${EXPERIMENT}"
