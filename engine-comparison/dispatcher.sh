@@ -55,7 +55,7 @@ emit_index_page() {
     [[ -n "${LIBFUZZER_REVISION}" ]] && \
       echo "<li>libFuzzer revision: ${LIBFUZZER_REVISION}</li>"
     while read fengine_config; do
-      echo "<li><a href="${fengine_config}">${fengine_config}</a></li>"
+      echo "<li><a href=\"${fengine_config}\">${fengine_config}</a></li>"
     done < <(ls "${WORK}/fengine-configs")
     echo "</ul>"
 
