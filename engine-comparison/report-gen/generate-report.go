@@ -122,7 +122,9 @@ func extendRecordsToRow(mat [][]string, desiredRows int, matCols int) [][]string
 func handleTrialCSV(trialReader *csv.Reader, records [][]string, colName string, totalCols int, trialNum int) [][]string {
 	// Read whole CSV to an array
 	trialRecords, err := trialReader.ReadAll()
-	checkErr(err)
+	if err != nil {
+		return nil
+	}
 	// Add the name of this new column to records[0]
 	records[0] = append(records[0], colName)
 
@@ -159,6 +161,9 @@ func handleFEngine(fengine os.FileInfo, bmarkPath string, finalReportFName strin
 		trialReader := csv.NewReader(trialCSV)
 
 		records = handleTrialCSV(trialReader, records, fengine.Name()+"-"+trial.Name(), totalCols, j)
+		if records == nil {
+			return nil
+		}
 		trialCSV.Close()
 	}
 
