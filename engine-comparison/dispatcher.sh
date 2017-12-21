@@ -55,7 +55,7 @@ emit_index_page() {
     [[ -n "${LIBFUZZER_REVISION}" ]] && \
       echo "<li>libFuzzer revision: ${LIBFUZZER_REVISION}</li>"
     while read fengine_config; do
-      echo "<li><a href="${fengine_config}">${fengine_config}</a></li>"
+      echo "<li><a href=\"${fengine_config}\">${fengine_config}</a></li>"
     done < <(ls "${WORK}/fengine-configs")
     echo "</ul>"
 
@@ -233,16 +233,16 @@ handle_benchmark() {
   local benchmark=$1
   local fengine_config=$2
   local fengine_name="$(basename "${fengine_config}")"
-  local bmark_with_fengine="${benchmark}-with-${fengine_name}"
+  local bmark_with_fengine="${benchmark}-${fengine_name}"
   build_benchmark "${benchmark}" "${fengine_config}" "${bmark_with_fengine}"
   rsync_delete "${SEND_DIR}" \
     "${EXP_BUCKET}/binary-folders/${bmark_with_fengine}"
   # GCloud instance names must match the following regular expression:
   # '[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?'
-  local instance_name="$(echo "run-${EXPERIMENT}-${bmark_with_fengine}" | \
+  local instance_name="$(echo "r-${EXPERIMENT}${benchmark}${fengine_name}" | \
     tr '[:upper:]' '[:lower:]' | tr -d '.')"
   for (( i=0; i < RUNNERS; i++ )); do
-    create_or_start_runner "${instance_name}-${i}" "${benchmark}" \
+    create_or_start_runner "${instance_name}${i}" "${benchmark}" \
       "${fengine_name}" "${i}" &
   done
 }
