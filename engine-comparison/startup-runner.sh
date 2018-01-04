@@ -15,7 +15,9 @@ readonly FENGINE_NAME="$(curl "${METADATA_URL}/fengine" -H \
   "Metadata-Flavor: Google")"
 readonly EXPERIMENT="$(curl "${METADATA_URL}/experiment" -H \
   "Metadata-Flavor: Google")"
-readonly EXP_BUCKET="gs://fuzzer-test-suite/${EXPERIMENT}"
+readonly BUCKET="$(curl "${METADATA_URL}/bucket" -H \
+  "Metadata-Flavor: Google")"
+readonly EXP_BUCKET="${BUCKET}/${EXPERIMENT}"
 readonly FOLDER_NAME="${BENCHMARK}-${FENGINE_NAME}"
 
 mkdir -p ~/input

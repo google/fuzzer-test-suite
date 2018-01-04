@@ -4,14 +4,6 @@
 #
 # Defines utility functions and variables used by the engine-comparison tool.
 
-# Define zone to avoid prompt
-declare -xr CLOUDSDK_COMPUTE_ZONE="us-west1-b"
-declare -xr GSUTIL_BUCKET="gs://fuzzer-test-suite"
-declare -xr GSUTIL_PUBLIC_BUCKET="gs://fuzzer-test-suite-public"
-
-# Almost definitely fine to be in the public domain
-declare -xr SERVICE_ACCOUNT="373628893752-compute@developer.gserviceaccount.com"
-
 # It takes some time for sshd to start up after a VM is created.  This function
 # repeatedly tries to connect until the ssh succeeds.
 robust_begin_gcloud_ssh() {
@@ -32,15 +24,18 @@ robust_begin_gcloud_ssh() {
 
 create_or_start() {
   local instance_name=$1
+  local service_account=$2
+  local zone=$3
   local metadata=""
-  [[ -n ${2+x} ]] && metadata=$2
+  [[ -n ${4+x} ]] && metadata=$4
   local metadata_from_file=""
-  [[ -n ${3+x} ]] && metadata_from_file=$3
+  [[ -n ${5+x} ]] && metadata_from_file=$5
 
   if gcloud compute instances describe "${instance_name}" 2>&1 | grep "ERROR" \
     > /dev/null; then
     echo "${instance_name} doesn't exist yet. Now creating VM."
-    gcloud_create "${instance_name}" "${metadata}" "${metadata_from_file}"
+    gcloud_create "${instance_name}" "${service_account}" "${zone}" \
+      "${metadata}" "${metadata_from_file}"
   else
     gcloud compute instances start "${instance_name}"
   fi
@@ -48,28 +43,31 @@ create_or_start() {
 
 gcloud_create() {
   local instance_name=$1
+  local service_account=$2
+  local zone=$3
   local metadata_cmd=""
-  [[ -n $2 ]] && metadata_cmd="--metadata $2"
+  [[ -n $4 ]] && metadata_cmd="--metadata $4"
   local metadata_ff_cmd=""
-  [[ -n $3 ]] && metadata_ff_cmd="--metadata-from-file $3"
+  [[ -n $5 ]] && metadata_ff_cmd="--metadata-from-file $5"
 
   # The dispatcher should be more powerful
   if echo "${instance_name}" | grep "dispatcher" > /dev/null; then
     gcloud compute instances create "${instance_name}" \
       --image-family="cos-stable" --image-project="cos-cloud" \
-      --service-account="${SERVICE_ACCOUNT}" \
       --machine-type="n1-standard-16" --scopes="compute-rw,storage-rw,default" \
       --boot-disk-type="pd-ssd" --boot-disk-size="500GB" \
+      --service-account="${service_account}" --zone="${zone}" \
       ${metadata_cmd} ${metadata_ff_cmd}
   else
     gcloud compute instances create "${instance_name}" \
-      --image-family="docker-ubuntu" --service-account="${SERVICE_ACCOUNT}" \
+      --image-family="docker-ubuntu"  --network=runner-net --no-address \
       --machine-type="n1-standard-2" --scopes="compute-rw,storage-rw,default" \
-      ${metadata_cmd} ${metadata_ff_cmd} --network=runner-net --no-address
+      --service-account="${service_account}" --zone="${zone}" \
+      ${metadata_cmd} ${metadata_ff_cmd}
   fi
 }
 
 gcloud_delete() {
   local instance_name=$1
-  gcloud compute instances delete "${instance_name}"
+  gcloud compute instances delete -q "${instance_name}"
 }
