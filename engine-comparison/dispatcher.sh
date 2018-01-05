@@ -223,7 +223,9 @@ build_benchmark() {
 create_or_start_runner() {
   local instance_name=$1
   local metadata="benchmark=$2,fengine=$3,trial=$4,experiment=${EXPERIMENT}"
-  create_or_start "${instance_name}" "${metadata}" \
+  metadata="${metadata},bucket=${GSUTIL_BUCKET}"
+  create_or_start "${instance_name}" "${SERVICE_ACCOUNT}" \
+    "${CLOUDSDK_COMPUTE_ZONE}" "${metadata}" \
     "startup-script=${WORK}/FTS/engine-comparison/startup-runner.sh"
 }
 
@@ -438,14 +440,14 @@ check_finished() {
 
 main() {
   declare -xr EXP_BUCKET="${GSUTIL_BUCKET}/${EXPERIMENT}"
-  declare -xr WEB_BUCKET="${GSUTIL_PUBLIC_BUCKET}/${EXPERIMENT}"
+  declare -xr WEB_BUCKET="${GSUTIL_WEB_BUCKET}/${EXPERIMENT}"
 
   mkdir "${WORK}/build" "${WORK}/send" "${WORK}/build-logs"
 
   # Stripped down equivalent of "gcloud init"
   gcloud auth activate-service-account "${SERVICE_ACCOUNT}" \
     --key-file="${WORK}/FTS/engine-comparison/config/autogen-PRIVATE-key.json"
-  gcloud config set project fuzzer-test-suite
+  gcloud config set project "${PROJECT}"
 
   # This config file defines $BMARKS
   . "${WORK}/FTS/engine-comparison/config/bmarks.cfg"
@@ -590,7 +592,8 @@ main() {
   done
 
   # We're done. Stop this dispatcher to save resources.
-  gcloud compute instances stop --zone us-west1-b -q "${INSTANCE_NAME}"
+  gcloud compute instances stop --zone="${CLOUDSDK_COMPUTE_ZONE}" -q \
+    "${INSTANCE_NAME}"
 }
 
 main "$@"

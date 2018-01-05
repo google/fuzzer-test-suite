@@ -24,8 +24,13 @@ cp "$2" "${CONFIG_DIR}/parameters.cfg"
 
 # Validate experiment configuration
 if [[ -z ${EXPERIMENT+x} || -z ${RUNNERS+x} || -z ${JOBS+x} || \
-  -z ${MAX_RUNS+x} || -z ${MAX_TOTAL_TIME+x} ]]; then
-  echo "Error: experiment-config must define EXPERIMENT, RUNNERS, JOBS, MAX_RUNS, and MAX_TOTAL_TIME"
+  -z ${MAX_RUNS+x} || -z ${MAX_TOTAL_TIME+x} || \
+  -z ${CLOUDSDK_COMPUTE_ZONE+x} || -z ${GSUTIL_BUCKET+x} || \
+  -z ${GSUTIL_WEB_BUCKET+x} || -z ${SERVICE_ACCOUNT+x} ]]; then
+  echo "Error: experiment-config must define the following parameters:"
+  echo "  EXPERIMENT, RUNNERS, JOBS, MAX_RUNS, MAX_TOTAL_TIME,"
+  echo "  CLOUDSDK_COMPUTE_ZONE, GSUTIL_BUCKET, GSUTIL_WEB_BUCKET,"
+  echo "  and SERVICE_ACCOUNT"
   exit 1
 fi
 if ! echo "${EXPERIMENT}" | grep "^[a-z0-9-][a-z0-9-]*$" &> /dev/null; then
@@ -36,6 +41,13 @@ for numeric_param in ${RUNNERS} ${JOBS} ${MAX_RUNS} ${MAX_TOTAL_TIME}; do
   numeric_regex="^-?[0-9]+$"
   if [[ ! "${numeric_param}" =~ ${numeric_regex} ]]; then
     echo "Error: RUNNERS, JOBS, MAX_RUNS, and MAX_TOTAL_TIME must be integers"
+    exit 1
+  fi
+done
+for bucket_param in ${GSUTIL_BUCKET} ${GSUTIL_WEB_BUCKET}; do
+  bucket_regex="^gs://"
+  if [[ ! "${bucket_param}" =~ ${bucket_regex} ]]; then
+    echo "Error: GSUTIL_BUCKET and GSUTIL_WEB_BUCKET must start with gs://"
     exit 1
   fi
 done
@@ -82,6 +94,8 @@ for fengine_config in "${FENGINE_CONFIGS[@]}"; do
   cp "${fengine_config}" "${FENGINE_CONFIG_DIR}/"
 done
 
+gcloud config set project "${PROJECT}"
+
 # Create or reuse service account auth key.
 if [[ ! -e "./autogen-PRIVATE-key.json" ]]; then
   gcloud iam service-accounts keys create autogen-PRIVATE-key.json \
@@ -91,7 +105,8 @@ cp autogen-PRIVATE-key.json "${CONFIG_DIR}/"
 
 # Create dispatcher in the background.
 readonly INSTANCE_NAME="dispatcher-${EXPERIMENT}"
-create_or_start "${INSTANCE_NAME}" &
+create_or_start "${INSTANCE_NAME}" "${SERVICE_ACCOUNT}" \
+  "${CLOUDSDK_COMPUTE_ZONE}" &
 
 gsutil -m rsync -rd "${FENGINE_CONFIG_DIR}" \
   "${GSUTIL_BUCKET}/${EXPERIMENT}/input/fengine-configs"
@@ -108,8 +123,7 @@ gsutil -m rsync -rd "${CONFIG_DIR}" \
 # Configure dispatcher and run startup script.
 wait
 robust_begin_gcloud_ssh "${INSTANCE_NAME}"
-gcloud compute scp "${SCRIPT_DIR}/startup-dispatcher.sh" \
-  "${INSTANCE_NAME}:~/" --zone us-west1-b
+gcloud compute scp "${SCRIPT_DIR}/startup-dispatcher.sh" "${INSTANCE_NAME}:~/"
 cmd="chmod 750 ~/startup-dispatcher.sh"
 cmd="${cmd} && docker run --rm -d -e INSTANCE_NAME=${INSTANCE_NAME}"
 cmd="${cmd}   -e EXPERIMENT=${EXPERIMENT} --cap-add=SYS_PTRACE"

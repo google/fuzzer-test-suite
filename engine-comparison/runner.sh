@@ -45,7 +45,7 @@ conduct_experiment() {
   local bmark_fengine_dir=$3
   local next_sync=${WAIT_PERIOD}
   local cycle=1
-  local sync_dir="gs://fuzzer-test-suite/${EXPERIMENT}/experiment-folders"
+  local sync_dir="${GSUTIL_BUCKET}/${EXPERIMENT}/experiment-folders"
   sync_dir="${sync_dir}/${bmark_fengine_dir}/trial-${trial_num}"
 
   rm -rf corpus last-corpus corpus-archives results crashes
@@ -154,10 +154,11 @@ main() {
 
   # We're done. Notify dispatcher and delete this runner to save resources.
   touch finished
-  local sync_dir="gs://fuzzer-test-suite/${EXPERIMENT}/experiment-folders"
+  local sync_dir="${GSUTIL_BUCKET}/${EXPERIMENT}/experiment-folders"
   sync_dir="${sync_dir}/${bmark_fengine_dir}/trial-${trial}"
   gsutil -m mv finished "${sync_dir}/"
-  gcloud compute instances delete --zone us-west1-b -q "${INSTANCE_NAME}"
+  gcloud compute instances delete --zone="${CLOUDSDK_COMPUTE_ZONE}" -q \
+    "${INSTANCE_NAME}"
 }
 
 main "$@"
