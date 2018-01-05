@@ -36,6 +36,7 @@ their snapshots, the dispatcher also shuts itself down.
 ## Prerequisites
 
 - Install [Google Cloud SDK](https://cloud.google.com/sdk/downloads).
+- Configure a Google Cloud Platform project for experiments.
 
 ## Configuration
 
@@ -53,7 +54,7 @@ can specify both build flags (e.g. `CC`, `CFLAGS`, `CXXFLAGS`) and runtime flags
 The following two environment variables have special meaning in fuzzing
 configurations:
 
-- `FUZZING_ENGINE` - Currently `afl, `libfuzzer`, and `fsanitize_fuzzer` are
+- `FUZZING_ENGINE` - Currently `afl`, `libfuzzer`, and `fsanitize_fuzzer` are
   supported.  `fsanitize_fuzzer` is libFuzzer built using the new
   `-fsanitize=fuzzer` flag.
 - `BINARY_RUNTIME_OPTIONS` - Flags to pass to the fuzzer binary.
@@ -86,6 +87,13 @@ Experiment parameters are defined in a configuration file as follows:
   -1, run indefinitely.
 - `MAX_TOTAL_TIME` - How long to run each fuzzer before killing it.  If 0, run
   indefinitely.
+- `PROJECT` - Your GCP project configured for experiments.
+- `CLOUDSDK_COMPUTE_ZONE` - The region in which to create GCP instances.  Valid
+  values are printed by `gcloud compute zones list`.
+- `GSUTIL_BUCKET` - The Google Storage bucket to use for experiment data.
+- `GSUTIL_WEB_BUCKET` - The Google Storage bucket to use for web reports.
+- `SERVICE_ACCOUNT` - The [service account ID](https://cloud.google.com/compute/docs/access/service-accounts)
+  the framework may use to manage GCP instances and data.
 
 ## Usage
 
@@ -107,17 +115,21 @@ Each fuzzing configuration is specified by a path to its
 
 Suppose you would like to compare two fuzzing configurations located at
 `./config/afl` and `./config/libfuzzer` on the boringssl, freetype, and guetzli
-benchmarks.  The corresponding script invocation would be:
+benchmarks, with experiment parameters located at `./param/afl-vs-lf.cfg`.  The
+corresponding script invocation would be:
 
 ```shell
-${FTS}/engine-comparison/begin-experiment.sh boringssl-2016-02-12,freetype2-2017,guetzli-2017-3-30 ./config/afl ./config/libfuzzer
+${FTS}/engine-comparison/begin-experiment.sh \
+  ./param/afl-vs-lf.cfg \
+  boringssl-2016-02-12,freetype2-2017,guetzli-2017-3-30 \
+  ./config/afl ./config/libfuzzer
 ```
 
 ## Viewing Results
 
 As results become available, they will be displayed in graphs reachable from
-`https://storage.googleapis.com/fuzzer-test-suite-public/EXPERIMENT/index.html`,
-where `EXPERIMENT` is the name defined in the [experiment
+`https://storage.googleapis.com/GSUTIL_WEB_BUCKET/EXPERIMENT/index.html`,
+where `GSUTIL_WEB_BUCKET` and `EXPERIMENT` are defined in the [experiment
 parameters](#experiment-parameters).
 
 Note that results will not become available until all benchmarks have finished
