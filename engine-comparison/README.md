@@ -36,7 +36,7 @@ their snapshots, the dispatcher also shuts itself down.
 ## Prerequisites
 
 - Install [Google Cloud SDK](https://cloud.google.com/sdk/downloads).
-- Configure a Google Cloud Platform project for experiments.
+- [Configure a Google Cloud Platform project](gcpConfig.md) for experiments.
 
 ## Configuration
 
