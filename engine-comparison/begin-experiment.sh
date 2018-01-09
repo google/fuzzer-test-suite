@@ -122,8 +122,9 @@ gsutil -m rsync -rd "${CONFIG_DIR}" \
 
 # Configure dispatcher and run startup script.
 wait
-robust_begin_gcloud_ssh "${INSTANCE_NAME}"
-gcloud compute scp "${SCRIPT_DIR}/startup-dispatcher.sh" "${INSTANCE_NAME}:~/"
+robust_begin_gcloud_ssh "${INSTANCE_NAME}" "${CLOUDSDK_COMPUTE_ZONE}"
+gcloud compute scp "${SCRIPT_DIR}/startup-dispatcher.sh" "${INSTANCE_NAME}:~/" \
+  --zone="${CLOUDSDK_COMPUTE_ZONE}"
 cmd="chmod 750 ~/startup-dispatcher.sh"
 cmd="${cmd} && docker run --rm -d -e INSTANCE_NAME=${INSTANCE_NAME}"
 cmd="${cmd}   -e EXPERIMENT=${EXPERIMENT} --cap-add=SYS_PTRACE"
@@ -131,4 +132,5 @@ cmd="${cmd}   --cap-add=SYS_NICE --name=dispatcher-container"
 cmd="${cmd}   gcr.io/fuzzer-test-suite/dispatcher tail -f /dev/null"
 cmd="${cmd} && docker cp startup-dispatcher.sh dispatcher-container:/work/"
 cmd="${cmd} && docker exec dispatcher-container /work/startup-dispatcher.sh"
-gcloud compute ssh "${INSTANCE_NAME}" --command="${cmd}"
+gcloud compute ssh "${INSTANCE_NAME}" --command="${cmd}" \
+  --zone="${CLOUDSDK_COMPUTE_ZONE}"
