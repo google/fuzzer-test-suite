@@ -26,6 +26,10 @@ network is created, click on it and then edit the subnet for your region to
 enable Google Private access.  This will allow instances on this subnet to use
 Google services without having an externally-visible IP address.
 
+Also add a firewall rule to the default network, allowing TCP traffic on port 22
+from 0.0.0.0/0.  This will allow SSH connections to dispatcher instances from
+your local machine and from other GCP instances.
+
 ## Bucket Configuration
 [Create two Cloud Storage
 buckets](https://cloud.google.com/storage/docs/creating-buckets). One will be
