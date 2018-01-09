@@ -110,4 +110,19 @@ to:
 Connection to 35.197.3.39 closed by remote host.
 ERROR: (gcloud.compute.ssh) [/usr/bin/ssh] exited with return code [255].
 ```
-This is expected and should not be a cause for concern.
+This is expected and is not a cause for concern.
+
+### FAQs
+
+#### When I try to start an experiment, I get an error message:
+```ERROR: (gcloud.iam.service-accounts.keys.create) RESOURCE_EXHAUSTED: Maximum number of keys on account reached
+```
+
+You need to
+[delete unused keys](https://console.cloud.google.com/iam-admin/serviceaccounts)
+from your service account.  Every time you run an experiment, the framework
+checks for the file `./autogen-PRIVATE-key.json`.  If the file doesn't exist,
+the framework generates a new key and saves it in that file. Over time, you may
+hit the 10 key limit for your service account.  You can prevent this from
+happening by saving your `autogen-PRIVATE-key.json` file and reusing it for
+future experiments.
