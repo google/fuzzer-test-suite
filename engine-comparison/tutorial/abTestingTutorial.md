@@ -13,8 +13,10 @@ fuzzing configurations on a set of benchmarks.
 
 From the [Compute Engine
 Console](https://console.cloud.google.com/compute) for your project, create a
-Google Debian GNU/Linux 9 instance with full access to all Cloud APIs.  SSH to
-the new instance by clicking the SSH button next to the instance in the console.
+Google Debian GNU/Linux 9 instance, selecting the service account you configured
+with Editor permissions and selecting "Allow full access to all Cloud APIs".
+SSH to the new instance by clicking the SSH button next to the instance in the
+console.
 
 Once you have a shell open on the instance, simply install Git and clone this
 repository.
