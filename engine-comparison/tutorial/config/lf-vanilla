@@ -1,2 +1,2 @@
-export FUZZING_ENGINE="libfuzzer"
+export FUZZING_ENGINE="fsanitize_fuzzer"
 export BINARY_RUNTIME_OPTIONS="-timeout=25"

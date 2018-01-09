@@ -38,9 +38,11 @@ Now take a look at the `lf-vanilla` configuration.
 ```shell
 cat FTS/engine-comparison/tutorial/config/lf-vanilla
 ```
-This configuration sets libFuzzer as the fuzzing engine and also instructs the
-testing framework to run libFuzzer with the `-timeout=25` option.  `-timeout=25`
-is analogous to AFL's `-t 25000`.
+This configuration sets `fsanitize_fuzzer` as the fuzzing engine, which tells
+the framework to use libFuzzer's default `-fsanitize=fuzzer` flag for coverage
+instrumentation.  The second line instructs the testing framework to run
+libFuzzer with the `-timeout=25` option.  `-timeout=25` is analogous to AFL's
+`-t 25000`.
 
 ### Experiment Parameters
 
@@ -48,7 +50,7 @@ Now take a look at the supplied `afl-lf.cfg` file.
 ```shell
 cat FTS/engine-comparison/tutorial/param/afl-lf.cfg
 ```
-This file defines the parameters of our experiment as follows.
+This file defines the parameters for our experiment as follows.
 
 - `EXPERIMENT="afl-libfuzzer"` - Names the experiment `afl-libfuzzer`.  This
   determines the URL at which results will be displayed.
