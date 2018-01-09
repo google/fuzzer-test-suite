@@ -127,5 +127,10 @@ cmd="docker run --rm -e INSTANCE_NAME=${INSTANCE_NAME}"
 cmd="${cmd} -e EXPERIMENT=${EXPERIMENT} --cap-add=SYS_PTRACE --cap-add=SYS_NICE"
 cmd="${cmd} --name=dispatcher-container gcr.io/fuzzer-test-suite/dispatcher"
 cmd="${cmd} /work/startup-dispatcher.sh"
-gcloud compute ssh "${INSTANCE_NAME}" --command="${cmd}" \
-  --zone="${CLOUDSDK_COMPUTE_ZONE}"
+if on_gcp_instance; then
+  gcloud beta compute ssh "${INSTANCE_NAME}" --command="${cmd}" --internal-ip \
+    --zone="${CLOUDSDK_COMPUTE_ZONE}"
+else
+  gcloud compute ssh "${INSTANCE_NAME}" --command="${cmd}" \
+    --zone="${CLOUDSDK_COMPUTE_ZONE}"
+fi

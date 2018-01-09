@@ -4,6 +4,11 @@
 #
 # Defines utility functions and variables used by the engine-comparison tool.
 
+# Returns 0 if we are running on a GCP instance, else 1.
+on_gcp_instance() {
+  curl -i metadata.google.internal 2>/dev/null | grep "Metadata-Flavor: Google"
+}
+
 # It takes some time for sshd to start up after a VM is created.  This function
 # repeatedly tries to connect until the ssh succeeds.
 robust_begin_gcloud_ssh() {
@@ -11,8 +16,13 @@ robust_begin_gcloud_ssh() {
   local zone=$2
   local tries=0
   while [[ ${tries} -lt 10 ]]; do
-    gcloud compute ssh "${instance_name}" --command="echo ping" \
-      --zone="${zone}" 2>&1 | grep "ERROR" > /dev/null || break
+    if on_gcp_instance; then
+      gcloud beta compute ssh "${instance_name}" --command="echo ping" \
+        --zone="${zone}" --internal-ip 2>&1 | grep "ERROR" >/dev/null || break
+    else
+      gcloud compute ssh "${instance_name}" --command="echo ping" \
+        --zone="${zone}" 2>&1 | grep "ERROR" > /dev/null || break
+    fi
     echo "GCP instance isn't ready yet. Rerunning SSH momentarily."
     sleep 5
     tries=$((tries + 1))
