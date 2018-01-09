@@ -16,5 +16,7 @@ RUN ln -s /usr/bin/clang++-6.0 /usr/bin/clang++
 
 # Create directory, and set it as the working directory "."
 WORKDIR /work
+COPY startup-dispatcher.sh /work/
+
 # Set env var
 ENV WORK /work

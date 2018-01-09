@@ -7,12 +7,19 @@ fuzzing configurations on a set of benchmarks.
 
 ## Prerequisites
 
-- Install [Google Cloud SDK](https://cloud.google.com/sdk/downloads).
+- [Configure a Google Cloud Platform project](../gcpConfig.md) for experiments.
 
 ## Set Up the Environment
 
-Since most of the experiment runs in Google Cloud, environment setup is minimal.
-Just install Git and clone this repository.
+From the [Compute Engine
+Console](https://console.cloud.google.com/compute) for your project, create a
+Google Debian GNU/Linux 9 instance, selecting the service account you configured
+with Editor permissions and selecting "Allow full access to all Cloud APIs".
+SSH to the new instance by clicking the SSH button next to the instance in the
+console.
+
+Once you have a shell open on the instance, simply install Git and clone this
+repository.
 ```shell
 sudo apt-get --yes install git
 git clone https://github.com/google/fuzzer-test-suite.git FTS
@@ -38,9 +45,11 @@ Now take a look at the `lf-vanilla` configuration.
 ```shell
 cat FTS/engine-comparison/tutorial/config/lf-vanilla
 ```
-This configuration sets libFuzzer as the fuzzing engine and also instructs the
-testing framework to run libFuzzer with the `-timeout=25` option.  `-timeout=25`
-is analogous to AFL's `-t 25000`.
+This configuration sets `fsanitize_fuzzer` as the fuzzing engine, which tells
+the framework to use libFuzzer's default `-fsanitize=fuzzer` flag for coverage
+instrumentation.  The second line instructs the testing framework to run
+libFuzzer with the `-timeout=25` option.  `-timeout=25` is analogous to AFL's
+`-t 25000`.
 
 ### Experiment Parameters
 
@@ -48,7 +57,7 @@ Now take a look at the supplied `afl-lf.cfg` file.
 ```shell
 cat FTS/engine-comparison/tutorial/param/afl-lf.cfg
 ```
-This file defines the parameters of our experiment as follows.
+This file defines the parameters for our experiment as follows.
 
 - `EXPERIMENT="afl-libfuzzer"` - Names the experiment `afl-libfuzzer`.  This
   determines the URL at which results will be displayed.
@@ -56,6 +65,20 @@ This file defines the parameters of our experiment as follows.
 - `JOBS=1` - Each fuzzer will run single-threaded.
 - `MAX_RUNS=-1` - Trials will not be limited by number of inputs run.
 - `MAX_TOTAL_TIME=300` - Trials will end after 300 seconds (5 minutes).
+
+The file also contains parameters specifying the GCP project configuration.
+**You should change these parameters to match the project you configured
+earlier.**
+
+- `PROJECT="fuzzer-test-suite"` - Replace with your own GCP project ID.
+- `CLOUDSDK_COMPUTE_ZONE="us-west1-b"` - Replace with the zone for which you
+  configured your GCP project quotas.
+- `GSUTIL_BUCKET="gs://fuzzer-test-suite"` - Replace with your own experiment
+  bucket.
+- `GSUTIL_WEB_BUCKET="gs://fuzzer-test-suite-public"` - Replace with your own
+  web report bucket.
+- `SERVICE_ACCOUNT="373628893752-compute@developer.gserviceaccount.com"` -
+  Replace with the service account you configured with the Editor role.
 
 ### Starting the Experiment
 
@@ -72,12 +95,14 @@ files to it, and sets up a Docker image.  When this is finished, the dispatcher
 will begin building the specified benchmarks with the different fuzzing
 configurations, and its output will be piped back to your terminal.  During this
 process, you can observe the runner VMs being created at
-<https://pantheon.corp.google.com/compute/instances?project=fuzzer-test-suite>.
+<https://console.cloud.google.com/compute>.
 
 After the dispatcher finishes building the benchmarks, it will start to download
 and process the corpus snapshots produced by the runners.  At this point, you
 can start monitoring the coverage graphs produced by the dispatcher at
-<https://storage.googleapis.com/fuzzer-test-suite-public/afl-libfuzzer/index.html>.
+<https://storage.googleapis.com/GSUTIL_WEB_BUCKET/afl-libfuzzer/index.html>.  Be
+sure to replace `GSUTIL_WEB_BUCKET` in the URL with the name of your own web
+report bucket (omit the `gs://` prefix).
 
 When all runners have finished and the dispatcher is finished processing all
 snapshots, the dispatcher will automatically shut down, and the pipe to your
@@ -87,4 +112,20 @@ to:
 Connection to 35.197.3.39 closed by remote host.
 ERROR: (gcloud.compute.ssh) [/usr/bin/ssh] exited with return code [255].
 ```
-This is expected and should not be a cause for concern.
+This is expected and is not a cause for concern.
+
+### FAQs
+
+#### When I try to start an experiment, I get an error message:
+```
+ERROR: (gcloud.iam.service-accounts.keys.create) RESOURCE_EXHAUSTED: Maximum number of keys on account reached
+```
+
+You need to
+[delete unused keys](https://console.cloud.google.com/iam-admin/serviceaccounts)
+from your service account.  Every time you run an experiment, the framework
+checks for the file `./autogen-PRIVATE-key.json`.  If the file doesn't exist,
+the framework generates a new key and saves it in that file. Over time, you may
+hit the 10 key limit for your service account.  You can prevent this from
+happening by saving your `autogen-PRIVATE-key.json` file and reusing it for
+future experiments.
