@@ -592,7 +592,7 @@ main() {
   done
 
   # We're done. Stop this dispatcher to save resources.
-  gcloud compute instances stop --zone="${CLOUDSDK_COMPUTE_ZONE}" -q \
+  gcloud compute instances delete --zone="${CLOUDSDK_COMPUTE_ZONE}" -q \
     "${INSTANCE_NAME}"
 }
 
