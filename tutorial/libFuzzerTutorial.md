@@ -222,13 +222,13 @@ it is running millions of inputs but can not find many new code paths.
 The first step you should make in such case is to find some inputs that trigger enough code paths -- the more the better.
 The woff2 fuzz target consumes web fonts in `.woff2` format and so you can just find any such file(s).
 The build script you have just executed has downloaded a project with some `.woff2`
-files and placed it into the directory `./SEED_CORPUS/`.
+files and placed it into the directory `./seeds/`.
 Inspect this directory. What do you see? Are there any `.woff2` files?
 
 Now you can use the woff2 fuzzer with a seed corpus. Do it like this:
 ```shell
 mkdir MY_CORPUS
-./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ seeds/
 ```
 
 When a libFuzzer-based fuzzer is executed with one more directory as arguments,
@@ -241,7 +241,7 @@ Let us look at the output:
 INFO: Seed: 3976665814
 INFO: Loaded 1 modules (17592 guards): [0x946de0, 0x9580c0), 
 Loading corpus dir: MY_CORPUS/
-Loading corpus dir: SEED_CORPUS/
+Loading corpus dir: seeds/
 INFO: -max_len is not provided, using 168276
 #0      READ units: 62
 #62     INITED cov: 595 ft: 766 corp: 13/766Kb exec/s: 0 rss: 57Mb
@@ -273,15 +273,15 @@ use `-workers=M` to set the number of allowed parallel jobs.
 
 ```shell
 cd ~/woff
-./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/ -jobs=8
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ seeds/ -jobs=8
 ```
 On a 8-core machine this will spawn 4 parallel workers. If one of them dies, another one will be created, up to 8.
 ```
 Running 4 workers
-./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/  > fuzz-0.log 2>&1
-./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/  > fuzz-1.log 2>&1
-./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/  > fuzz-2.log 2>&1
-./woff2-2016-05-06-libfuzzer MY_CORPUS/ SEED_CORPUS/  > fuzz-3.log 2>&1
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ seeds/  > fuzz-0.log 2>&1
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ seeds/  > fuzz-1.log 2>&1
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ seeds/  > fuzz-2.log 2>&1
+./woff2-2016-05-06-libfuzzer MY_CORPUS/ seeds/  > fuzz-3.log 2>&1
 ```
 
 At this time it would be convenient to have some terminal multiplexer, e.g. [GNU screen]
