@@ -12,5 +12,5 @@ set -x
 rm -rf $CORPUS
 mkdir $CORPUS
 rm -f *.log
-[ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS/ -use_value_profile=1 -jobs=$JOBS -workers=$JOBS $CORPUS BUILD/fuzz/privkey_corpus
+[ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS/ -use_value_profile=1 -jobs=$JOBS -workers=$JOBS $CORPUS seeds
 grep "AddressSanitizer: heap-use-after-free" fuzz-0.log || exit 1
