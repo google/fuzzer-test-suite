@@ -197,7 +197,6 @@ build_benchmark() {
   else
     cp "${building_dir}/${benchmark}-${FUZZING_ENGINE}" "${SEND_DIR}/"
   fi
-  rm -rf "${building_dir}"
 
   cp "${WORK}/FTS/engine-comparison/Dockerfile-runner" "${SEND_DIR}/Dockerfile"
   cp "${WORK}/FTS/engine-comparison/runner.sh" "${SEND_DIR}/"
@@ -212,9 +211,14 @@ build_benchmark() {
 
   local bmark_dir="${WORK}/FTS/${benchmark}"
   [[ -d "${bmark_dir}/seeds" ]] && cp -r "${bmark_dir}/seeds" "${SEND_DIR}"
+  [[ -d "${building_dir}/seeds" ]] && cp -r "${building_dir}/seeds" \
+    "${SEND_DIR}"
   [[ -d "${bmark_dir}/runtime" ]] && cp -r "${bmark_dir}/runtime" "${SEND_DIR}"
   ls "${bmark_dir}"/*.dict &> /dev/null && \
     cp "${bmark_dir}"/*.dict "${SEND_DIR}"
+  ls "${building_dir}"/*.dict &> /dev/null && \
+    cp "${building_dir}"/*.dict "${SEND_DIR}"
+  rm -rf "${building_dir}"
 
   [[ "${FUZZING_ENGINE}" == "afl" ]] && cp "${AFL_SRC}/afl-fuzz" "${SEND_DIR}"
 }
