@@ -483,10 +483,17 @@ main() {
   p_gsutil rm -r "${EXP_BUCKET}/experiment-folders" "${EXP_BUCKET}/reports"
 
   # Record Clang revision before build.
-  export CLANG_REVISION="$(clang --version \
+  CLANG_REVISION="$(clang --version \
     | grep "clang version" \
     | grep -o "svn[0-9]*" \
     | grep -o "[0-9]*")"
+  # If clang --version doesn't have revision, try extracting it from image tag.
+  [[ -z "${CLANG_REVISION}" ]] && CLANG_REVISION="$(gcloud container images \
+    list-tags gcr.io/fuzzer-test-suite/dispatcher \
+    | grep latest \
+    | grep -o 'clang-r[0-9]*' \
+    | grep -o '[0-9]*')"
+  export CLANG_REVISION
 
   # Outermost loops
   local active_runners=0
