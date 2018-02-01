@@ -197,7 +197,6 @@ build_benchmark() {
   else
     cp "${building_dir}/${benchmark}-${FUZZING_ENGINE}" "${SEND_DIR}/"
   fi
-  rm -rf "${building_dir}"
 
   cp "${WORK}/FTS/engine-comparison/Dockerfile-runner" "${SEND_DIR}/Dockerfile"
   cp "${WORK}/FTS/engine-comparison/runner.sh" "${SEND_DIR}/"
@@ -212,9 +211,14 @@ build_benchmark() {
 
   local bmark_dir="${WORK}/FTS/${benchmark}"
   [[ -d "${bmark_dir}/seeds" ]] && cp -r "${bmark_dir}/seeds" "${SEND_DIR}"
+  [[ -d "${building_dir}/seeds" ]] && cp -r "${building_dir}/seeds" \
+    "${SEND_DIR}"
   [[ -d "${bmark_dir}/runtime" ]] && cp -r "${bmark_dir}/runtime" "${SEND_DIR}"
   ls "${bmark_dir}"/*.dict &> /dev/null && \
     cp "${bmark_dir}"/*.dict "${SEND_DIR}"
+  ls "${building_dir}"/*.dict &> /dev/null && \
+    cp "${building_dir}"/*.dict "${SEND_DIR}"
+  rm -rf "${building_dir}"
 
   [[ "${FUZZING_ENGINE}" == "afl" ]] && cp "${AFL_SRC}/afl-fuzz" "${SEND_DIR}"
 }
@@ -383,9 +387,8 @@ measure_coverage() {
 
     local coverage="$(wc -w < "${covered_pcs_file}")"
     local corpus_size="$(find "${corpus_dir}" -maxdepth 1 -type f -print0 \
-      | wc -c --files0-from=- \
-      | tail --lines=1 \
-      | grep -o "[0-9]*")"
+      | xargs -0 stat -c %s \
+      | awk '{sum+=$1} END {print sum}')"
     local corpus_elems="$(find "${corpus_dir}" -maxdepth 1 -type f | wc -l)"
 
     # Save corpus for comparison next cycle
@@ -480,10 +483,17 @@ main() {
   p_gsutil rm -r "${EXP_BUCKET}/experiment-folders" "${EXP_BUCKET}/reports"
 
   # Record Clang revision before build.
-  export CLANG_REVISION="$(clang --version \
+  CLANG_REVISION="$(clang --version \
     | grep "clang version" \
     | grep -o "svn[0-9]*" \
     | grep -o "[0-9]*")"
+  # If clang --version doesn't have revision, try extracting it from image tag.
+  [[ -z "${CLANG_REVISION}" ]] && CLANG_REVISION="$(gcloud container images \
+    list-tags gcr.io/fuzzer-test-suite/dispatcher \
+    | grep latest \
+    | grep -o 'clang-r[0-9]*' \
+    | grep -o '[0-9]*')"
+  export CLANG_REVISION
 
   # Outermost loops
   local active_runners=0
@@ -592,7 +602,7 @@ main() {
   done
 
   # We're done. Stop this dispatcher to save resources.
-  gcloud compute instances stop --zone="${CLOUDSDK_COMPUTE_ZONE}" -q \
+  gcloud compute instances delete --zone="${CLOUDSDK_COMPUTE_ZONE}" -q \
     "${INSTANCE_NAME}"
 }
 

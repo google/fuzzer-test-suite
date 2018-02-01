@@ -13,5 +13,8 @@ get_git_tag git://git.gnome.org/libxml2  v2.9.2 SRC
 get_git_revision https://github.com/mcarpenter/afl be3e88d639da5350603f6c0fee06970128504342 afl
 build_lib
 build_fuzzer
+
+cp afl/dictionaries/xml.dict .
+
 set -x
 $CXX $CXXFLAGS -std=c++11  $SCRIPT_DIR/target.cc -I BUILD/include BUILD/.libs/libxml2.a $LIB_FUZZING_ENGINE -lz -o $EXECUTABLE_NAME_BASE

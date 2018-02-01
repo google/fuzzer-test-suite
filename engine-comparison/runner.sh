@@ -125,6 +125,10 @@ main() {
     # AFL requires some starter input
     [[ ! -d seeds ]] && mkdir seeds
     [[ ! $(find seeds -type f) ]] && echo > ./seeds/nil_seed
+
+    # AFL doesn't work with inputs >1MB.
+    find seeds -size +1M -delete
+
     export AFL_SKIP_CPUFREQ=1
 
     local exec_cmd="./afl-fuzz ${BINARY_RUNTIME_OPTIONS} -i seeds -o corpus"
