@@ -79,7 +79,7 @@ conduct_experiment() {
     time_run_limits_exceeded && kill -15 "${process_pid}"
 
     # Delete most crashes and logs to save disk space.
-    find . -name "fuzz-[1-9]*.log" -delete
+    find . -name "fuzz-[1-9][0-9]*.log" -delete
     if [[ -z "$(ls -A crashes)" ]]; then
       mv crash-* leak* timeout* oom* crashes/
     else
