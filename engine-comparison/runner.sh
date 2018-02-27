@@ -51,7 +51,7 @@ conduct_experiment() {
   rm -rf corpus last-corpus corpus-archives results crashes
   mkdir -p corpus last-corpus corpus-archives results crashes
 
-  ${exec_cmd} &
+  ASAN_OPTIONS="symbolize=0" ${exec_cmd} &
   local process_pid=$!
   SECONDS=0  # Builtin that automatically increments every second
   while kill -0 "${process_pid}"; do
