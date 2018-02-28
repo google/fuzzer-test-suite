@@ -37,9 +37,8 @@ get_git_revision https://github.com/openthread/openthread.git \
 build_fuzzer
 build_lib
 
-if [[ ! -d seeds-radio-receive-done ]]; then
-  cp -r BUILD/tests/fuzz/corpora/radio-receive-done seeds-radio-receive-done
+if [[ ! -d seeds-radio ]]; then
+  cp -r BUILD/tests/fuzz/corpora/radio-receive-done seeds-radio
 fi
-for f in ip6-send radio-receive-done; do
-  cp BUILD/tests/fuzz/$f-fuzzer $EXECUTABLE_NAME_BASE-$f
-done
+cp BUILD/tests/fuzz/ip6-send-fuzzer $EXECUTABLE_NAME_BASE-ip6
+cp BUILD/tests/fuzz/radio-receive-done-fuzzer $EXECUTABLE_NAME_BASE-radio
