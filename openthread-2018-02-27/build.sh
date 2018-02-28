@@ -1,12 +1,17 @@
 #!/bin/bash
 # Copyright 2018 Google Inc. All Rights Reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
+. $(dirname $0)/../custom-build.sh $1 $2
 . $(dirname $0)/../common.sh
 
 build_lib() {
   rm -rf BUILD
   cp -rf SRC BUILD
   [[ -f $LIB_FUZZING_ENGINE ]] && cp $LIB_FUZZING_ENGINE BUILD/tests/fuzz/
+  if [[ $FUZZING_ENGINE == "hooks" ]]; then
+    # Link ASan runtime so we can hook memcmp et al.
+    LIB_FUZZING_ENGINE="$LIB_FUZZING_ENGINE -fsanitize=address"
+  fi
   (cd BUILD && ./bootstrap && ./configure \
     --enable-fuzz-targets               \
     --enable-application-coap           \
@@ -29,13 +34,13 @@ build_lib() {
     --enable-service                    \
     --enable-tmf-proxy                  \
     --disable-docs                      \
-    && make -j $JOBS)
+    && make V=1 -j $JOBS)
 }
 
 get_git_revision https://github.com/openthread/openthread.git \
   79c4830c3c17369909e0906d8f455ecf2be4b6aa SRC
-build_fuzzer
-build_lib
+build_fuzzer || exit 1
+build_lib || exit 1
 
 if [[ ! -d seeds-radio ]]; then
   cp -r BUILD/tests/fuzz/corpora/radio-receive-done seeds-radio
