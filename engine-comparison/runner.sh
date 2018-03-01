@@ -51,7 +51,7 @@ conduct_experiment() {
   rm -rf corpus last-corpus corpus-archives results crashes
   mkdir -p corpus last-corpus corpus-archives results crashes
 
-  ${exec_cmd} &
+  ASAN_OPTIONS="symbolize=0" ${exec_cmd} &
   local process_pid=$!
   SECONDS=0  # Builtin that automatically increments every second
   while kill -0 "${process_pid}"; do
@@ -156,11 +156,7 @@ main() {
   local bmark_fengine_dir="${BENCHMARK}-${fengine_name}"
   conduct_experiment "${exec_cmd}" "${trial}" "${bmark_fengine_dir}"
 
-  # We're done. Notify dispatcher and delete this runner to save resources.
-  touch finished
-  local sync_dir="${GSUTIL_BUCKET}/${EXPERIMENT}/experiment-folders"
-  sync_dir="${sync_dir}/${bmark_fengine_dir}/trial-${trial}"
-  gsutil -m mv finished "${sync_dir}/"
+  # Delete this runner to save resources.
   gcloud compute instances delete --zone="${CLOUDSDK_COMPUTE_ZONE}" -q \
     "${INSTANCE_NAME}"
 }
