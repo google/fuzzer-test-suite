@@ -9,6 +9,8 @@ if [[ -n "${MODE}" ]]; then
   case "${MODE}" in
     asan)
       export FUZZING_ENGINE=fsanitize_fuzzer
+      export CFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer-no-link"
+      export CXXFLAGS="${CFLAGS}"
       ;;
     ubsan)
       export FUZZING_ENGINE=fsanitize_fuzzer
