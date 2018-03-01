@@ -7,7 +7,7 @@
 
 # Ensure that fuzzing engine, if defined, is valid
 FUZZING_ENGINE=${FUZZING_ENGINE:-"libfuzzer"}
-POSSIBLE_FUZZING_ENGINE="libfuzzer afl coverage fsanitize_fuzzer"
+POSSIBLE_FUZZING_ENGINE="libfuzzer afl coverage fsanitize_fuzzer hooks"
 !(echo "$POSSIBLE_FUZZING_ENGINE" | grep -w "$FUZZING_ENGINE" > /dev/null) && \
   echo "USAGE: Error: If defined, FUZZING_ENGINE should be one of the following:
   $POSSIBLE_FUZZING_ENGINE. However, it was defined as $FUZZING_ENGINE" && exit 1
@@ -80,6 +80,12 @@ build_fsanitize_fuzzer() {
 build_coverage () {
   $CC $COVERAGE_FLAGS -c $LIBFUZZER_SRC/standalone/StandaloneFuzzTargetMain.c
   ar rc $LIB_FUZZING_ENGINE StandaloneFuzzTargetMain.o
+}
+
+# Build with user-defined main and hooks.
+build_hooks() {
+  LIB_FUZZING_ENGINE=libFuzzingEngine-hooks.o
+  $CXX $CXXFLAGS -c $HOOKS_FILE -o $LIB_FUZZING_ENGINE
 }
 
 build_fuzzer() {
