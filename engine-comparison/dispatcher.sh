@@ -169,58 +169,49 @@ download_engine() {
 build_benchmark() {
   local benchmark=$1
   local fengine_config=$2
-  local output_dirname=$3
+  local building_dir=$3
 
-  # Special case for OpenSSL x509 fuzzer
-  local is_x509_fuzzer=false
-  if [[ "${benchmark}" = "openssl-1.1.0c-x509" ]]; then
-    is_x509_fuzzer=true
-    benchmark="openssl-1.1.0c"
-  fi
-
-  local building_dir="${WORK}/build/${output_dirname}"
   echo "Building in ${building_dir}"
   rm -rf "${building_dir}"
   mkdir "${building_dir}"
 
   local build_cmd=". ${fengine_config} && ${WORK}/FTS/${benchmark}/build.sh"
   (cd "${building_dir}" && exec_in_clean_env "${build_cmd}")
+}
 
-  export SEND_DIR="${WORK}/send/${output_dirname}"
-  rm -rf "${SEND_DIR}"
-  mkdir "${SEND_DIR}"
+package_benchmark_fuzzer() {
+  local benchmark=$1
+  local fuzzer_name=$2
+  local fengine_config=$3
+  local building_dir=$4
+  local send_dir=$5
+  local fuzzer_suffix="${fuzzer_name#${benchmark}-${FUZZING_ENGINE}}"
 
-  # Copy the executable and delete build directory
-  if [[ "${is_x509_fuzzer}" = true ]]; then
-    cp "${building_dir}/${benchmark}-${FUZZING_ENGINE}-x509" \
-      "${SEND_DIR}/openssl-1.1.0c-x509-${FUZZING_ENGINE}"
-  else
-    cp "${building_dir}/${benchmark}-${FUZZING_ENGINE}" "${SEND_DIR}/"
-  fi
+  rm -rf "${send_dir}"
+  mkdir "${send_dir}"
 
-  cp "${WORK}/FTS/engine-comparison/Dockerfile-runner" "${SEND_DIR}/Dockerfile"
-  cp "${WORK}/FTS/engine-comparison/runner.sh" "${SEND_DIR}/"
-  cp "${WORK}/FTS/engine-comparison/config/parameters.cfg" "${SEND_DIR}/"
-  cp "${fengine_config}" "${SEND_DIR}/fengine.cfg"
+  cp "${building_dir}/${fuzzer_name}" \
+    "${send_dir}/${benchmark}${fuzzer_suffix}-${FUZZING_ENGINE}"
+  cp "${WORK}/FTS/engine-comparison/Dockerfile-runner" "${send_dir}/Dockerfile"
+  cp "${WORK}/FTS/engine-comparison/runner.sh" "${send_dir}/"
+  cp "${WORK}/FTS/engine-comparison/config/parameters.cfg" "${send_dir}/"
+  cp "${fengine_config}" "${send_dir}/fengine.cfg"
 
-  if [[ "${is_x509_fuzzer}" = true ]]; then
-    echo "BENCHMARK=openssl-1.1.0c-x509" > "${SEND_DIR}/benchmark.cfg"
-  else
-    echo "BENCHMARK=${benchmark}" > "${SEND_DIR}/benchmark.cfg"
-  fi
+  echo "BENCHMARK=${benchmark}${fuzzer_suffix}" > "${send_dir}/benchmark.cfg"
 
   local bmark_dir="${WORK}/FTS/${benchmark}"
-  [[ -d "${bmark_dir}/seeds" ]] && cp -r "${bmark_dir}/seeds" "${SEND_DIR}"
+  [[ -d "${bmark_dir}/seeds" ]] && cp -r "${bmark_dir}/seeds" "${send_dir}"
   [[ -d "${building_dir}/seeds" ]] && cp -r "${building_dir}/seeds" \
-    "${SEND_DIR}"
-  [[ -d "${bmark_dir}/runtime" ]] && cp -r "${bmark_dir}/runtime" "${SEND_DIR}"
+    "${send_dir}"
+  [[ -d "${building_dir}/seeds${fuzzer_suffix}" ]] && \
+    cp -r "${building_dir}/seeds${fuzzer_suffix}" "${send_dir}/seeds"
+  [[ -d "${bmark_dir}/runtime" ]] && cp -r "${bmark_dir}/runtime" "${send_dir}"
   ls "${bmark_dir}"/*.dict &> /dev/null && \
-    cp "${bmark_dir}"/*.dict "${SEND_DIR}"
+    cp "${bmark_dir}"/*.dict "${send_dir}"
   ls "${building_dir}"/*.dict &> /dev/null && \
-    cp "${building_dir}"/*.dict "${SEND_DIR}"
-  rm -rf "${building_dir}"
+    cp "${building_dir}"/*.dict "${send_dir}"
 
-  [[ "${FUZZING_ENGINE}" == "afl" ]] && cp "${AFL_SRC}/afl-fuzz" "${SEND_DIR}"
+  [[ "${FUZZING_ENGINE}" == "afl" ]] && cp "${AFL_SRC}/afl-fuzz" "${send_dir}"
 }
 
 # Starts a runner VM
@@ -233,24 +224,38 @@ create_or_start_runner() {
     "startup-script=${WORK}/FTS/engine-comparison/startup-runner.sh"
 }
 
-# Top-level function to handle the initialization of a single runner VM. Builds
-# the binary, assembles a folder with configs and seeds, and starts the VM.
+# Handles the initialization of all runner VMs for a given benchmark.
 handle_benchmark() {
   local benchmark=$1
   local fengine_config=$2
   local fengine_name="$(basename "${fengine_config}")"
-  local bmark_with_fengine="${benchmark}-${fengine_name}"
-  build_benchmark "${benchmark}" "${fengine_config}" "${bmark_with_fengine}"
-  rsync_delete "${SEND_DIR}" \
-    "${EXP_BUCKET}/binary-folders/${bmark_with_fengine}"
-  # GCloud instance names must match the following regular expression:
-  # '[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?'
-  local instance_name="$(echo "r-${EXPERIMENT}${benchmark}${fengine_name}" | \
-    tr '[:upper:]' '[:lower:]' | tr -d '.')"
-  for (( i=0; i < RUNNERS; i++ )); do
-    create_or_start_runner "${instance_name}${i}" "${benchmark}" \
-      "${fengine_name}" "${i}" &
-  done
+  local building_dir="${WORK}/build/${benchmark}-${fengine_name}"
+
+  build_benchmark "${benchmark}" "${fengine_config}" "${building_dir}"
+
+  while read fuzzer_name; do
+    local fuzzer_suffix="${fuzzer_name#${benchmark}-${FUZZING_ENGINE}}"
+    local bmark_fuzzer="${benchmark}${fuzzer_suffix}"
+    local send_dir="${WORK}/send/${bmark_fuzzer}-${fengine_name}"
+    package_benchmark_fuzzer "${benchmark}" "${fuzzer_name}" \
+      "${fengine_config}" "${building_dir}" "${send_dir}"
+    rsync_delete "${send_dir}" \
+      "${EXP_BUCKET}/binary-folders/${bmark_fuzzer}-${fengine_name}"
+
+    # GCloud instance names must match the following regular expression:
+    # '[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?'
+    local instance_name="$( \
+      echo "r-${EXPERIMENT}${bmark_fuzzer}${fengine_name}" \
+      | tr '[:upper:]' '[:lower:]' \
+      | tr -d '.')"
+    for (( i=0; i < RUNNERS; i++ )); do
+      create_or_start_runner "${instance_name}${i}" "${bmark_fuzzer}" \
+        "${fengine_name}" "${i}" &
+    done
+  done < <(find "${building_dir}" -mindepth 1 -maxdepth 1 \
+    -name "${benchmark}-${FUZZING_ENGINE}*" -printf "%f\n")
+
+  rm -rf "${building_dir}"
 }
 
 # Make a "plain" coverage build for a benchmark
@@ -258,23 +263,16 @@ make_measurer() {
   local benchmark=$1
   local building_dir="${WORK}/coverage-builds/${benchmark}"
 
-  # Special case for OpenSSL x509 fuzzer
-  local is_x509_fuzzer=false
-  if [[ "${benchmark}" = "openssl-1.1.0c-x509" ]]; then
-    is_x509_fuzzer=true
-    benchmark="openssl-1.1.0c"
-  fi
-
   mkdir -p "${building_dir}"
   (cd "${building_dir}" && exec_in_clean_env \
     "FUZZING_ENGINE=coverage ${WORK}/FTS/${benchmark}/build.sh")
 
-  if [[ "${is_x509_fuzzer}" = true ]]; then
-    mv "${building_dir}/${benchmark}-coverage-x509" \
-      "${WORK}/coverage-binaries/openssl-1.1.0c-x509-coverage"
-  else
-    mv "${building_dir}/${benchmark}-coverage" "${WORK}/coverage-binaries/"
-  fi
+  while read fuzzer_name; do
+    local fuzzer_suffix="${fuzzer_name#${benchmark}-coverage}"
+    mv "${building_dir}/${fuzzer_name}" \
+      "${WORK}/coverage-binaries/${benchmark}${fuzzer_suffix}-coverage"
+  done < <(find "${building_dir}" -mindepth 1 -maxdepth 1 \
+    -name "${benchmark}-coverage*" -printf "%f\n")
 
   [[ -d "${building_dir}/runtime" ]] && \
     cp -r "${building_dir}"/runtime/* "${WORK}/coverage-binaries/runtime/"
@@ -453,9 +451,6 @@ main() {
     three) BENCHMARKS="libssh-2017-1272 json-2017-02-12 proj4-2017-08-14" ;;
     *) BENCHMARKS="$(echo "${BMARKS}" | tr ',' ' ')" ;;
   esac
-  if echo "${BENCHMARKS}" | grep "openssl-1.1.0c" > /dev/null; then
-    BENCHMARKS="${BENCHMARKS} openssl-1.1.0c-x509"
-  fi
   readonly BENCHMARKS
 
   # Reset google cloud results before doing experiments
@@ -525,8 +520,16 @@ main() {
 
   p_gsutil rm -r "${EXP_BUCKET}/processed-folders"
 
+  # Compile list of all benchmark folder names.
+  BENCHMARK_FOLDERS=""
+  while read fuzzer_name; do
+    BENCHMARK_FOLDERS="${BENCHMARK_FOLDERS} ${fuzzer_name%-coverage}"
+  done < <(find "${WORK}/coverage-binaries" -mindepth 1 -maxdepth 1 \
+    -name "*-coverage" -printf "%f\n")
+  readonly BENCHMARK_FOLDERS
+
   # Start detached process to update graphs
-  live_graphing_loop "${BENCHMARKS}" & disown
+  live_graphing_loop "${BENCHMARK_FOLDERS}" & disown
 
   # wait_period defines how frequently the dispatcher generates new reports for
   # every benchmark with every fengine. For a large number of runner VMs,
@@ -548,7 +551,7 @@ main() {
       echo "Doing sync #${sync_num}..."
       rsync_delete "${EXP_BUCKET}/experiment-folders" \
         "${WORK}/experiment-folders"
-      for benchmark in ${BENCHMARKS}; do
+      for benchmark in ${BENCHMARK_FOLDERS}; do
         while read fengine_config; do
           for (( i=0; i < RUNNERS; i++ )); do
             process_corpora "${fengine_config}" "${benchmark}" "${i}" &
