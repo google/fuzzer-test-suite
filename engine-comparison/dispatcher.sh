@@ -420,27 +420,6 @@ process_corpora() {
   while measure_coverage "$1" "$2" "$3"; do :; done
 }
 
-# Returns 0 if the given fuzzer has just finished producing results, and removes
-# the finished file so we don't return 0 next time.
-check_finished() {
-  local fengine_config=$1
-  local benchmark=$2
-  local trial=$3
-  local fengine_name="$(basename "${fengine_config}")"
-  local finished_file="${WORK}/experiment-folders/${benchmark}-${fengine_name}"
-  finished_file="${finished_file}/trial-${trial}/finished"
-  if ls "${finished_file}" &> /dev/null; then
-    echo "Runner ${benchmark}-${fengine_name}-${trial} has finished"
-    local remote_finished="${EXP_BUCKET}/experiment-folders"
-    remote_finished="${remote_finished}/${benchmark}-${fengine_name}"
-    remote_finished="${remote_finished}/trial-${trial}/finished"
-    p_gsutil rm "${remote_finished}"
-    rm "${finished_file}"
-    return 0
-  fi
-  return 1
-}
-
 main() {
   declare -xr EXP_BUCKET="${GSUTIL_BUCKET}/${EXPERIMENT}"
   declare -xr WEB_BUCKET="${GSUTIL_WEB_BUCKET}/${EXPERIMENT}"
@@ -496,14 +475,12 @@ main() {
   export CLANG_REVISION
 
   # Outermost loops
-  local active_runners=0
   while read fengine_config; do
     download_engine "${fengine_config}"
     for benchmark in ${BENCHMARKS}; do
       local fengine_name="$(basename "${fengine_config}")"
       handle_benchmark "${benchmark}" "${fengine_config}" 2>&1 \
         | tee "${WORK}/build-logs/${benchmark}-${fengine_name}.txt" &
-      active_runners=$((active_runners + RUNNERS))
     done
   done < <(find "${WORK}/fengine-configs" -type f)
   wait
@@ -575,17 +552,11 @@ main() {
         while read fengine_config; do
           for (( i=0; i < RUNNERS; i++ )); do
             process_corpora "${fengine_config}" "${benchmark}" "${i}" &
-            if check_finished "${fengine_config}" "${benchmark}" "${i}"; then
-              active_runners=$((active_runners - 1))
-              echo "Active Runners: ${active_runners}"
-            fi
           done
         done < <(find "${WORK}/fengine-configs" -type f)
       done
-      if [[ ${active_runners} -eq 0 && $((sync_num % 10)) -eq 0 ]]; then
-        # Only compute diffs when all runners are finished.  Until that point,
-        # this operation is unnecessary overhead.
-        # Also only check diffs every 10 syncs to avoid unnecessarily slowing
+      if [[ $((sync_num % 10)) -eq 0 ]]; then
+        # Only check diffs every 10 syncs to avoid unnecessarily slowing
         # down this loop.
         if diff -qr "${WORK}/experiment-folders" \
           "${WORK}/prev-experiment-folders" > /dev/null; then

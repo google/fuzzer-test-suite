@@ -156,11 +156,7 @@ main() {
   local bmark_fengine_dir="${BENCHMARK}-${fengine_name}"
   conduct_experiment "${exec_cmd}" "${trial}" "${bmark_fengine_dir}"
 
-  # We're done. Notify dispatcher and delete this runner to save resources.
-  touch finished
-  local sync_dir="${GSUTIL_BUCKET}/${EXPERIMENT}/experiment-folders"
-  sync_dir="${sync_dir}/${bmark_fengine_dir}/trial-${trial}"
-  gsutil -m mv finished "${sync_dir}/"
+  # Delete this runner to save resources.
   gcloud compute instances delete --zone="${CLOUDSDK_COMPUTE_ZONE}" -q \
     "${INSTANCE_NAME}"
 }
