@@ -8,13 +8,13 @@ HOOKS_FILE=$2
 if [[ -n "${MODE}" ]]; then
   case "${MODE}" in
     asan)
-      export FUZZING_ENGINE=fsanitize_fuzzer
-      export CFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer-no-link"
+      export FUZZING_ENGINE=libfuzzer
+      export CFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div"
       export CXXFLAGS="${CFLAGS}"
       ;;
     ubsan)
-      export FUZZING_ENGINE=fsanitize_fuzzer
-      export CFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=undefined,fuzzer-no-link"
+      export FUZZING_ENGINE=libfuzzer
+      export CFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=undefined -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div"
       export CXXFLAGS="${CFLAGS}"
       ;;
     hooks)
