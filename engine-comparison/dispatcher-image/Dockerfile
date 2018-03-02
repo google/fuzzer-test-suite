@@ -10,7 +10,8 @@ RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 RUN apt-get update -y && apt-get install -y git subversion wget cmake automake \
     google-cloud-sdk clang-7 libarchive-dev libfreetype6-dev libglib2.0-dev \
     libcairo2-dev openssl libtool ragel golang libxml2-dev libssl-dev nasm \
-    python-dev libgcrypt20-dev libgss-dev liblzma-dev
+    python-dev libgcrypt20-dev libgss-dev liblzma-dev libdbus-1-dev \
+    libboost-dev autoconf-archive
 RUN ln -s /usr/bin/clang-7 /usr/bin/clang
 RUN ln -s /usr/bin/clang++-7 /usr/bin/clang++
 
