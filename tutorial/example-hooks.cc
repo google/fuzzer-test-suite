@@ -1,7 +1,7 @@
 #include <fstream>
-#include <cstdint>
-#include <cstdio>
-#include <cassert>
+#include <stdint.h>
+#include <stdio.h>
+#include <assert.h>
 
 // Wrap log file to ensure it is initialized no matter which callback happens
 // first.
