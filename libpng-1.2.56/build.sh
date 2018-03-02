@@ -4,7 +4,7 @@
 . $(dirname $0)/../custom-build.sh $1 $2
 . $(dirname $0)/../common.sh
 
-[ ! -e libpng-1.2.56.tar.gz ] && wget https://downloads.sourceforge.net/project/libpng/libpng12/older-releases/1.2.56/libpng-1.2.56.tar.gz
+[ ! -e libpng-1.2.56.tar.gz ] && wget https://vorboss.dl.sourceforge.net/project/libpng/libpng12/older-releases/1.2.56/libpng-1.2.56.tar.gz
 [ ! -e libpng-1.2.56 ] && tar xf libpng-1.2.56.tar.gz
 
 build_lib() {
