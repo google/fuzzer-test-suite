@@ -85,7 +85,7 @@ build_coverage () {
 # Build with user-defined main and hooks.
 build_hooks() {
   LIB_FUZZING_ENGINE=libFuzzingEngine-hooks.o
-  $CXX $CXXFLAGS -c $HOOKS_FILE -o $LIB_FUZZING_ENGINE
+  $CXX -c $HOOKS_FILE -o $LIB_FUZZING_ENGINE
 }
 
 build_fuzzer() {

@@ -1,6 +1,7 @@
 #!/bin/bash
 # Copyright 2017 Google Inc. All Rights Reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
+. $(dirname $0)/../custom-build.sh $1 $2
 . $(dirname $0)/../common.sh
 
 build_lib() {
@@ -22,6 +23,10 @@ if [[ ! -d seeds ]]; then
   rm -fr TRT
 fi
 
+if [[ $FUZZING_ENGINE == "hooks" ]]; then
+  # Link ASan runtime so we can hook memcmp et al.
+  LIB_FUZZING_ENGINE="$LIB_FUZZING_ENGINE -fsanitize=address"
+fi
 set -x
 $CXX $CXXFLAGS -std=c++11 -I BUILD/include -I BUILD/ BUILD/src/tools/ftfuzzer/ftfuzzer.cc BUILD/objs/.libs/libfreetype.a  $LIB_FUZZING_ENGINE -larchive -lz -o $EXECUTABLE_NAME_BASE
 
