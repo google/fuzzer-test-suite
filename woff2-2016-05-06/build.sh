@@ -1,6 +1,7 @@
 #!/bin/bash
 # Copyright 2016 Google Inc. All Rights Reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
+. $(dirname $0)/../custom-build.sh $1 $2
 . $(dirname $0)/../common.sh
 
 get_git_revision https://github.com/google/woff2.git  9476664fd6931ea6ec532c94b816d8fbbe3aed90 SRC
@@ -17,5 +18,9 @@ for f in BROTLI/dec/*.c BROTLI/enc/*.cc; do
 done
 wait
 
+if [[ $FUZZING_ENGINE == "hooks" ]]; then
+  # Link ASan runtime so we can hook memcmp et al.
+  LIB_FUZZING_ENGINE="$LIB_FUZZING_ENGINE -fsanitize=address"
+fi
 set -x
 $CXX $CXXFLAGS *.o $LIB_FUZZING_ENGINE $SCRIPT_DIR/target.cc -I SRC/src -o $EXECUTABLE_NAME_BASE
