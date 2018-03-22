@@ -75,7 +75,7 @@ readonly RESERVED_LENGTH="$( \
   | awk '{ print length }' \
   | sort -rn \
   | head -n1)"
-readonly MAX_EXP_FENGINE_LENGTH=$((61 - RESERVED_LENGTH))
+readonly MAX_EXP_FENGINE_LENGTH=$((59 - RESERVED_LENGTH))
 for fengine_config in "${FENGINE_CONFIGS[@]}"; do
   fengine_name="$(basename "${fengine_config}")"
   # Validate fengine_config name
