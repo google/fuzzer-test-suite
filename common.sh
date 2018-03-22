@@ -78,7 +78,7 @@ build_fsanitize_fuzzer() {
 
 # This provides a build with no fuzzing engine, just to measure coverage
 build_coverage () {
-  $CC $COVERAGE_FLAGS -c $LIBFUZZER_SRC/standalone/StandaloneFuzzTargetMain.c
+  $CC -O2 -c $LIBFUZZER_SRC/standalone/StandaloneFuzzTargetMain.c
   ar rc $LIB_FUZZING_ENGINE StandaloneFuzzTargetMain.o
 }
 
