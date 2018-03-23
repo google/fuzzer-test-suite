@@ -124,7 +124,7 @@ gsutil -m rsync -rd "${CONFIG_DIR}" \
 wait
 robust_begin_gcloud_ssh "${INSTANCE_NAME}" "${CLOUDSDK_COMPUTE_ZONE}"
 cmd="docker run --rm -e INSTANCE_NAME=${INSTANCE_NAME}"
-cmd="${cmd} -e EXPERIMENT=${EXPERIMENT} -e PROJECT=${PROJECT}"
+cmd="${cmd} -e EXPERIMENT=${EXPERIMENT} -e GSUTIL_BUCKET=${GSUTIL_BUCKET}"
 cmd="${cmd} --cap-add=SYS_PTRACE --cap-add=SYS_NICE"
 cmd="${cmd} --name=dispatcher-container gcr.io/fuzzer-test-suite/dispatcher"
 cmd="${cmd} /work/startup-dispatcher.sh"
