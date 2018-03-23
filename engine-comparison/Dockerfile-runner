@@ -1,8 +1,0 @@
-FROM gcr.io/fuzzer-test-suite/gcloud-clang-deps:latest
-
-# Create directory, and set it as the working directory "."
-WORKDIR /work
-# Add files from "real" filesystem to the container's
-COPY . .
-# Set env var
-ENV WORK /work

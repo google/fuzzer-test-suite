@@ -71,7 +71,8 @@ gcloud_create() {
       ${metadata_cmd} ${metadata_ff_cmd}
   else
     gcloud compute instances create "${instance_name}" \
-      --image-family="docker-ubuntu"  --network=runner-net --no-address \
+      --image-family="cos-stable"  --image-project="cos-cloud" \
+      --network=runner-net --no-address \
       --machine-type="n1-standard-2" --scopes="compute-rw,storage-rw,default" \
       --service-account="${service_account}" --zone="${zone}" \
       ${metadata_cmd} ${metadata_ff_cmd}

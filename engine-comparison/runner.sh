@@ -130,6 +130,7 @@ main() {
     find seeds -size +1M -delete
 
     export AFL_SKIP_CPUFREQ=1
+    export AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
 
     local exec_cmd="./afl-fuzz ${BINARY_RUNTIME_OPTIONS} -i seeds -o corpus"
     if ls ./*.dict; then

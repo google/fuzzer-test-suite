@@ -3,8 +3,7 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 #
 # Script to run on creation of each runner VM.
-# Pulls down the benchmark fuzzer built for this runner, configures the runner
-# container, and runs the runner script.
+# Configures the runner container, and runs the runner script.
 
 METADATA_URL="http://metadata.google.internal/computeMetadata/v1/instance"
 METADATA_URL="${METADATA_URL}/attributes"
@@ -20,14 +19,6 @@ readonly BUCKET="$(curl "${METADATA_URL}/bucket" -H \
 readonly EXP_BUCKET="${BUCKET}/${EXPERIMENT}"
 readonly FOLDER_NAME="${BENCHMARK}-${FENGINE_NAME}"
 
-mkdir -p ~/input
-gsutil -m rsync -rd "${EXP_BUCKET}/binary-folders/${FOLDER_NAME}" ~/input
-
-# Make sure AFL doesn't miss crashes
-echo core | sudo tee /proc/sys/kernel/core_pattern > /dev/null
-
-sudo gcloud docker -- pull gcr.io/fuzzer-test-suite/gcloud-clang-deps
-find ~/input -name "*.sh" -exec chmod 750 {} \;
-sudo docker build -t base-image ~/input
-sudo docker run -e INSTANCE_NAME="${HOSTNAME}" --cap-add SYS_PTRACE base-image \
-  /work/runner.sh
+gsutil -m rsync -r "${EXP_BUCKET}/binary-folders/${FOLDER_NAME}" "${WORK}"
+find "${WORK}" -name "*.sh" -exec chmod 750 {} \;
+"${WORK}/runner.sh"
