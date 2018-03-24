@@ -51,7 +51,7 @@ conduct_experiment() {
   rm -rf corpus last-corpus corpus-archives results crashes
   mkdir -p corpus last-corpus corpus-archives results crashes
 
-  ASAN_OPTIONS="symbolize=0" ${exec_cmd} &
+  ${exec_cmd} &
   local process_pid=$!
   SECONDS=0  # Builtin that automatically increments every second
   while kill -0 "${process_pid}"; do
@@ -131,6 +131,7 @@ main() {
 
     export AFL_SKIP_CPUFREQ=1
     export AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
+    export ASAN_OPTIONS="abort_on_error=1:symbolize=0"
 
     local exec_cmd="./afl-fuzz ${BINARY_RUNTIME_OPTIONS} -i seeds -o corpus"
     if ls ./*.dict; then
@@ -140,6 +141,8 @@ main() {
     exec_cmd="${exec_cmd} -m none -- ${binary}"
   elif [[ "${FUZZING_ENGINE}" == "libfuzzer" || \
     "${FUZZING_ENGINE}" == "fsanitize_fuzzer" ]]; then
+    export ASAN_OPTIONS="symbolize=0"
+
     local exec_cmd="${binary} ${BINARY_RUNTIME_OPTIONS}"
     exec_cmd="${exec_cmd} -workers=${JOBS} -jobs=100000000 -runs=${MAX_RUNS}"
     exec_cmd="${exec_cmd} -max_total_time=${MAX_TOTAL_TIME}"
