@@ -192,7 +192,6 @@ package_benchmark_fuzzer() {
 
   cp "${building_dir}/${fuzzer_name}" \
     "${send_dir}/${benchmark}${fuzzer_suffix}-${FUZZING_ENGINE}"
-  cp "${WORK}/FTS/engine-comparison/Dockerfile-runner" "${send_dir}/Dockerfile"
   cp "${WORK}/FTS/engine-comparison/runner.sh" "${send_dir}/"
   cp "${WORK}/FTS/engine-comparison/config/parameters.cfg" "${send_dir}/"
   cp "${fengine_config}" "${send_dir}/fengine.cfg"
@@ -219,9 +218,18 @@ create_or_start_runner() {
   local instance_name=$1
   local metadata="benchmark=$2,fengine=$3,trial=$4,experiment=${EXPERIMENT}"
   metadata="${metadata},bucket=${GSUTIL_BUCKET}"
+  local startup_script="/tmp/${instance_name}-start-docker.sh"
+  {
+    echo "#!/bin/bash"
+    echo "while ! docker run --rm -e INSTANCE_NAME=${instance_name} \\"
+    echo "  --cap-add SYS_PTRACE --name=runner-container \\"
+    echo "  gcr.io/fuzzer-test-suite/runner /work/startup-runner.sh"
+    echo "do"
+    echo "  echo 'Error pulling image, retrying...'"
+    echo "done 2>&1 | tee /tmp/runner-log.txt"
+  } > "${startup_script}"
   create_or_start "${instance_name}" "${SERVICE_ACCOUNT}" \
-    "${CLOUDSDK_COMPUTE_ZONE}" "${metadata}" \
-    "startup-script=${WORK}/FTS/engine-comparison/startup-runner.sh"
+    "${CLOUDSDK_COMPUTE_ZONE}" "${metadata}" "startup-script=${startup_script}"
 }
 
 # Handles the initialization of all runner VMs for a given benchmark.
