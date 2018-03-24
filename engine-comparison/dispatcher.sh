@@ -221,9 +221,12 @@ create_or_start_runner() {
   local startup_script="/tmp/${instance_name}-start-docker.sh"
   {
     echo "#!/bin/bash"
-    echo "docker run --rm -e INSTANCE_NAME=${instance_name} \\"
+    echo "while ! docker run --rm -e INSTANCE_NAME=${instance_name} \\"
     echo "  --cap-add SYS_PTRACE --name=runner-container \\"
     echo "  gcr.io/fuzzer-test-suite/runner /work/startup-runner.sh"
+    echo "do"
+    echo "  echo 'Error pulling image, retrying...'"
+    echo "done 2>&1 | tee /tmp/runner-log.txt"
   } > "${startup_script}"
   create_or_start "${instance_name}" "${SERVICE_ACCOUNT}" \
     "${CLOUDSDK_COMPUTE_ZONE}" "${metadata}" "startup-script=${startup_script}"
