@@ -20,7 +20,7 @@ test_source_location() {
 }
 
 test_source_location png.c:1035
-test_source_location pngrutil.c:1041
+test_source_location png_handle_sRGB
 test_source_location pngread.c:757
 # The following currently require too much time to find.
 #test_source_location pngrutil.c:1393
