@@ -6,7 +6,7 @@
 [ -e $(basename $0) ] && echo "PLEASE USE THIS SCRIPT FROM ANOTHER DIR" && exit 1
 
 # Ensure that fuzzing engine, if defined, is valid
-FUZZING_ENGINE=${FUZZING_ENGINE:-"libfuzzer"}
+FUZZING_ENGINE=${FUZZING_ENGINE:-"fsanitize_fuzzer"}
 POSSIBLE_FUZZING_ENGINE="libfuzzer afl coverage fsanitize_fuzzer hooks"
 !(echo "$POSSIBLE_FUZZING_ENGINE" | grep -w "$FUZZING_ENGINE" > /dev/null) && \
   echo "USAGE: Error: If defined, FUZZING_ENGINE should be one of the following:
