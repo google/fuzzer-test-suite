@@ -31,9 +31,6 @@ sudo apt-get --yes install git
 git clone https://github.com/google/fuzzer-test-suite.git FTS
 ./FTS/tutorial/install-deps.sh  # Get deps
 ./FTS/tutorial/install-clang.sh # Get fresh clang binaries
-# Get libFuzzer sources and build it
-svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer Fuzzer
-Fuzzer/build.sh
 ```
 ### Docker
 *This option is less tested; besides you will be limited with the number of cores your laptop has*
@@ -43,14 +40,13 @@ Fuzzer/build.sh
 ## Verify the setup
 Run:
 ```shell
-clang++ -g -fsanitize=address -fsanitize-coverage=trace-pc-guard FTS/tutorial/fuzz_me.cc libFuzzer.a
+clang++ -g -fsanitize=address,fuzzer FTS/tutorial/fuzz_me.cc
 ./a.out 2>&1 | grep ERROR
 ```
 and make sure you see something like
 ```
 ==31851==ERROR: AddressSanitizer: heap-buffer-overflow on address...
 ```
-Note: this tutorial uses LLVM/Clang 5.0, where libFuzzer uses the flags `-fsanitize=address -fsanitize-coverage=trace-pc-guard`. In newer versions the flags were renamed to `-fsanitize=address,fuzzer`, see http://libfuzzer.info
 
 ## 'Hello world' fuzzer
 Definition:
@@ -66,13 +62,14 @@ Take a look at an example of such **fuzz target**: [./fuzz_me.cc](fuzz_me.cc). C
 
 To build a fuzzer binary for this target you need to compile the source using the recent Clang compiler 
 with the following extra flags:
-* `-fsanitize-coverage=trace-pc-guard` (required): provides in-process coverage information to libFuzzer.
+
+* `-fsanitize=fuzzer` (required): provides in-process coverage information to libFuzzer and links with the libFuzzer runtime.
 * `-fsanitize=address` (recommended): enables [AddressSanitizer](http://clang.llvm.org/docs/AddressSanitizer.html)
 * `-g` (recommended): enables debug info, makes the error messages easier to read. 
 
-Then you need to link the target code with `libFuzzer.a` which provides the `main()` function. 
+For example:
 ```shell
-clang++ -g -fsanitize=address -fsanitize-coverage=trace-pc-guard FTS/tutorial/fuzz_me.cc libFuzzer.a
+clang++ -g -fsanitize=address,fuzzer FTS/tutorial/fuzz_me.cc
 ```
 Now try running it:
 ```
@@ -81,8 +78,9 @@ Now try running it:
 You will see something like this:
 ```
 INFO: Seed: 3918206239
-INFO: Loaded 1 modules (14 guards): [0x73be00, 0x73be38), 
-INFO: -max_len is not provided, using 64
+INFO: Loaded 1 modules (14 guards): [0x73be00, 0x73be38),
+INFO: Loaded 1 PC tables (7 PCs): 7 [0x52f8c8,0x52f938),
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
 INFO: A corpus is not provided, starting from an empty corpus
 #0      READ units: 1
 #1      INITED cov: 3 ft: 3 corp: 1/1b exec/s: 0 rss: 26Mb
@@ -109,10 +107,10 @@ INFO: Seed: 3918206239
 The fuzzer has started with this random seed. Rerun it with `-seed=3918206239` to get the same result.
 
 ```
-INFO: -max_len is not provided, using 64
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
 INFO: A corpus is not provided, starting from an empty corpus
 ```
-By default, libFuzzer assumes that all inputs are 64 bytes or smaller.
+By default, libFuzzer assumes that all inputs are 4096 bytes or smaller.
 To change that either use `-max_len=N` or run with a non-empty [seed corpus](#seed-corpus).
 
 ```
@@ -172,7 +170,7 @@ see  [openssl-1.0.1f/target.cc](../openssl-1.0.1f/target.cc).
 
 Try running the fuzzer:
 ```shell
-./openssl-1.0.1f-libfuzzer
+./openssl-1.0.1f-fsanitize_fuzzer
 ```
 You whould see something like this in a few seconds:
 ```
@@ -204,7 +202,7 @@ cd; mkdir -p woff; cd woff;
 ```
 Now run it like you did it with the previous fuzz targets: 
 ```shell
-./woff2-2016-05-06-libfuzzer
+./woff2-2016-05-06-fsanitize_fuzzer
 ```
 Most likely you will see that the fuzzer is stuck --
 it is running millions of inputs but can not find many new code paths. 
@@ -228,7 +226,7 @@ Inspect this directory. What do you see? Are there any `.woff2` files?
 Now you can use the woff2 fuzzer with a seed corpus. Do it like this:
 ```shell
 mkdir MY_CORPUS
-./woff2-2016-05-06-libfuzzer MY_CORPUS/ seeds/
+./woff2-2016-05-06-fsanitize_fuzzer MY_CORPUS/ seeds/
 ```
 
 When a libFuzzer-based fuzzer is executed with one more directory as arguments,
@@ -239,20 +237,23 @@ corpus directory (in this case, `MY_CORPUS`).
 Let us look at the output:
 ```
 INFO: Seed: 3976665814
-INFO: Loaded 1 modules (17592 guards): [0x946de0, 0x9580c0), 
-Loading corpus dir: MY_CORPUS/
-Loading corpus dir: seeds/
-INFO: -max_len is not provided, using 168276
-#0      READ units: 62
-#62     INITED cov: 595 ft: 766 corp: 13/766Kb exec/s: 0 rss: 57Mb
-#64     NEW    cov: 601 ft: 781 corp: 14/826Kb exec/s: 0 rss: 59Mb L: 61644 MS: 2 ...
+INFO: Loaded 1 modules   (9611 inline 8-bit counters): 9611 [0x93c710, 0x93ec9b), 
+INFO: Loaded 1 PC tables (9611 PCs): 9611 [0x6e8628,0x70ded8), 
+INFO:        0 files found in MY_CORPUS/
+INFO:       62 files found in seeds/
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 168276 bytes
+INFO: seed corpus: files: 62 min: 14b max: 168276b total: 3896056b rss: 37Mb
+#63     INITED cov: 632 ft: 1096 corp: 13/766Kb exec/s: 0 rss: 61Mb
+        NEW_FUNC[0/1]: 0x5aae80 in TransformDictionaryWord...
+#64     NEW    cov: 651 ft: 1148 corp: 14/832Kb exec/s: 0 rss: 63Mb L: 67832/68784 MS: 1 ChangeBinInt-
 ...
-#199    NEW    cov: 636 ft: 953 corp: 22/1319Kb exec/s: 0 rss: 85Mb L: 63320 MS: 2 ...
+#535    NEW    cov: 705 ft: 1620 corp: 48/3038Kb exec/s: 0 rss: 162Mb L: 68784/68784 MS: 1 ChangeBinInt-
 ...
-#346693 NEW    cov: 805 ft: 2325 corp: 378/23Mb exec/s: 1212 rss: 551Mb L: 67104 ...
+#288595 NEW    cov: 839 ft: 2909 corp: 489/30Mb exec/s: 1873 rss: 488Mb L: 62832/68784 MS: 1 ShuffleBytes-
+...
 ```
 
-As you can see, the initial coverage is much greater than before (`INITED cov: 595`) and it keeps growing.
+As you can see, the initial coverage is much greater than before (`INITED cov: 632`) and it keeps growing.
 
 The size of the inputs that libFuzzer tries is now limited by 168276,
 which is the size of the largest file in the seed corpus.
@@ -273,15 +274,15 @@ use `-workers=M` to set the number of allowed parallel jobs.
 
 ```shell
 cd ~/woff
-./woff2-2016-05-06-libfuzzer MY_CORPUS/ seeds/ -jobs=8
+./woff2-2016-05-06-fsanitize_fuzzer MY_CORPUS/ seeds/ -jobs=8
 ```
 On a 8-core machine this will spawn 4 parallel workers. If one of them dies, another one will be created, up to 8.
 ```
 Running 4 workers
-./woff2-2016-05-06-libfuzzer MY_CORPUS/ seeds/  > fuzz-0.log 2>&1
-./woff2-2016-05-06-libfuzzer MY_CORPUS/ seeds/  > fuzz-1.log 2>&1
-./woff2-2016-05-06-libfuzzer MY_CORPUS/ seeds/  > fuzz-2.log 2>&1
-./woff2-2016-05-06-libfuzzer MY_CORPUS/ seeds/  > fuzz-3.log 2>&1
+./woff2-2016-05-06-fsanitize_fuzzer MY_CORPUS/ seeds/  > fuzz-0.log 2>&1
+./woff2-2016-05-06-fsanitize_fuzzer MY_CORPUS/ seeds/  > fuzz-1.log 2>&1
+./woff2-2016-05-06-fsanitize_fuzzer MY_CORPUS/ seeds/  > fuzz-2.log 2>&1
+./woff2-2016-05-06-fsanitize_fuzzer MY_CORPUS/ seeds/  > fuzz-3.log 2>&1
 ```
 
 At this time it would be convenient to have some terminal multiplexer, e.g. [GNU screen]
@@ -300,7 +301,7 @@ rewarded by a [nice security bug](https://bugs.chromium.org/p/chromium/issues/de
 
 If you are both impatient and curious you may feed a provided crash reproducer to see the bug:
 ```
-./woff2-2016-05-06-libfuzzer ../FTS/woff2-2016-05-06/crash-696cb49b6d7f63e153a6605f00aceb0d7738971a
+./woff2-2016-05-06-fsanitize_fuzzer ../FTS/woff2-2016-05-06/crash-696cb49b6d7f63e153a6605f00aceb0d7738971a
 ```
 Do you see the same stack trace as in the
 [original bug report](https://bugs.chromium.org/p/chromium/issues/detail?id=609042)?
@@ -322,10 +323,10 @@ mkdir -p ~/libxml; rm -rf ~/libxml/*; cd ~/libxml
 
 Now, run the newly bult fuzzer for 10-20 seconds with and without a dictionary:
 ```shell
-./libxml2-v2.9.2-libfuzzer   # Press Ctrl-C in 10-20 seconds
+./libxml2-v2.9.2-fsanitize_fuzzer   # Press Ctrl-C in 10-20 seconds
 ```
 ```shell
-./libxml2-v2.9.2-libfuzzer -dict=afl/dictionaries/xml.dict  # Press Ctrl-C in 10-20 seconds
+./libxml2-v2.9.2-fsanitize_fuzzer -dict=afl/dictionaries/xml.dict  # Press Ctrl-C in 10-20 seconds
 ```
 
 Did you see the differentce? 
@@ -333,7 +334,7 @@ Did you see the differentce?
 Now create a corpus directory and run for real on all CPUs:
 ```shell
 mkdir CORPUS
-./libxml2-v2.9.2-libfuzzer -dict=afl/dictionaries/xml.dict -jobs=8 -workers=8 CORPUS
+./libxml2-v2.9.2-fsanitize_fuzzer -dict=afl/dictionaries/xml.dict -jobs=8 -workers=8 CORPUS
 ```
 
 How much time did it take to find the bug?
@@ -355,7 +356,7 @@ are expected to produce the same result and verifies that.
 ```shell
 mkdir -p ~/openssl-1.0.2d; rm -rf ~/openssl-1.0.2d/*; cd ~/openssl-1.0.2d
 ~/FTS/openssl-1.0.2d/build.sh
-mkdir CORPUS; ./openssl-1.0.2d-libfuzzer  -max_len=256 CORPUS -jobs=8 -workers=8
+mkdir CORPUS; ./openssl-1.0.2d-fsanitize_fuzzer  -max_len=256 CORPUS -jobs=8 -workers=8
 ```
 
 Did it crash? How? 
@@ -374,7 +375,7 @@ mkdir -p ~/pcre2 ; rm -rf ~/pcre2/*; cd ~/pcre2
 
 ```shell
 mkdir CORPUS
-./pcre2-10.00-libfuzzer -jobs=1000 -workers=8 CORPUS
+./pcre2-10.00-fsanitize_fuzzer -jobs=1000 -workers=8 CORPUS
 ```
 
 After a minute or two look for the erros in the log files:
@@ -415,7 +416,7 @@ by applying up to 10000 mutations on every iteration.
 
 ```shell
 cd ~/openssl-1.0.2d
-./openssl-1.0.2d-libfuzzer \
+./openssl-1.0.2d-fsanitize_fuzzer \
   -minimize_crash=1 -runs=10000 \
   ~/FTS/openssl-1.0.2d/crash-12ae1af0c82252420b5f780bc9ed48d3ba05109e
 ```
@@ -426,6 +427,7 @@ Try this with one of the crashes you have found previously.
 We recommend [Clang Coverage](http://clang.llvm.org/docs/SourceBasedCodeCoverage.html) to visualize and study your code coverage. A simple example:
 ```
 # Build you code for Clang Coverage; link it against a standalone driver for running fuzz targets.
+svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/fuzzer Fuzzer
 clang -fprofile-instr-generate -fcoverage-mapping ~/FTS/tutorial/fuzz_me.cc \
                                                   ~/Fuzzer/standalone/StandaloneFuzzTargetMain.c
 mkdir CORPUS # Create an empty corpus dir.
@@ -520,7 +522,7 @@ touch EMPTY_FILE; gsutil cp EMPTY_FILE  gs://$GCS_BUCKET/CORPUS/
 ```shell
 cd ~/pcre2
 mkdir CORPUS
-./pcre2-10.00-libfuzzer CORPUS/ -runs=10000
+./pcre2-10.00-fsanitize_fuzzer CORPUS/ -runs=10000
 ```
 * Now `CORPUS` has some files. Synchronize it with the cloud directory:
 ```shell
@@ -576,7 +578,7 @@ Try fuzzing the woff benchmark with an empty seed corpus:
 ```shell
 cd ~/woff
 mkdir NEW_CORPUS
-./woff2-2016-05-06-libfuzzer NEW_CORPUS -jobs=8 -workers=8
+./woff2-2016-05-06-fsanitize_fuzzer NEW_CORPUS -jobs=8 -workers=8
 ```
 Pretty soon you will hit an OOM bug:
 ```
