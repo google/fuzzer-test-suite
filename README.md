@@ -6,9 +6,13 @@ The goal of this project is to have a set of fuzzing benchmarks derived from rea
 libraries that have interesting bugs, hard-to-find code paths, or other
 challenges for bug finding tools.
 
-The current version supports [libFuzzer](http://libFuzzer.info),
-in future versions we exect to support [AFL](http://lcamtuf.coredump.cx/afl/)
-and potentially other fuzzing engines.
+In addition, this project provides a fuzzing engine
+[comparison framework](engine-comparison/) to execute A/B tests between
+different fuzzing configurations.
+
+The current version supports [libFuzzer](http://libFuzzer.info) and
+[AFL](http://lcamtuf.coredump.cx/afl/).  In future versions we may support
+other fuzzing engines.
 
 # See also
 
