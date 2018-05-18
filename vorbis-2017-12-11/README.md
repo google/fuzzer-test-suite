@@ -1,7 +1,8 @@
 Fuzzing benchmark for [Vorbis](https://github.com/xiph/vorbis).
-Contains CVE-2018-5146 (pwn2own 2018), a buffer overflow. Reproducer provided.
+Contains CVE-2018-5146 (pwn2own 2018), a buffer overflow. Reproducer provided
+(`crash-e86e0482b8d66f924e50e62f5d7cc36a0acb03a7`).
 As of 2018-04 libFuzzer finds this bug in several hundred CPU hours
-(a bit faster with `-use_value_profile=1`)
+(a bit faster with `-use_value_profile=1`).
 
 ```
 ==108564==ERROR: AddressSanitizer: heap-buffer-overflow on ...
@@ -13,6 +14,23 @@ READ of size 4 at 0x619000000480 thread T0
     #4 0x52aa17 in ov_read_filter lib/vorbisfile.c:1976:15
     #5 0x52b715 in ov_read lib/vorbisfile.c:2096:10
     #6 0x4fab0d in LLVMFuzzerTestOneInput
+```
+
+Also contains a null-dereference, which libFuzzer found after several hundred
+CPU hours with `-use_value_profile=1`.  Reproducer provided
+(`crash-23c2d78e497bf4aebe5859e3092657cb0af4c299`).
+
+```
+==18193==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 ...
+==18193==The signal is caused by a READ memory access.
+==18193==Hint: address points to the zero page.
+    #0 0x5f0ccf in _01inverse lib/res0.c:690:35
+    #1 0x5f45c9 in res1_inverse lib/res0.c:757:12
+    #2 0x5fbc1b in mapping0_inverse lib/mapping0.c:748:5
+    #3 0x57f8aa in _fetch_and_process_packet lib/vorbisfile.c:705:15
+    #4 0x581594 in ov_read_filter lib/vorbisfile.c:1976:15
+    #5 0x5822a4 in ov_read lib/vorbisfile.c:2096:10
+    #6 0x577c4a in LLVMFuzzerTestOneInput
 ```
 
 See also:
