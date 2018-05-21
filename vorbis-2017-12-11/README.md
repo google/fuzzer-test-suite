@@ -18,8 +18,9 @@ READ of size 4 at 0x619000000480 thread T0
 
 Also contains a null-dereference, which libFuzzer found after several hundred
 CPU hours with `-use_value_profile=1`.  Reproducer provided
-(`crash-23c2d78e497bf4aebe5859e3092657cb0af4c299`).
-
+(`crash-23c2d78e497bf4aebe5859e3092657cb0af4c299`).  This bug no longer
+reproduces after the [fix for CVE-2018-5146](
+https://github.com/xiph/vorbis/commit/667ceb4aab60c1f74060143bb24e5f427b3cce5f).
 ```
 ==18193==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 ...
 ==18193==The signal is caused by a READ memory access.
