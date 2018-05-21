@@ -27,12 +27,17 @@
 
     function graphFromText(filename, inputText, chart) {
       var csvMatrix = inputText.split("\n").map(function(row){return row.split(",");});
-
+      var selections = [];
       csvMatrix = csvMatrix.slice(0,csvMatrix.length - 1);
-      csvMatrix.forEach( function(row, index, mat) {
-        if (index != 0) {
-          mat[index] = row.map(function(num)  { return parseInt(num); });
-        }
+      csvMatrix.forEach(function(row, i) {
+        if (i == 0) return;
+        row.forEach(function(value_str, j, my_row) {
+          if (value_str.length > 0 && value_str[value_str.length-1] == 'X') {
+            selections.push({row:i-1, column:j});
+            value_str = value_str.slice(0, value_str.length - 1);
+          }
+          my_row[j] = parseInt(value_str);
+        });
       });
       var data = google.visualization.arrayToDataTable(csvMatrix);
 
@@ -57,6 +62,9 @@
         interpolateNulls: 'true'
       };
 
+      google.visualization.events.addListener(chart, 'ready', function() {
+        chart.setSelection(selections);
+      });
       chart.draw(data, options);
     }
 

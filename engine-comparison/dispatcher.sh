@@ -363,8 +363,11 @@ measure_coverage() {
       local corpus_elems_line="$(tail -n1 \
         "${report_dir}/corpus-elems-graph.csv")"
       local coverage="${coverage_line##*,}"
+      coverage="$(echo "${coverage}" | sed 's/[^0-9]*//g')"
       local corpus_size="${corpus_size_line##*,}"
+      corpus_size="$(echo "${corpus_size}" | sed 's/[^0-9]*//g')"
       local corpus_elems="${corpus_elems_line##*,}"
+      corpus_elems="$(echo "${corpus_elems}" | sed 's/[^0-9]*//g')"
     else
       # No corpus archive because we've processed all our archives already.
       return 1
@@ -396,6 +399,14 @@ measure_coverage() {
       | xargs -0 stat -c %s \
       | awk '{sum+=$1} END {print sum}')"
     local corpus_elems="$(find "${corpus_dir}" -maxdepth 1 -type f | wc -l)"
+
+    # If we got our first crash this cycle, mark this cycle in the CSV.
+    if grep "^${this_cycle}$" "${experiment_dir}/results/first-crash-cycle" \
+      &> /dev/null; then
+      coverage="${coverage}X"
+      corpus_size="${corpus_size}X"
+      corpus_elems="${corpus_elems}X"
+    fi
 
     # Save corpus for comparison next cycle
     rm -rf "${prev_corpus_dir}"

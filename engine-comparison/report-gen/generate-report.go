@@ -27,7 +27,15 @@ func onlyDirectories(inLs []os.FileInfo) (outLs []os.FileInfo) {
 	return
 }
 
-// Strips the "-trial-X" suffix from a column name
+// Strips the "X" suffix from a string.
+func stripX(str string) string {
+	if str[len(str)-1] == 'X' {
+		return str[:len(str)-1]
+	}
+	return str
+}
+
+// Strips the "-trial-X" suffix from a column name.
 func stripTrial(colName string) string {
 	splitStrings := strings.Split(colName, "-")
 	return strings.Join(splitStrings[:len(splitStrings)-2], "-")
@@ -39,6 +47,7 @@ func stringNumAverage(nums []string) string {
 	count := 0
 	for _, numStr := range nums {
 		if numStr != "" {
+			numStr = stripX(numStr)
 			num, err := strconv.Atoi(numStr)
 			checkErr(err)
 			sum += num
@@ -66,6 +75,7 @@ func stringNumMax(nums []string) string {
 	intNums := []int{}
 	for _, numStr := range nums {
 		if numStr != "" {
+			numStr = stripX(numStr)
 			num, err := strconv.Atoi(numStr)
 			checkErr(err)
 			intNums = append(intNums, num)
@@ -98,7 +108,7 @@ func fillEmptyCells(records [][]string) [][]string {
 				if row == 1 {
 					records[row][col] = strconv.Itoa(0)
 				} else {
-					records[row][col] = records[row-1][col]
+					records[row][col] = stripX(records[row-1][col])
 				}
 			}
 		}
@@ -218,12 +228,22 @@ func appendMaxes(aggregateRecords [][]string, records [][]string) [][]string {
 
 func selectDataPoints(matrix [][]string) [][]string {
 	numRows := len(matrix)
+	numCols := len(matrix[0])
 	thinnedMatrix := make([][]string, 0)
 	if numRows > 200 {
 		thinnedMatrix = append(thinnedMatrix, matrix[0])
 		interval := numRows / 100
-		for i := interval; i < numRows; i += interval {
-			thinnedMatrix = append(thinnedMatrix, matrix[i])
+		for i := 1; i < numRows; i++ {
+			hasX := false
+			for j := 1; j < numCols; j++ {
+				if strings.ContainsRune(matrix[i][j], 'X') {
+					hasX = true
+					break
+				}
+			}
+			if i % interval == 0 || hasX {
+				thinnedMatrix = append(thinnedMatrix, matrix[i])
+			}
 		}
 	} else {
 		thinnedMatrix = matrix
