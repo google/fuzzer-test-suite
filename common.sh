@@ -17,7 +17,7 @@ EXECUTABLE_NAME_BASE=$(basename $SCRIPT_DIR)-${FUZZING_ENGINE}
 LIBFUZZER_SRC=${LIBFUZZER_SRC:-$(dirname $(dirname $SCRIPT_DIR))/Fuzzer}
 AFL_SRC=${AFL_SRC:-$(dirname $(dirname $SCRIPT_DIR))/AFL}
 COVERAGE_FLAGS="-O0 -fsanitize-coverage=trace-pc-guard"
-FUZZ_CXXFLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div"
+FUZZ_CXXFLAGS="-O2 -fno-omit-frame-pointer -gline-tables-only -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div"
 CORPUS=CORPUS-$EXECUTABLE_NAME_BASE
 JOBS=${JOBS:-"8"}
 
@@ -27,7 +27,7 @@ export CXX=${CXX:-"clang++"}
 export LIB_FUZZING_ENGINE="libFuzzingEngine-${FUZZING_ENGINE}.a"
 
 if [[ $FUZZING_ENGINE == "fsanitize_fuzzer" ]]; then
-  FSANITIZE_FUZZER_FLAGS="-O2 -fno-omit-frame-pointer -g -fsanitize=address,fuzzer-no-link"
+  FSANITIZE_FUZZER_FLAGS="-O2 -fno-omit-frame-pointer -gline-tables-only -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -fsanitize=address,fuzzer-no-link -fsanitize-address-use-after-scope"
   export CFLAGS=${CFLAGS:-$FSANITIZE_FUZZER_FLAGS}
   export CXXFLAGS=${CXXFLAGS:-$FSANITIZE_FUZZER_FLAGS}
 elif [[ $FUZZING_ENGINE == "coverage" ]]; then
