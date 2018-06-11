@@ -37,8 +37,9 @@ build_lib() {
     && make V=1 -j $JOBS)
 }
 
-get_git_revision https://github.com/openthread/openthread.git \
-  79c4830c3c17369909e0906d8f455ecf2be4b6aa SRC
+rm -rf SRC
+[[ -z "${REVISION}" ]] && REVISION="79c4830c3c17369909e0906d8f455ecf2be4b6aa"
+get_git_revision https://github.com/openthread/openthread.git "${REVISION}" SRC
 build_fuzzer || exit 1
 build_lib || exit 1
 
