@@ -9,12 +9,12 @@ if [[ -n "${MODE}" ]]; then
   case "${MODE}" in
     asan)
       export FUZZING_ENGINE=libfuzzer
-      export CFLAGS="-O2 -fno-omit-frame-pointer -gline-tables-only -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div"
+      export CFLAGS="-O2 -fno-omit-frame-pointer -gline-tables-only -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div"
       export CXXFLAGS="${CFLAGS}"
       ;;
     ubsan)
       export FUZZING_ENGINE=libfuzzer
-      export CFLAGS="-O2 -fno-omit-frame-pointer -gline-tables-only -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -fsanitize=undefined -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div"
+      export CFLAGS="-O2 -fno-omit-frame-pointer -gline-tables-only -fsanitize=undefined -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div"
       export CXXFLAGS="${CFLAGS}"
       ;;
     hooks)
