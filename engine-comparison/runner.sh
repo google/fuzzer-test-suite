@@ -59,6 +59,19 @@ conduct_experiment() {
     local sleep_time=$((next_sync - SECONDS))
     sleep ${sleep_time}
 
+    # Delete most crashes and logs to save disk space.
+    find . -name "fuzz-[1-9][0-9]*.log" -delete
+    if [[ -z "$(ls -A crashes)" ]]; then
+      mv corpus/crashes/* corpus/hangs/* crashes/
+      mv crash-* leak* timeout* oom* crashes/
+      if [[ -n "$(ls -A crashes)" ]]; then
+        cp fuzz-0.log crashes/* results/
+        echo "${cycle}" >> results/first-crash-cycle
+      fi
+    else
+      rm -rf crash-* leak* timeout* oom*
+    fi
+
     # Snapshot
     cp -r corpus corpus-copy
 
@@ -69,6 +82,7 @@ conduct_experiment() {
       tar -czf "corpus-archives/corpus-archive-${cycle}.tar.gz" corpus-copy
       rsync_no_delete corpus-archives "${sync_dir}/corpus"
     fi
+
     rsync_no_delete results "${sync_dir}/results"
 
     # Done with snapshot
@@ -77,14 +91,6 @@ conduct_experiment() {
     rm "corpus-archives/corpus-archive-${cycle}.tar.gz"
 
     time_run_limits_exceeded && kill -15 "${process_pid}"
-
-    # Delete most crashes and logs to save disk space.
-    find . -name "fuzz-[1-9][0-9]*.log" -delete
-    if [[ -z "$(ls -A crashes)" ]]; then
-      mv crash-* leak* timeout* oom* crashes/
-    else
-      rm -rf crash-* leak* timeout* oom*
-    fi
 
     cycle=$((cycle + 1))
     next_sync=$((cycle * WAIT_PERIOD))
