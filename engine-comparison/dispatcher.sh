@@ -400,14 +400,6 @@ measure_coverage() {
       | awk '{sum+=$1} END {print sum}')"
     local corpus_elems="$(find "${corpus_dir}" -maxdepth 1 -type f | wc -l)"
 
-    # If we got our first crash this cycle, mark this cycle in the CSV.
-    if grep "^${this_cycle}$" "${experiment_dir}/results/first-crash-cycle" \
-      &> /dev/null; then
-      coverage="${coverage}X"
-      corpus_size="${corpus_size}X"
-      corpus_elems="${corpus_elems}X"
-    fi
-
     # Save corpus for comparison next cycle
     rm -rf "${prev_corpus_dir}"
     mv "${corpus_dir}" "${prev_corpus_dir}"
@@ -419,6 +411,14 @@ measure_coverage() {
     local dst_archive="${EXP_BUCKET}/processed-folders/${bmark_trial}"
     dst_archive="${dst_archive}/corpus-archive-${this_cycle}.tar.gz"
     p_gsutil mv "${src_archive}" "${dst_archive}"
+  fi
+
+  # If we got our first crash this cycle, mark this cycle in the CSV.
+  if grep "^${this_cycle}$" "${experiment_dir}/results/first-crash-cycle" \
+    &> /dev/null; then
+    coverage="${coverage}X"
+    corpus_size="${corpus_size}X"
+    corpus_elems="${corpus_elems}X"
   fi
 
   # Finish generating human readable report
