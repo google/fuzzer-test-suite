@@ -7,6 +7,8 @@
 build_lib() {
   rm -rf BUILD
   cp -rf SRC BUILD
+  # workaround https://github.com/google/fuzzer-test-suite/issues/131
+  sed -i 's/-Wshadow//g' BUILD/configure.ac BUILD/third_party/mbedtls/repo.patched/CMakeLists.txt
   [[ -f $LIB_FUZZING_ENGINE ]] && cp $LIB_FUZZING_ENGINE BUILD/tests/fuzz/
   if [[ $FUZZING_ENGINE == "hooks" ]]; then
     # Link ASan runtime so we can hook memcmp et al.
