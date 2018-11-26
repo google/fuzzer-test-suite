@@ -4,7 +4,7 @@ Two fuzz targets are included: `ip6_send_fuzzer` and
 `radio_receive_done_fuzzer`.
 
 Reproducers for 12 historical OpenThread bugs are provided.  To reproduce the
-crashes or find them by fuzzing, make sure you build the appropriate version of
+crashes or find them by fuzzing, make sure you build the appropriate revision of
 OpenThread.  For example, to reproduce the first crash below, we would do the
 following:
 ```shell
