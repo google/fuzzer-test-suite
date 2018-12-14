@@ -321,7 +321,7 @@ mkdir -p ~/libxml; rm -rf ~/libxml/*; cd ~/libxml
 ~/FTS/libxml2-v2.9.2/build.sh
 ```
 
-Now, run the newly bult fuzzer for 10-20 seconds with and without a dictionary:
+Now, run the newly built fuzzer for 10-20 seconds with and without a dictionary:
 ```shell
 ./libxml2-v2.9.2-fsanitize_fuzzer   # Press Ctrl-C in 10-20 seconds
 ```
