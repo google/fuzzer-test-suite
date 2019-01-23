@@ -132,5 +132,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
 // Include png_mutator for structure-aware-fuzzing (aka custom mutator).
 // To actually enable it need to also define
-// PNG_MUTATOR_DEFINE_LIBFUZZER_CUSTOM_MUTATOR (and in the build command).
+// PNG_MUTATOR_DEFINE_LIBFUZZER_CUSTOM_MUTATOR (e.g. in the build command).
 #include "png_mutator.h"
