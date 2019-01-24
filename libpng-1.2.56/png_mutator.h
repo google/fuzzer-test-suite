@@ -40,6 +40,8 @@ class PngMutator {
     // Read 13 values.
     in.read((char*)ihdr_.data(), ihdr_.size());
     Read4(in);  // ignore CRC
+    ssize_t idat_idx = -1;
+
     while (in) {
       uint32_t len = ReadInteger(in);
       uint32_t type = Read4(in);
@@ -53,7 +55,12 @@ class PngMutator {
       Read4(in);  // ignore CRC
 
       if (type == Type("IDAT")) {
-        idat_.insert(idat_.end(), v.begin(), v.end());
+        if (idat_idx != -1)
+          Append(&chunks_[idat_idx].v, v);
+        else {
+          idat_idx = chunks_.size();
+          chunks_.push_back({type, v});
+        }
       } else if (type == Type("iCCP")) {
         auto it = v.begin();
         while (it < v.end() && isprint(*it)) it++;
@@ -68,7 +75,8 @@ class PngMutator {
       }
       //  std::cerr << "CHUNK: " << chunk_name << std::endl;
     }
-    idat_ = Uncompress(idat_);
+    if (idat_idx != -1)
+      chunks_[idat_idx].v = Uncompress(chunks_[idat_idx].v);
   }
 
   // Write back the PNG file.
@@ -84,14 +92,13 @@ class PngMutator {
         v.push_back(0);
         v.push_back(0);
         auto compressed = Compress(ch.v);
-        v.insert(v.end(), compressed.begin(), compressed.end());
+        Append(&v, compressed);
         WriteChunk(out, ch.type, v);
       } else {
         WriteChunk(out, ch.type, ch.v);
       }
     }
 
-    WriteChunk(out, "IDAT", idat_, true);
     WriteChunk(out, "IEND", {});
   }
 
@@ -107,33 +114,34 @@ class PngMutator {
         v->resize(v->size() + 1 + rnd() % 256);
       v->resize(m(v->data(), v->size(), v->size()));
     };
-    switch (rnd() % 6) {
+    switch (rnd() % 5) {
       // Mutate IHDR.
       case 0: m(ihdr_.data(), ihdr_.size(), ihdr_.size()); break;
-      // Mutate IDAT.
-      case 1: M(&idat_); break;
       // Mutate some other chunk.
-      case 2:
+      case 1:
         if (!chunks_.empty()) M(&chunks_[rnd() % chunks_.size()].v);
         break;
       // Shuffle the chunks.
-      case 3:
+      case 2:
         std::shuffle(chunks_.begin(), chunks_.end(), rnd);
         break;
       // Delete a random chunk.
-      case 4:
+      case 3:
         if (!chunks_.empty())
          chunks_.erase(chunks_.begin() + rnd() % chunks_.size());
         break;
-      // Insert a random chunk with one of the known types.
-      case 5: {
+      // Insert a random chunk with one of the known types, or a random type.
+      case 4: {
         static const char *types[] = {
             "IATx", "sTER", "hIST", "sPLT", "mkBF", "mkBS", "mkTS", "prVW",
             "oFFs", "iDOT", "zTXt", "mkBT", "acTL", "iTXt", "sBIT", "tIME",
             "iCCP", "vpAg", "tRNS", "cHRM", "PLTE", "bKGD", "gAMA", "sRGB",
-            "pHYs", "fdAT", "fcTL", "tEXt", "IDAT"};
+            "pHYs", "fdAT", "fcTL", "tEXt", "IDAT",
+            "pCAL", "sCAL", "eXIf"
+        };
         static const size_t n_types = sizeof(types) / sizeof(types[0]);
-        uint32_t type = Type(types[rnd() % n_types]);
+        uint32_t type =
+            (rnd() % 10 <= 8) ? Type(types[rnd() % n_types]) : (uint32_t)rnd();
         size_t len = rnd() % 256;
         V v(len);
         for (auto &b : v) b = rnd();
@@ -155,6 +163,10 @@ class PngMutator {
   }
 
  private:
+  void Append(V *to, const V &from) {
+    to->insert(to->end(), from.begin(), from.end());
+  }
+
   uint32_t Read4(std::istream &in) {
     uint32_t res = 0;
     in.read((char *)&res, sizeof(res));
@@ -245,7 +257,6 @@ class PngMutator {
   }
 
   V ihdr_;
-  V idat_;
 
   struct Chunk {
     uint32_t type;
