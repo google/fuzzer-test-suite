@@ -114,9 +114,11 @@ class PngMutator {
         v->resize(v->size() + 1 + rnd() % 256);
       v->resize(m(v->data(), v->size(), v->size()));
     };
-    switch (rnd() % 5) {
+    switch (rnd() % 6) {
       // Mutate IHDR.
-      case 0: m(ihdr_.data(), ihdr_.size(), ihdr_.size()); break;
+      case 0:
+        m(ihdr_.data(), ihdr_.size(), ihdr_.size());
+        break;
       // Mutate some other chunk.
       case 1:
         if (!chunks_.empty()) M(&chunks_[rnd() % chunks_.size()].v);
@@ -137,18 +139,29 @@ class PngMutator {
             "oFFs", "iDOT", "zTXt", "mkBT", "acTL", "iTXt", "sBIT", "tIME",
             "iCCP", "vpAg", "tRNS", "cHRM", "PLTE", "bKGD", "gAMA", "sRGB",
             "pHYs", "fdAT", "fcTL", "tEXt", "IDAT",
-            "pCAL", "sCAL", "eXIf"
+            "pCAL", "sCAL", "eXIf",
+            "fUZz", // special chunk for extra fuzzing hints.
         };
         static const size_t n_types = sizeof(types) / sizeof(types[0]);
         uint32_t type =
             (rnd() % 10 <= 8) ? Type(types[rnd() % n_types]) : (uint32_t)rnd();
         size_t len = rnd() % 256;
+        if (type == Type("fUZz"))
+          len = 16;
         V v(len);
         for (auto &b : v) b = rnd();
         size_t pos = rnd() % (chunks_.size() + 1);
         chunks_.insert(chunks_.begin() + pos, {type, v});
       } break;
       // Any more interesting mutations with a PNG file?
+      case 5: {
+        auto it = std::find_if(
+            chunks_.begin(), chunks_.end(),
+            [](const Chunk &ch) { return ch.type == Type("fUZz"); });
+        if (it != chunks_.end())
+          m(it->v.data(), it->v.size(), it->v.size());
+      }
+
     }
   }
 
@@ -175,7 +188,7 @@ class PngMutator {
   uint32_t ReadInteger(std::istream &in) {
     return __builtin_bswap32(Read4(in));
   }
-  uint32_t Type(const char *tagname) {
+  static uint32_t Type(const char *tagname) {
     uint32_t res;
     assert(strlen(tagname) == 4);
     memcpy(&res, tagname, 4);
