@@ -49,22 +49,22 @@ Very simple target, yet the traditional universal fuzzers, libFuzzer included, h
 virtually not chance of discovering the crash because they will mutate
 compressed data causing the mutations to be invalid inputs for `uncompress`.
 
-There is where **custom mutators**, or libFuzzer plugins, come into play.
-The custom mutator is a use-defined function with a fixed signature that does
+This is where **custom mutators**, or libFuzzer plugins, come into play.
+The custom mutator is a user-defined function with a fixed signature that does
 the following:
   * Parses the input data according to the specified language grammar (in our
-    example, it uncompresses the data using Zlib).
+    example, it uncompresses the data).
     * If parsing fails, it returns a syntactically correct dummy input (in our
-      case, it returns a Zlib-compressed two-byte sequence `Hi`).
+      case, it returns a compressed byte sequence `Hi`).
   * Mutates the in-memory parsed representation of the input (in our case,
-    uncompressed raw data). The custom mutator *may* request libFuzzer to mutate some part of raw data
+    uncompressed raw data). The custom mutator *may* request libFuzzer to
+    mutate some part of the raw data
     via the function `LLVMFuzzerMutate`.
   * Serializes the in-memory representation (in our case, compresses it).
-See the full example code
-[here](https://github.com/llvm-mirror/compiler-rt/blob/master/test/fuzzer/CompressedTest.cpp)
 
-Let's run our example. First, let's compile the target alone, without the custom
-mutator:
+Let's run
+[our example](https://github.com/llvm-mirror/compiler-rt/blob/master/test/fuzzer/CompressedTest.cpp).
+First, let's compile the target alone, without the custom mutator:
 
 ```console
 % clang -O -g CompressedTest.cpp -fsanitize=fuzzer -lz
@@ -88,7 +88,7 @@ compressed byte-sequence `FU`.
 Now let's run the same target but this time with the custom mutator:
 
 ```console
-& clang -O -g CompressedTest.cpp -fsanitize=fuzzer -lz -DCUSTOM_MUTATOR
+% clang -O -g CompressedTest.cpp -fsanitize=fuzzer -lz -DCUSTOM_MUTATOR
 % ./a.out
 ...
 INFO: A corpus is not provided, starting from an empty corpus
