@@ -22,7 +22,7 @@ However, with some additional effort libFuzzer can be turned into a
 grammar-aware (or, **structure-aware**) fuzzing engine for a specific input
 type.
 
-## Exaple: Compression
+## Example: Compression
 
 Let us start from a simple example, that demonstrates most of the aspects of
 structure-aware fuzzing with libFuzzer.
@@ -30,7 +30,7 @@ structure-aware fuzzing with libFuzzer.
 Take a look at the
 [example fuzz target](https://github.com/llvm-mirror/compiler-rt/blob/master/test/fuzzer/CompressedTest.cpp)
 that consumes Zlib-compressed data, uncompresses
-it, and crashes if the furst two bytes of the uncompresses input are 'F' and 'U'.
+it, and crashes if the first two bytes of the uncompressed input are 'F' and 'U'.
 
 ```cpp
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
@@ -50,9 +50,66 @@ virtually not chance of discovering the crash because they will mutate
 compressed data causing the mutations to be invalid inputs for `uncompress`.
 
 There is where **custom mutators**, or libFuzzer plugins, come into play.
+The custom mutator is a use-defined function with a fixed signature that does
+the following:
+  * Parses the input data according to the specified language grammar (in our
+    example, it uncompresses the data using Zlib).
+    * If parsing fails, it returns a syntactically correct dummy input (in our
+      case, it returns a Zlib-compressed two-byte sequence `Hi`).
+  * Mutates the in-memory parsed representation of the input (in our case,
+    uncompressed raw data). The custom mutator *may* request libFuzzer to mutate some part of raw data
+    via the function `LLVMFuzzerMutate`.
+  * Serializes the in-memory representation (in our case, compresses it).
+See the full example code
+[here](https://github.com/llvm-mirror/compiler-rt/blob/master/test/fuzzer/CompressedTest.cpp)
 
+Let's run our example. First, let's compile the target alone, without the custom
+mutator:
 
-TODO
+```console
+% clang -O -g CompressedTest.cpp -fsanitize=fuzzer -lz
+% ./a.out
+...
+INFO: A corpus is not provided, starting from an empty corpus
+#2      INITED cov: 2 ft: 3 corp: 1/1b lim: 4 exec/s: 0 rss: 25Mb
+#2097152        pulse  cov: 2 ft: 3 corp: 1/1b lim: 4096 exec/s: 1048576 rss: 25Mb
+#4194304        pulse  cov: 2 ft: 3 corp: 1/1b lim: 4096 exec/s: 1048576 rss: 25Mb
+#8388608        pulse  cov: 2 ft: 3 corp: 1/1b lim: 4096 exec/s: 1198372 rss: 26Mb
+#16777216       pulse  cov: 2 ft: 3 corp: 1/1b lim: 4096 exec/s: 1290555 rss: 26Mb
+#33554432       pulse  cov: 2 ft: 3 corp: 1/1b lim: 4096 exec/s: 1342177 rss: 26Mb
+#67108864       pulse  cov: 2 ft: 3 corp: 1/1b lim: 4096 exec/s: 1398101 rss: 26Mb
+...
+```
+
+No luck. The coverage (`cov: 2`) doesn't grow because no new instrumented code in the target is executed.
+If we also instrument Zlib, maybe, after a long time, the fuzzer will find the
+compressed byte-sequence `FU`.
+
+Now let's run the same target but this time with the custom mutator:
+
+```console
+& clang -O -g CompressedTest.cpp -fsanitize=fuzzer -lz -DCUSTOM_MUTATOR
+% ./a.out
+...
+INFO: A corpus is not provided, starting from an empty corpus
+#2      INITED cov: 2 ft: 3 corp: 1/1b lim: 4 exec/s: 0 rss: 25Mb
+#512    pulse  cov: 2 ft: 3 corp: 1/1b lim: 8 exec/s: 256 rss: 26Mb
+#713    NEW    cov: 3 ft: 4 corp: 2/11b lim: 11 exec/s: 237 rss: 26Mb L: 10/10 MS: 1 Custom-
+#740    NEW    cov: 4 ft: 5 corp: 3/20b lim: 11 exec/s: 246 rss: 26Mb L: 9/10 MS: 3 Custom-EraseBytes-Custom-
+#1024   pulse  cov: 4 ft: 5 corp: 3/20b lim: 11 exec/s: 341 rss: 26Mb
+#2048   pulse  cov: 4 ft: 5 corp: 3/20b lim: 21 exec/s: 682 rss: 26Mb
+#4096   pulse  cov: 4 ft: 5 corp: 3/20b lim: 43 exec/s: 1365 rss: 26Mb
+#4548   NEW    cov: 5 ft: 6 corp: 4/30b lim: 48 exec/s: 1516 rss: 26Mb L: 10/10 MS: 6 ShuffleBytes-Custom-ChangeByte-Custom-InsertByte-Custom-
+#8192   pulse  cov: 5 ft: 6 corp: 4/30b lim: 80 exec/s: 2730 rss: 26Mb
+#16384  pulse  cov: 5 ft: 6 corp: 4/30b lim: 163 exec/s: 5461 rss: 26Mb
+==157112== ERROR: libFuzzer: deadly signal...
+    #7 0x4b024b in LLVMFuzzerTestOneInput CompressedTest.cpp:23:5
+```
+
+Here, every input that is received by the target function
+(`LLVMFuzzerTestOneInput`) is a valid compressed data, that successfully
+ uncompresses. The rest is the usual libFuzzer's behaviour.
+
 
 ## Example: PNG
 
