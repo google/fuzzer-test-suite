@@ -82,8 +82,8 @@ INFO: A corpus is not provided, starting from an empty corpus
 ```
 
 No luck. The coverage (`cov: 2`) doesn't grow because no new instrumented code in the target is executed.
-If we also instrument Zlib, maybe, after a long time, the fuzzer will find the
-compressed byte-sequence `FU`.
+Even if we also instrument Zlib, thus providing more coverage feedback during fuzzing,
+libFuzzer is unlikely to discover the crash.
 
 Now let's run the same target but this time with the custom mutator:
 
@@ -113,13 +113,46 @@ Here, every input that is received by the target function
 
 ## Example: PNG
 
-TODO
+[PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics)
+is a raster-graphics file-format. A PNG file is a sequence of
+length-tag-value-checksum chunks. This data format represents a challenge for
+non-specialized mutation-based fuzzing engines for these reasons:
+* Every chunk contains a CRC checksum
+ (although [libpng](http://www.libpng.org) allows to disable CRC checking with a
+ call to `png_set_crc_action`).
+* Every chunk has a length, and thus a mutation that increases the size of a
+  chunk also needs to change the stored size.
+* Some chunks contain Zlib-compressed data, and the multiple `IDAT` chunks are
+  parts of the same compressed data stream.
+
+Here is an
+[example of a fuzz target for libpng](https://github.com/google/oss-fuzz/blob/master/projects/libpng-proto/libpng_transforms_fuzzer.cc).
+Non-specialized fuzzers could be relatively
+effective for this target when CRC checking is disabled and a comprehensive seed
+corpus is provided. But libFuzzer with
+([a custom mutator example](../libpng-1.2.56/png_mutator.h))
+will be much more effective. As in the previous artificial example, here the
+custom mutator parses the PNG file into an in-memory data structure, mutates it,
+and serializes the mutant back to PNG.
+
+This custom mutator does an extra twist: it randomly inserts and extra chunk
+`fUZz` with a fixed-size value, that can later be interpreted by the fuzz target
+as the instruction for extra actions on the input, to provide more coverage.
+
+The resulting fuzzer achieves much higher coverage starting from an empty corpus
+compared to the same target w/o the custom mutator, even with a good seed
+corpus and interations.
 
 ## Example: Protocol Buffers
 
 TODO
 
-## Example: Protocol buffers As Intermediate Format
+## Example: Protocol Buffers As Intermediate Format
+
+TODO
+
+## Example: Fuzzing Stateful APIs
+
 
 ## Links
 
@@ -130,3 +163,4 @@ TODO
 * [Structure-aware fuzzing for Clang and LLVM with libprotobuf-mutator](https://www.youtube.com/watch?v=U60hC16HEDY)
 * [AFLSmart](https://arxiv.org/pdf/1811.09447.pdf) - combines AFL with Peach
   grammar definitions.
+* [syzkaller](https://github.com/google/syzkaller) - kernel fuzzer
