@@ -121,7 +121,7 @@ non-specialized mutation-based fuzzing engines for these reasons:
  (although [libpng](http://www.libpng.org) allows to disable CRC checking with a
  call to `png_set_crc_action`).
 * Every chunk has a length, and thus a mutation that increases the size of a
-  chunk also needs to change the stored size.
+  chunk also needs to change the stored length.
 * Some chunks contain Zlib-compressed data, and the multiple `IDAT` chunks are
   parts of the same compressed data stream.
 
@@ -129,9 +129,9 @@ Here is an
 [example of a fuzz target for libpng](https://github.com/google/oss-fuzz/blob/master/projects/libpng-proto/libpng_transforms_fuzzer.cc).
 Non-specialized fuzzers could be relatively
 effective for this target when CRC checking is disabled and a comprehensive seed
-corpus is provided. But libFuzzer with
-([a custom mutator example](../libpng-1.2.56/png_mutator.h))
-will be much more effective. As in the previous artificial example, here the
+corpus is provided. But libFuzzer with a custom mutator
+([example](../libpng-1.2.56/png_mutator.h))
+will be much more effective. The
 custom mutator parses the PNG file into an in-memory data structure, mutates it,
 and serializes the mutant back to PNG.
 
