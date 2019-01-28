@@ -212,12 +212,16 @@ When fuzzing a data format `Foo` with LPM, these steps need to be made:
 Below we discuss several real-life examples of this approach.
 
 ### Example: SQLite
-TODO: 
+TODO: add links, 1-2 paragraphs description.
 
 https://chromium.googlesource.com/chromium/src/third_party/+/refs/heads/master/sqlite/fuzz/sql_query_grammar.proto
 https://chromium.googlesource.com/chromium/src/third_party/+/refs/heads/master/sqlite/fuzz/sql_query_proto_to_string.cc
 
-### Example: TODO
+### Example: Chrome IPC Fuzzer
+
+TODO: add links, 1-2 paragraphs description.
+
+* [Attacking Chrome IPC: Reliably finding bugs to escape the Chrome sandbox](https://media.ccc.de/v/35c3-9579-attacking_chrome_ipc)
 
 ## Example: Fuzzing Stateful APIs
 
@@ -226,7 +230,6 @@ https://chromium.googlesource.com/chromium/src/third_party/+/refs/heads/master/s
 
 * [libprotobuf-mutator](https://github.com/google/libprotobuf-mutator) -
   Mutator for protobufs.
-* [Attacking Chrome IPC: Reliably finding bugs to escape the Chrome sandbox](https://media.ccc.de/v/35c3-9579-attacking_chrome_ipc)
 * [Adventures in Fuzzing Instruction Selection](https://www.youtube.com/watch?v=UBbQ_s6hNgg&t=979s)
 * [Structure-aware fuzzing for Clang and LLVM with libprotobuf-mutator](https://www.youtube.com/watch?v=U60hC16HEDY)
 * [AFLSmart](https://arxiv.org/pdf/1811.09447.pdf) - combines AFL with Peach
