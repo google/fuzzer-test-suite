@@ -145,16 +145,84 @@ corpus and interations.
 
 ## Example: Protocol Buffers
 
-TODO
+Interface Definition Languages (IDLs), such as
+[Protocol Buffers](https://developers.google.com/protocol-buffers/) (aka protobufs),
+[Mojo](https://chromium.googlesource.com/chromium/src/+/master/mojo/README.md),
+[FIDL](https://fuchsia.googlesource.com/docs/+/master/development/languages/fidl/README.md),
+or [Thrift](https://thrift.apache.org/)
+are all good examples of highly structured input types that are hard to fuzz
+with generic mutation-based fuzzers.
 
-## Example: Protocol Buffers As Intermediate Format
+Structure-aware fuzzing for IDLs is possible with libFuzzer using custom
+mutators. One such mutator is implemented for protobufs:
+[libprotobuf-mutator](https://github.com/google/libprotobuf-mutator) (aka LPM).
 
-TODO
+Let's look at the
+[example proto definition](https://github.com/google/libprotobuf-mutator/blob/master/examples/libfuzzer/libfuzzer_example.proto)
+and the corresponding
+[fuzz target](https://github.com/google/libprotobuf-mutator/blob/master/examples/libfuzzer/libfuzzer_example.cc).
+
+```protobuf
+message Msg {
+  optional float optional_float = 1;
+  optional uint64 optional_uint64 = 2;
+  optional string optional_string = 3;
+}
+```
+
+```cpp
+DEFINE_PROTO_FUZZER(const libfuzzer_example::Msg& message) {
+  // Emulate a bug.
+  if (message.optional_string() == "FooBar" &&
+      message.optional_uint64() > 100 &&
+      !std::isnan(message.optional_float()) &&
+      std::fabs(message.optional_float()) > 1000 &&
+      std::fabs(message.optional_float()) < 1E10) {
+    abort();
+  }
+}
+
+```
+
+Here the crash will happen if the 3 fields of the message have specific values.
+
+Note that LPM provides a convenience macro `DEFINE_PROTO_FUZZER` to define a
+fuzz target that directly consumes a protobuf message.
+
+Here are some real life examples of fuzzing protobuf-based APIs with libFuzzer
+and LPM:
+* [config_fuzz_test](https://github.com/envoyproxy/envoy/blob/568b2573341151b2d9f3c7e7db6ebb33380029c8/test/server/config_validation/config_fuzz_test.cc)
+fuzzes the [Envoy](https://github.com/envoyproxy/envoy) configuration API.
+* TODO
+
+## Protocol Buffers As Intermediate Format
+
+Protobufs provide a convenient way to serialize structured data,
+and LPM provides an easy way to mutate protobufs for structure-aware fuzzing.
+Thus, it is tempting to use libFuzzer+LPM for APIs that consume structured data
+other than protobufs.
+
+When fuzzing a data format `Foo` with LPM, these steps need to be made:
+* Describe `Foo` as a protobuf message, say `FooProto`. Precise mapping from Foo
+  to protobufs may not be possible, so `FooProto` may describe a subset of a superset of `Foo`.
+* Implement a `FooProto` => `Foo` converter.
+* Optionally implement a `Foo => FooProto`. This is more important if an
+  extensive corpus of `Foo` inputs is available.
+
+Below we discuss several real-life examples of this approach.
+
+### Example: SQLite
+TODO: 
+
+https://chromium.googlesource.com/chromium/src/third_party/+/refs/heads/master/sqlite/fuzz/sql_query_grammar.proto
+https://chromium.googlesource.com/chromium/src/third_party/+/refs/heads/master/sqlite/fuzz/sql_query_proto_to_string.cc
+
+### Example: TODO
 
 ## Example: Fuzzing Stateful APIs
 
 
-## Links
+## Related Links
 
 * [libprotobuf-mutator](https://github.com/google/libprotobuf-mutator) -
   Mutator for protobufs.
