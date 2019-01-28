@@ -630,6 +630,10 @@ will be reported during the run (with reproducers dumped on disk) but will
 not cause the process to exit. Use `-report_slow_units=N` to set the threshold
 for *just slow* units.
 
+## Advanced Topics
+
+* [Structure-Aware Fuzzing](structure-aware-fuzzing.md)
+
 ## Related links
 * [Blog post: "Guided in-process fuzzing of Chrome components"](https://security.googleblog.com/2016/08/guided-in-process-fuzzing-of-chrome.html)
 * OSS-FUZZ, a pilot of continuous-fuzzing-as-a-service for open source: https://github.com/google/oss-fuzz
