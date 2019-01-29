@@ -348,7 +348,26 @@ change in the target. They are also not human readable, which makes analysis of
 such bugs complicated.
 
 
-### Example TODO
+### Example: Envoy Header Map Fuzzer
+One of the [Envoy](https://github.com/envoyproxy/envoy)'s fuzz targets
+uses a different approach to fuzzing stateful APIs: it encodes the actions using a
+[custom protobuf message type](https://github.com/envoyproxy/envoy/blob/master/test/common/http/conn_manager_impl_fuzz.proto),
+and implements a
+[player for this type](https://github.com/envoyproxy/envoy/blob/master/test/common/http/header_map_impl_fuzz_test.cc).
+
+This particular fuzz target has discovered at least one security regression:
+[bug](https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=10038),
+[fix](https://github.com/envoyproxy/envoy/pull/4245).
+The [reproducer input for this bug](https://oss-fuzz.com/download?testcase_id=5689833624698880)
+is a human-readable file with the message text.
+
+Using protos for fuzzing stateful APIs might be a bit slower and a bit more
+complicated than fuzzing action sequences encoded as a sequence of bytes (as
+described [above](#grpc-api-fuzzer). But this approach is more flexible and
+maintanable since the protobuf type is easier to extend and to understand
+than a custom byte encoding.
+
+
 ### Example TODO
 
 
