@@ -355,6 +355,13 @@ uses a different approach to fuzzing stateful APIs: it encodes the actions using
 and implements a
 [player for this type](https://github.com/envoyproxy/envoy/blob/master/test/common/http/header_map_impl_fuzz_test.cc).
 
+```cpp
+DEFINE_PROTO_FUZZER(const test::common::http::HeaderMapImplFuzzTestCase& input) { ...
+  for (int i = 0; i < input.actions().size(); ++i) { ...
+    const auto& action = input.actions(i);           ...
+    switch (action.action_selector_case()) {         ...
+```
+
 This particular fuzz target has discovered at least one security regression:
 [bug](https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=10038),
 [fix](https://github.com/envoyproxy/envoy/pull/4245).
