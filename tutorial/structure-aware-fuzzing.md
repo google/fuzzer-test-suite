@@ -54,8 +54,8 @@ The custom mutator is a user-defined function with a fixed signature that does
 the following:
   * Parses the input data according to the specified language grammar (in our
     example, it uncompresses the data).
-    * If parsing fails, it returns a syntactically correct dummy input (in our
-      case, it returns a compressed byte sequence `Hi`).
+    * If parsing fails, it returns a syntactically correct dummy input
+      (here, it returns a compressed byte sequence `Hi`).
   * Mutates the in-memory parsed representation of the input (in our case,
     uncompressed raw data). The custom mutator *may* request libFuzzer to
     mutate some part of the raw data
