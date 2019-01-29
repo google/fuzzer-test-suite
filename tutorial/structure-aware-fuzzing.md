@@ -14,7 +14,7 @@ Coverage-guided mutation-based fuzzers, like
 [AFL](http://lcamtuf.coredump.cx/afl/)
 are not restricted to a single input type nor they require grammar definitions,
 which is not only their strength, but also a weakness:
-they are inefficient for fuzzing complicated inputs types because
+they are inefficient for fuzzing complicated input types because
 any traditional mutation (e.g. bit flipping) leads to an invalid input
 rejected by the target API in the early stage of parsing.
 
