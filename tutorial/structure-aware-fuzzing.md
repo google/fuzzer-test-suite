@@ -45,8 +45,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
 }
 ```
 
-Very simple target, yet the traditional universal fuzzers, libFuzzer included, have
-virtually not chance of discovering the crash because they will mutate
+Very simple target, yet the traditional universal fuzzers, libFuzzer included,
+have virtually no chance of discovering the crash because they will mutate
 compressed data causing the mutations to be invalid inputs for `uncompress`.
 
 This is where **custom mutators**, or libFuzzer plugins, come into play.
@@ -297,7 +297,7 @@ DEFINE_BINARY_PROTO_FUZZER(const SQLQueries& sql_queries) {
 }
 ```
 
-With luck, libFuzzer and LPM will be able to create many interesting CREATE TABLE statements, with varying numbers of columns, table constraints, and other attributes. This basic definition of SQLQueries can be expanded to work with other SQL statements like INSERT or SELECT, and with care we can cause these other statements to insert or select from the tables created by the random CREATE TABLE statements. Without defining this protobuf structure, it's very difficult for a fuzzer to be able to generate valid CREATE TABLE statements that actually create tables without causing parsing errors--especially tables with valid table constraints.
+With luck, libFuzzer and LPM will be able to create many interesting CREATE TABLE statements, with varying numbers of columns, table constraints, and other attributes. This basic definition of `SQLQueries` can be expanded to work with other SQL statements like INSERT or SELECT, and with care we can cause these other statements to insert or select from the tables created by the random CREATE TABLE statements. Without defining this protobuf structure, it's very difficult for a fuzzer to be able to generate valid CREATE TABLE statements that actually create tables without causing parsing errors--especially tables with valid table constraints.
 
 ### Example: Chrome IPC Fuzzer
 
@@ -388,10 +388,11 @@ research topic.
 
 * [libprotobuf-mutator](https://github.com/google/libprotobuf-mutator) -
   Mutator for protobufs.
+* [Getting Started with libprotobuf-mutator in Chromium](https://chromium.googlesource.com/chromium/src/+/master/testing/libfuzzer/libprotobuf-mutator.md).
 * [Adventures in Fuzzing Instruction Selection](https://www.youtube.com/watch?v=UBbQ_s6hNgg&t=979s):
   using libFuzzer with a custom mutator for LLVM IR to find bugs in LLVM
   optimization passes.
-* [Structure-aware fuzzing for Clang and LLVM with libprotobuf-mutator](https://www.youtube.com/watch?v=U60hC16HEDY)
+* [Structure-aware fuzzing for Clang and LLVM with libprotobuf-mutator](https://www.youtube.com/watch?v=U60hC16HEDY).
 * [AFLSmart](https://arxiv.org/pdf/1811.09447.pdf) - combines AFL with Peach
   grammar definitions.
-* [syzkaller](https://github.com/google/syzkaller) - kernel fuzzer
+* [syzkaller](https://github.com/google/syzkaller) - kernel fuzzer.
