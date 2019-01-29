@@ -393,6 +393,9 @@ research topic.
   using libFuzzer with a custom mutator for LLVM IR to find bugs in LLVM
   optimization passes.
 * [Structure-aware fuzzing for Clang and LLVM with libprotobuf-mutator](https://www.youtube.com/watch?v=U60hC16HEDY).
-* [AFLSmart](https://arxiv.org/pdf/1811.09447.pdf) - combines AFL with Peach
-  grammar definitions.
+* [AFLSmart](https://arxiv.org/pdf/1811.09447.pdf) - It makes AFL
+  input-structure aware by taking in high-level structural representation of
+  seed files. This avoids random bit-flip mutations as in AFL, thereby rendering
+  coverage based greybox fuzzing to be highly effective in testing applications
+  processing structured file formats such as PDF, PNG WAV and so on.
 * [syzkaller](https://github.com/google/syzkaller) - kernel fuzzer.
