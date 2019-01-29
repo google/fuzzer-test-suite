@@ -370,12 +370,9 @@ is a human-readable file with the message text.
 
 Using protos for fuzzing stateful APIs might be a bit slower and a bit more
 complicated than fuzzing action sequences encoded as a sequence of bytes (as
-described [above](#grpc-api-fuzzer). But this approach is more flexible and
+described [above](#example-grpc-api-fuzzer)). But this approach is more flexible and
 maintanable since the protobuf type is easier to extend and to understand
 than a custom byte encoding.
-
-
-### Example TODO
 
 
 ## Related Links
