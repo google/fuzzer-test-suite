@@ -370,7 +370,7 @@ The [reproducer input for this bug](https://oss-fuzz.com/download?testcase_id=56
 is a human-readable file with the message text.
 
 Using protos for fuzzing stateful APIs might be a bit slower and a bit more
-complicated than fuzzing action sequences encoded as a sequence of bytes (as
+complicated than fuzzing action traces encoded as a sequence of bytes (as
 described [above](#example-grpc-api-fuzzer)). But this approach is more flexible and
 maintanable since the protobuf type is easier to extend and to understand
 than a custom byte encoding.
