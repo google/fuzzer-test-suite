@@ -113,11 +113,11 @@ INFO: A corpus is not provided, starting from an empty corpus
 #2      INITED cov: 2 ft: 3 corp: 1/1b lim: 4 exec/s: 0 rss: 25Mb
 #512    pulse  cov: 2 ft: 3 corp: 1/1b lim: 8 exec/s: 256 rss: 26Mb
 #713    NEW    cov: 3 ft: 4 corp: 2/11b lim: 11 exec/s: 237 rss: 26Mb L: 10/10 MS: 1 Custom-
-#740    NEW    cov: 4 ft: 5 corp: 3/20b lim: 11 exec/s: 246 rss: 26Mb L: 9/10 MS: 3 Custom-EraseBytes-Custom-
+#740    NEW    cov: 4 ft: 5 corp: 3/20b lim: 11 exec/s: 246 rss: 26Mb L: 9/10 MS: 3 Custom-EraseBytes-Cus
 #1024   pulse  cov: 4 ft: 5 corp: 3/20b lim: 11 exec/s: 341 rss: 26Mb
 #2048   pulse  cov: 4 ft: 5 corp: 3/20b lim: 21 exec/s: 682 rss: 26Mb
 #4096   pulse  cov: 4 ft: 5 corp: 3/20b lim: 43 exec/s: 1365 rss: 26Mb
-#4548   NEW    cov: 5 ft: 6 corp: 4/30b lim: 48 exec/s: 1516 rss: 26Mb L: 10/10 MS: 6 ShuffleBytes-Custom-ChangeByte-Custom-InsertByte-Custom-
+#4548   NEW    cov: 5 ft: 6 corp: 4/30b lim: 48 exec/s: 1516 rss: 26Mb L: 10/10 MS: 6 ShuffleBytes-Custom
 #8192   pulse  cov: 5 ft: 6 corp: 4/30b lim: 80 exec/s: 2730 rss: 26Mb
 #16384  pulse  cov: 5 ft: 6 corp: 4/30b lim: 163 exec/s: 5461 rss: 26Mb
 ==157112== ERROR: libFuzzer: deadly signal...
