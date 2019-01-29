@@ -382,7 +382,7 @@ a sequence of API calls to the backend and also handle any requests it makes. Th
 Chrome code facilitates this testing by letting us override the source of network
 data to our local fuzzed inputs.
 
-Here is a snippet from the protobuf specification:
+Here is a snippet from our fuzzer protobuf specification:
 
 ```protobuf
 message Session {
@@ -478,11 +478,13 @@ To design the `DoRequest` message required reviewing the AppCache code manually.
 The features that affect control flow in the AppCache backend are the HTTP codes,
 headers indicating whether or not to cache the response, the manifest content for
 manifest requests, and the URL which was requested. We store the URL as part of the
-message to handle two possible situations: we have a response ready immediately, or
-we respond to a pending request. The second case was needed for a Chrome sandbox
-escape bug, which is why we model it here.
+message to handle two possible situations: either we precache a response to be ready
+immediately as soon as the request comes in, or we respond to a pending request.
+The second case was needed for a Chrome sandbox escape bug, which is why we model
+it here.
 
-The C++ looks like this:
+The C++ looks like this. Note that it uses the Session message as the fundamental
+fuzzed message type:
 ```cpp
 
 DEFINE_BINARY_PROTO_FUZZER(const fuzzing::proto::Session& session) {
@@ -525,7 +527,7 @@ requests.
 You can view the full source of the protobuf component [here](https://cs.chromium.org/chromium/src/content/browser/appcache/appcache_fuzzer.proto) and
 the full source of the C++ component [here](https://cs.chromium.org/chromium/src/content/browser/appcache/appcache_fuzzer.cc).
 
-Please see the talk below for more context if needed.
+More details:
 
 * [Attacking Chrome IPC: Reliably finding bugs to escape the Chrome sandbox](https://media.ccc.de/v/35c3-9579-attacking_chrome_ipc)
 
