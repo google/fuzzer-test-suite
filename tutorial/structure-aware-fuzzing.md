@@ -212,10 +212,74 @@ When fuzzing a data format `Foo` with LPM, these steps need to be made:
 Below we discuss several real-life examples of this approach.
 
 ### Example: SQLite
-TODO: add links, 1-2 paragraphs description.
 
-https://chromium.googlesource.com/chromium/src/third_party/+/refs/heads/master/sqlite/fuzz/sql_query_grammar.proto
-https://chromium.googlesource.com/chromium/src/third_party/+/refs/heads/master/sqlite/fuzz/sql_query_proto_to_string.cc
+In Chromium, the SQLite database library backs many features, including WebSQL, which exposes SQLite to arbitrary websites and makes SQLite an interesting target for malicious websites. Because SQLite of course uses the highly structured, text-based SQL language, it is a good candidate for structure-aware fuzzing. Furthermore, it has a [very good description](https://www.sqlite.org/lang.html) of the language it consumes.
+
+The first step is to convert this grammar into the protobuf format, which can be seen [in the Chromium source tree](https://chromium.googlesource.com/chromium/src/third_party/+/refs/heads/master/sqlite/fuzz/sql_query_grammar.proto). As a quick, simplified example, if we only wanted to fuzz the CREATE TABLE sql statement, we could make a protobuf grammar as such:
+
+```protobuf
+message SQLQueries {
+    repeated CreateTable queries = 1;
+}
+
+message CreateTable {
+    optional TempModifier temp_table = 1;
+    required Table table = 2;
+    required ColumnDef col_def = 3;
+    repeated ColumnDef extra_col_defs = 4;
+    repeated TableConstraint table_constraints = 5;
+    required bool without_rowid = 6;
+}
+
+// Further definitions of TempModifier, Table, ColumnDef, and TableConstraint.
+```
+
+Then, we write the C++ required to convert the structured protobufs into actual textual SQL queries (the full version can be seen [in the Chromium source tree](https://chromium.googlesource.com/chromium/src/third_party/+/refs/heads/master/sqlite/fuzz/sql_query_proto_to_string.cc)):
+```cpp
+// Converters for TempModifier, Table, ColumnDef, and TableConstraint go here.
+
+std::string CreateTableToString(const CreateTable& ct) {
+    std::string ret("CREATE TABLE ");
+    if (ct.has_temp_table()) {
+        ret += TempModifierToString(ct.temp_table());
+        ret += " ";
+    }
+    ret += TableToString(ct.table());
+    ret += "(";
+    ret += ColumnDefToString(ct.col_def());
+    for (int i = 0; i < ct.extra_col_defs_size(); i++) {
+        ret += ", ";
+        ret += ColumnDefToString(ct.extra_col_defs(i));
+    }
+    for (int i = 0; i < ct.table_constraints_size(); i++) {
+        ret += ", ";
+        ret += TableConstraintToString(ct.table_constraints(i));
+    }
+    ret += ") ";
+    if (ct.without_rowid())
+        ret += "WITHOUT ROWID ";
+    return ret;
+}
+
+std::string SQLQueriesToString(const SQLQueries& queries) {
+    std::string queries;
+    for (int i = 0; i < queries.queries_size(); i++) {
+        queries += CreateTableToString(queries.queries(i));
+        queries += ";\n";
+    }
+    return queries;
+}
+```
+
+And finally, we write our fuzz target:
+```cpp
+DEFINE_BINARY_PROTO_FUZZER(const SQLQueries& sql_queries) {
+    std::string queries = SQLQueriesToString(sql_queries);
+    sql_fuzzer::RunSQLQueries(SQLQueriesToString(queries)); // Helper that passes our queries to sqlite library to execute
+}
+```
+
+With luck, libfuzzer and LPM will be able to create many interesting CREATE TABLE statements, with varying numbers of columns, table constraints, and other attributes. This basic definition of SQLQueries can be expanded to work with other SQL statements like INSERT or SELECT, and with care we can cause these other statements to insert or select from the tables created by the random CREATE TABLE statements. Without defining this protobuf structure, it's very difficult for a fuzzer to be able to generate valid CREATE TABLE statements that actually create tables without causing parsing errors--especially tables with valid table constraints.
 
 ### Example: Chrome IPC Fuzzer
 
