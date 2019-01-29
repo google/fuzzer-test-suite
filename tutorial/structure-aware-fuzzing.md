@@ -62,6 +62,24 @@ the following:
     via the function `LLVMFuzzerMutate`.
   * Serializes the in-memory representation (in our case, compresses it).
 
+```cpp
+extern "C" size_t LLVMFuzzerCustomMutator(uint8_t *Data, size_t Size,
+                                          size_t MaxSize, unsigned int Seed) {
+  uint8_t Uncompressed[100];
+  size_t UncompressedLen = sizeof(Uncompressed);
+  size_t CompressedLen = MaxSize;
+  if (Z_OK != uncompress(Uncompressed, &UncompressedLen, Data, Size)) {
+    // The data didn't uncompress. Return a dummy...
+  }
+  UncompressedLen =
+      LLVMFuzzerMutate(Uncompressed, UncompressedLen, sizeof(Uncompressed));
+  if (Z_OK != compress(Data, &CompressedLen, Uncompressed, UncompressedLen))
+    return 0;
+  return CompressedLen;
+}
+
+```
+
 Let's run
 [our example](https://github.com/llvm-mirror/compiler-rt/blob/master/test/fuzzer/CompressedTest.cpp).
 First, let's compile the target alone, without the custom mutator:
