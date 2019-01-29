@@ -350,7 +350,7 @@ such bugs complicated.
 
 ### Example: Envoy Header Map Fuzzer
 One of the [Envoy](https://github.com/envoyproxy/envoy)'s fuzz targets
-uses a different approach to fuzzing stateful APIs: it encodes the actions using a
+uses a different approach to fuzzing stateful APIs: it encodes the sequence of actions (or a trace) using a
 [custom protobuf message type](https://github.com/envoyproxy/envoy/blob/master/test/common/http/conn_manager_impl_fuzz.proto),
 and implements a
 [player for this type](https://github.com/envoyproxy/envoy/blob/master/test/common/http/header_map_impl_fuzz_test.cc).
