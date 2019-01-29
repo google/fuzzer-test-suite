@@ -372,8 +372,18 @@ is a human-readable file with the message text.
 Using protos for fuzzing stateful APIs might be a bit slower and a bit more
 complicated than fuzzing action traces encoded as a sequence of bytes (as
 described [above](#example-grpc-api-fuzzer)). But this approach is more flexible and
-maintanable since the protobuf type is easier to extend and to understand
+maintainable since the protobuf type is easier to extend and to understand
 than a custom byte encoding.
+
+## Conclusions
+
+Structure-aware fuzzing is one of the "next big things" in
+program state exploration and vulnerability discovery.
+Probably as big as the coverage-guided fuzzing has been since the early 2000s.
+Admittedly, structure-aware fuzzing, at least as described in this document,
+requires substantial manual work for every input type.
+Finding ways to automate structure-aware fuzzing further is becoming a hot
+research topic.
 
 
 ## Related Links
