@@ -279,7 +279,7 @@ DEFINE_BINARY_PROTO_FUZZER(const SQLQueries& sql_queries) {
 }
 ```
 
-With luck, libfuzzer and LPM will be able to create many interesting CREATE TABLE statements, with varying numbers of columns, table constraints, and other attributes. This basic definition of SQLQueries can be expanded to work with other SQL statements like INSERT or SELECT, and with care we can cause these other statements to insert or select from the tables created by the random CREATE TABLE statements. Without defining this protobuf structure, it's very difficult for a fuzzer to be able to generate valid CREATE TABLE statements that actually create tables without causing parsing errors--especially tables with valid table constraints.
+With luck, libFuzzer and LPM will be able to create many interesting CREATE TABLE statements, with varying numbers of columns, table constraints, and other attributes. This basic definition of SQLQueries can be expanded to work with other SQL statements like INSERT or SELECT, and with care we can cause these other statements to insert or select from the tables created by the random CREATE TABLE statements. Without defining this protobuf structure, it's very difficult for a fuzzer to be able to generate valid CREATE TABLE statements that actually create tables without causing parsing errors--especially tables with valid table constraints.
 
 ### Example: Chrome IPC Fuzzer
 
@@ -289,8 +289,48 @@ TODO: add links, 1-2 paragraphs description.
 
 ## Fuzzing Stateful APIs
 
+So far we have discussed fuzzing for APIs that consume a single structured input.
+Some APIs could be very different. An API may not consume data directly at all,
+and it could consist of many functions that work only when the API is in a certain
+state. Such **stateful APIs** are common for e.g. networking software.
+Fuzzing with protobufs could be useful here as well. All you need is to define a
+protobuf message describing a sequence of API calls and implement a function to
+*play* the message.
+
 TODO
 
+### Example: gRPC API Fuzzer
+The
+[gRPC](https://github.com/grpc/grpc)'s
+[API Fuzzer](https://github.com/grpc/grpc/blob/86953f66948aaf49ecda56a0b9f87cdcf4b3859a/test/core/end2end/fuzzers/api_fuzzer.cc)
+is actually not using libFuzzer's custom mutator or protobufs.
+But it's still a good and simple example of fuzzing a stateful API.
+The fuzzer consumes an array of bytes and every individual byte is
+interpreted as a single call to a specific API function
+(in some cases, following bytes are used as parameters).
+
+```cpp
+    switch (grpc_fuzzer_get_next_byte(&inp)) {
+      default:
+      // terminate on bad bytes
+      case 0: {
+        grpc_event ev = grpc_completion_queue_next(...
+      case 1: {
+        g_now = gpr_time_add(...
+```
+
+This fuzz target is compatible with any mutation-based fuzzing engine
+and has resulted in over
+[80 bug reports](https://bugs.chromium.org/p/oss-fuzz/issues/list?can=1&q=label%3AProj-grpc+api_fuzzer+&colspec=ID+Type+Component+Status+Proj+Reported+Owner+Summary&cells=ids),
+some discovered with libFuzzer and some with AFL.
+
+However, a drawback of this approach is that the inputs created by the fuzzer are
+meaningless outside of the fuzz target itself and will stop working with a slight
+change in the target. They are also not human readable, which makes analysis of
+such bugs complicated.
+
+
+### Example TODO
 ### Example TODO
 
 
