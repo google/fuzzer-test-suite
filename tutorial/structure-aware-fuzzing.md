@@ -338,7 +338,9 @@ such bugs complicated.
 
 * [libprotobuf-mutator](https://github.com/google/libprotobuf-mutator) -
   Mutator for protobufs.
-* [Adventures in Fuzzing Instruction Selection](https://www.youtube.com/watch?v=UBbQ_s6hNgg&t=979s)
+* [Adventures in Fuzzing Instruction Selection](https://www.youtube.com/watch?v=UBbQ_s6hNgg&t=979s):
+  using libFuzzer with a custom mutator for LLVM IR to find bugs in LLVM
+  optimization passes.
 * [Structure-aware fuzzing for Clang and LLVM with libprotobuf-mutator](https://www.youtube.com/watch?v=U60hC16HEDY)
 * [AFLSmart](https://arxiv.org/pdf/1811.09447.pdf) - combines AFL with Peach
   grammar definitions.
