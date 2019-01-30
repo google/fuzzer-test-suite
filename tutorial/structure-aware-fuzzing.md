@@ -19,7 +19,7 @@ any traditional mutation (e.g. bit flipping) leads to an invalid input
 rejected by the target API in the early stage of parsing.
 
 With some additional effort, however, libFuzzer can be turned into a
-grammar-aware (or, **structure-aware**) fuzzing engine for a specific input
+grammar-aware (i.e. **structure-aware**) fuzzing engine for a specific input
 type.
 
 ## Example: Compression
@@ -126,13 +126,14 @@ INFO: A corpus is not provided, starting from an empty corpus
 
 Here, every input that is received by the target function
 (`LLVMFuzzerTestOneInput`) is valid compressed data and successfully
-uncompresses. The rest is libFuzzer's usual behavior.
+uncompresses. With that simple change, libFuzzer's usual mutations become
+significantly more effective, and the crash can be found.
 
 
 ## Example: PNG
 
 [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics)
-is a raster graphics filelformat. A PNG file is a sequence of
+is a raster graphics file format. A PNG file is a sequence of
 length-tag-value-checksum chunks. This data format represents a challenge for
 non-specialized mutation-based fuzzing engines for these reasons:
 * Every chunk contains a CRC checksum
@@ -154,8 +155,8 @@ mutator parses the PNG file into an in-memory data structure, mutates it,
 and serializes the mutant back to PNG.
 
 This custom mutator also does an extra twist: it randomly inserts a special
-`fUZz` chunk that the fuzz target may later perform extra actions on to provide
-more coverage.
+`fUZz` chunk that the fuzz target may later perform additional mutations on to
+provide more coverage.
 
 The resulting fuzzer achieves higher coverage starting from an empty corpus
 than the same target does without the custom mutator, even with a good seed
@@ -222,7 +223,7 @@ other than protobufs.
 
 When fuzzing a data format `Foo` with LPM, these steps need to be made:
 * Describe `Foo` as a protobuf message, say `FooProto`. Precise mapping from Foo
-  to protobufs may not be possible, so `FooProto` may describe a subset or superset of `Foo`.
+  to protobufs may not be possible, so `FooProto` may describe a subset of a superset of `Foo`.
 * Implement a `FooProto` => `Foo` converter.
 * Optionally implement a `Foo => FooProto` converter. This is more important if
   there's already an extensive corpus of `Foo` inputs you'd like to use.
@@ -297,7 +298,7 @@ DEFINE_BINARY_PROTO_FUZZER(const SQLQueries& sql_queries) {
 }
 ```
 
-With luck, libFuzzer and LPM will be able to create many interesting `CREATE TABLE` statements, with varying numbers of columns, table constraints, and other attributes. This basic definition of `SQLQueries` can be expanded to work with other SQL statements like `INSERT` or `SELECT`, and with care we can cause these other statements to insert or select from the tables created by the random `CREATE TABLE` statements. Without defining this protobuf structure, it's very difficult for a fuzzer to be able to generate valid `CREATE TABLE` statements that actually create tables without causing parsing errors &mdash; especially tables with valid table constraints.
+With luck, libFuzzer and LPM will be able to create many interesting `CREATE TABLE` statements, with varying numbers of columns, table constraints, and other attributes. This basic definition of `SQLQueries` can be expanded to work with other SQL statements like `INSERT` or `SELECT`, and with care we can cause these other statements to insert or select from the tables created by the random `CREATE TABLE` statements. Without defining this protobuf structure, it's very difficult for a fuzzer to be able to generate valid `CREATE TABLE` statements that actually create tables without causing parsing errors&mdash; especially tables with valid table constraints.
 
 ## Fuzzing Stateful APIs
 
