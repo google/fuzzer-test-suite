@@ -1,36 +1,36 @@
 # Structure-Aware Fuzzing with libFuzzer
 
-Generation-based fuzzers are fuzzers created specifically for a single input type.
-They generate inputs according to a pre-defined grammar.
-Good examples of such fuzzers are
+Generation-based fuzzers usually target a single input type, generating inputs
+according to a pre-defined grammar. Good examples of such fuzzers are
 [csmith](https://embed.cs.utah.edu/csmith/) (generates valid C programs)
 and
 [Peach](https://www.peach.tech/)
 (generates inputs of any type, but requires such a
 type to be expressed as a grammar definition).
 
-Coverage-guided mutation-based fuzzers, like
+Coverage-guided mutation-based fuzzers, such as
 [libFuzzer](http://libfuzzer.info) or
-[AFL](http://lcamtuf.coredump.cx/afl/)
-are not restricted to a single input type nor they require grammar definitions,
-which is not only their strength, but also a weakness:
-they are inefficient for fuzzing complicated input types because
+[AFL](http://lcamtuf.coredump.cx/afl/),
+are not restricted to a single input type and do not require grammar
+definitions.  Thus, mutation-based fuzzers are generally easier to set up and
+use than their generation-based counterparts.  But the lack of an input grammar
+can also result in inefficient fuzzing for complicated input types, where
 any traditional mutation (e.g. bit flipping) leads to an invalid input
 rejected by the target API in the early stage of parsing.
 
-However, with some additional effort libFuzzer can be turned into a
-grammar-aware (or, **structure-aware**) fuzzing engine for a specific input
+With some additional effort, however, libFuzzer can be turned into a
+grammar-aware (i.e. **structure-aware**) fuzzing engine for a specific input
 type.
 
 ## Example: Compression
 
-Let us start from a simple example, that demonstrates most of the aspects of
+Let us start from a simple example that demonstrates most aspects of
 structure-aware fuzzing with libFuzzer.
 
-Take a look at the
-[example fuzz target](https://github.com/llvm-mirror/compiler-rt/blob/master/test/fuzzer/CompressedTest.cpp)
-that consumes Zlib-compressed data, uncompresses
-it, and crashes if the first two bytes of the uncompressed input are 'F' and 'U'.
+Take a look at this
+[example fuzz target](https://github.com/llvm-mirror/compiler-rt/blob/master/test/fuzzer/CompressedTest.cpp),
+which consumes Zlib-compressed data, uncompresses it, and crashes if the first
+two bytes of the uncompressed input are 'F' and 'U'.
 
 ```cpp
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
@@ -45,22 +45,22 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
 }
 ```
 
-Very simple target, yet the traditional universal fuzzers, libFuzzer included,
-have virtually no chance of discovering the crash because they will mutate
-compressed data causing the mutations to be invalid inputs for `uncompress`.
+This is a very simple target, yet traditional universal fuzzers (including
+libFuzzer) have virtually no chance of discovering the crash.  Why?  Because
+their mutatations will operate on the compressed data, causing virtually all
+generated inputs to be invalid for `uncompress`.
 
-This is where **custom mutators**, or libFuzzer plugins, come into play.
-The custom mutator is a user-defined function with a fixed signature that does
+This is where **custom mutators** (a.k.a. libFuzzer plugins) come into play.
+A custom mutator is a user-defined function with a fixed signature that does
 the following:
   * Parses the input data according to the specified language grammar (in our
     example, it uncompresses the data).
     * If parsing fails, it returns a syntactically correct dummy input
       (here, it returns a compressed byte sequence `Hi`).
-  * Mutates the in-memory parsed representation of the input (in our case,
+  * Mutates the parsed representation of the input (in our case,
     uncompressed raw data). The custom mutator *may* request libFuzzer to
-    mutate some part of the raw data
-    via the function `LLVMFuzzerMutate`.
-  * Serializes the in-memory representation (in our case, compresses it).
+    mutate some part of the raw data via the function `LLVMFuzzerMutate`.
+  * Serializes the mutated representation (in our case, compresses it).
 
 ```cpp
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t *Data, size_t Size,
@@ -82,7 +82,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t *Data, size_t Size,
 
 Let's run
 [our example](https://github.com/llvm-mirror/compiler-rt/blob/master/test/fuzzer/CompressedTest.cpp).
-First, let's compile the target alone, without the custom mutator:
+First, let's compile the target without the custom mutator:
 
 ```console
 % clang -O -g CompressedTest.cpp -fsanitize=fuzzer -lz
@@ -125,46 +125,47 @@ INFO: A corpus is not provided, starting from an empty corpus
 ```
 
 Here, every input that is received by the target function
-(`LLVMFuzzerTestOneInput`) is a valid compressed data, that successfully
- uncompresses. The rest is the usual libFuzzer's behaviour.
+(`LLVMFuzzerTestOneInput`) is valid compressed data and successfully
+uncompresses. With that simple change, libFuzzer's usual mutations become
+significantly more effective, and the crash can be found.
 
 
 ## Example: PNG
 
 [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics)
-is a raster-graphics file-format. A PNG file is a sequence of
+is a raster graphics file format. A PNG file is a sequence of
 length-tag-value-checksum chunks. This data format represents a challenge for
 non-specialized mutation-based fuzzing engines for these reasons:
 * Every chunk contains a CRC checksum
- (although [libpng](http://www.libpng.org) allows to disable CRC checking with a
+ (although [libpng](http://www.libpng.org) allows disabling CRC checking with a
  call to `png_set_crc_action`).
 * Every chunk has a length, and thus a mutation that increases the size of a
   chunk also needs to change the stored length.
-* Some chunks contain Zlib-compressed data, and the multiple `IDAT` chunks are
+* Some chunks contain Zlib-compressed data, and multiple `IDAT` chunks are
   parts of the same compressed data stream.
 
 Here is an
 [example of a fuzz target for libpng](https://github.com/google/oss-fuzz/blob/master/projects/libpng-proto/libpng_transforms_fuzzer.cc).
-Non-specialized fuzzers could be relatively
+Non-specialized fuzzers can be relatively
 effective for this target when CRC checking is disabled and a comprehensive seed
 corpus is provided. But libFuzzer with a custom mutator
 ([example](../libpng-1.2.56/png_mutator.h))
-will be much more effective. The
-custom mutator parses the PNG file into an in-memory data structure, mutates it,
+is even more effective. This example
+mutator parses the PNG file into an in-memory data structure, mutates it,
 and serializes the mutant back to PNG.
 
-This custom mutator does an extra twist: it randomly inserts and extra chunk
-`fUZz` with a fixed-size value, that can later be interpreted by the fuzz target
-as the instruction for extra actions on the input, to provide more coverage.
+This custom mutator also does an extra twist: it randomly inserts a special
+`fUZz` chunk that the fuzz target may later perform additional mutations on to
+provide more coverage.
 
-The resulting fuzzer achieves much higher coverage starting from an empty corpus
-compared to the same target w/o the custom mutator, even with a good seed
-corpus and interations.
+The resulting fuzzer achieves higher coverage starting from an empty corpus
+than the same target does without the custom mutator, even with a good seed
+corpus and many more iterations!
 
 ## Example: Protocol Buffers
 
 Interface Definition Languages (IDLs), such as
-[Protocol Buffers](https://developers.google.com/protocol-buffers/) (aka protobufs),
+[Protocol Buffers](https://developers.google.com/protocol-buffers/) (a.k.a. protobufs),
 [Mojo](https://chromium.googlesource.com/chromium/src/+/master/mojo/README.md),
 [FIDL](https://fuchsia.googlesource.com/docs/+/master/development/languages/fidl/README.md),
 or [Thrift](https://thrift.apache.org/)
@@ -173,7 +174,7 @@ with generic mutation-based fuzzers.
 
 Structure-aware fuzzing for IDLs is possible with libFuzzer using custom
 mutators. One such mutator is implemented for protobufs:
-[libprotobuf-mutator](https://github.com/google/libprotobuf-mutator) (aka LPM).
+[libprotobuf-mutator](https://github.com/google/libprotobuf-mutator) (a.k.a. LPM).
 
 Let's look at the
 [example proto definition](https://github.com/google/libprotobuf-mutator/blob/master/examples/libfuzzer/libfuzzer_example.proto)
@@ -224,8 +225,8 @@ When fuzzing a data format `Foo` with LPM, these steps need to be made:
 * Describe `Foo` as a protobuf message, say `FooProto`. Precise mapping from Foo
   to protobufs may not be possible, so `FooProto` may describe a subset of a superset of `Foo`.
 * Implement a `FooProto` => `Foo` converter.
-* Optionally implement a `Foo => FooProto`. This is more important if an
-  extensive corpus of `Foo` inputs is available.
+* Optionally implement a `Foo => FooProto` converter. This is more important if
+  there's already an extensive corpus of `Foo` inputs you'd like to use.
 
 Below we discuss several real-life examples of this approach.
 
@@ -233,7 +234,7 @@ Below we discuss several real-life examples of this approach.
 
 In Chromium, the SQLite database library backs many features, including WebSQL, which exposes SQLite to arbitrary websites and makes SQLite an interesting target for malicious websites. Because SQLite of course uses the highly structured, text-based SQL language, it is a good candidate for structure-aware fuzzing. Furthermore, it has a [very good description](https://www.sqlite.org/lang.html) of the language it consumes.
 
-The first step is to convert this grammar into the protobuf format, which can be seen [in the Chromium source tree](https://chromium.googlesource.com/chromium/src/third_party/+/refs/heads/master/sqlite/fuzz/sql_query_grammar.proto). As a quick, simplified example, if we only wanted to fuzz the CREATE TABLE sql statement, we could make a protobuf grammar as such:
+The first step is to convert this grammar into the protobuf format, which can be seen [in the Chromium source tree](https://chromium.googlesource.com/chromium/src/third_party/+/refs/heads/master/sqlite/fuzz/sql_query_grammar.proto). As a quick, simplified example, if we only wanted to fuzz the `CREATE TABLE` sql statement, we could make a protobuf grammar as such:
 
 ```protobuf
 message SQLQueries {
@@ -297,7 +298,7 @@ DEFINE_BINARY_PROTO_FUZZER(const SQLQueries& sql_queries) {
 }
 ```
 
-With luck, libFuzzer and LPM will be able to create many interesting CREATE TABLE statements, with varying numbers of columns, table constraints, and other attributes. This basic definition of `SQLQueries` can be expanded to work with other SQL statements like INSERT or SELECT, and with care we can cause these other statements to insert or select from the tables created by the random CREATE TABLE statements. Without defining this protobuf structure, it's very difficult for a fuzzer to be able to generate valid CREATE TABLE statements that actually create tables without causing parsing errors--especially tables with valid table constraints.
+With luck, libFuzzer and LPM will be able to create many interesting `CREATE TABLE` statements, with varying numbers of columns, table constraints, and other attributes. This basic definition of `SQLQueries` can be expanded to work with other SQL statements like `INSERT` or `SELECT`, and with care we can cause these other statements to insert or select from the tables created by the random `CREATE TABLE` statements. Without defining this protobuf structure, it's very difficult for a fuzzer to be able to generate valid `CREATE TABLE` statements that actually create tables without causing parsing errors&mdash; especially tables with valid table constraints.
 
 ## Fuzzing Stateful APIs
 
@@ -340,7 +341,7 @@ change in the target. They are also not human readable, which makes analysis of
 bugs generated by this fuzz target more complicated.
 
 ### Example: Envoy Header Map Fuzzer
-One of the [Envoy](https://github.com/envoyproxy/envoy)'s fuzz targets
+One of [Envoy](https://github.com/envoyproxy/envoy)'s fuzz targets
 uses a different approach to fuzzing stateful APIs: it encodes 
 a sequence of actions (a *trace*) using a
 [custom protobuf message type](https://github.com/envoyproxy/envoy/blob/master/test/common/http/conn_manager_impl_fuzz.proto),
@@ -363,14 +364,14 @@ is a human-readable file with the message text.
 Using protos for fuzzing stateful APIs might be a bit slower and a bit more
 complicated than fuzzing action traces encoded as a sequence of bytes (as
 described [above](#example-grpc-api-fuzzer)). But this approach is more flexible and
-maintainable since the protobuf type is easier to extend and to understand
+maintainable since the protobuf type is easier to understand and extend
 than a custom byte encoding.
 
 ### Example: Chrome IPC Fuzzer
 
 Chrome contains many stateful APIs that are very hard for humans to reason about
 during code review, which makes fuzzing those APIs powerful and highly productive.
-One such example is the AppCache subsystem. This is an older attempt at a richer
+One such example is the AppCache subsystem. This is an old attempt at a richer
 caching mechanism for HTTP that aims to make some applications available offline.
 
 In Chrome, this is implemented in an interface between the sandboxed renderer process
@@ -401,7 +402,7 @@ interface AppCacheBackend {
 A single AppCacheBackend is a stateful object that runs in the browser process
 and is responsible for handling all of these messages. As part of its normal
 operation, it's also possible for the backend to make HTTP requests. The content
-of the responses to those requests actually affect control flow. Because they are
+of the responses to those requests actually affects control flow. Because they are
 external, they are also part of the attack surface.
 
 With this background, we can write a protobuf specification that lets us perform
@@ -449,7 +450,7 @@ message RegisterHost {
 }
 ```
 
-We setup our protobuf to fuzz a sequence of "commands", which represent
+We set up our protobuf to fuzz a sequence of "commands", which represent
 API calls. Note that while the RegisterHost API takes a uint32_t as the
 input, we only provide a few possible values that trigger interesting
 control flow in the actual implementation (namely the normal case and
@@ -504,7 +505,7 @@ message DoRequest {
 To design the `DoRequest` message required reviewing the AppCache code manually.
 The features that affect control flow in the AppCache backend are the HTTP codes,
 headers indicating whether or not to cache the response, the manifest content for
-manifest requests, and the URL which was requested. We store the URL as part of the
+manifest requests, and the requested URL. We store the URL as part of the
 message to handle two possible situations: either we precache a response to be ready
 immediately as soon as the request comes in, or we respond to a pending request.
 The second case was needed for a Chrome sandbox escape bug, which is why we model
@@ -546,7 +547,7 @@ DEFINE_BINARY_PROTO_FUZZER(const fuzzing::proto::Session& session) {
       }
 ```
 
-We simply setup a single instance of the AppCache backend and communicate with it
+We simply set up a single instance of the AppCache backend and communicate with it
 and the mocked URL loader factory that we supplied when we set it up. We implement
 `DoRequest` as a helper function to handle precaching or responding to any pending
 requests.
@@ -562,7 +563,7 @@ More details:
 
 Structure-aware fuzzing is one of the "next big things" in
 program state exploration and vulnerability discovery.
-Probably as big as the coverage-guided fuzzing has been since the early 2000s.
+Probably as big as coverage-guided fuzzing has been since the early 2000s.
 Admittedly, structure-aware fuzzing, at least as described in this document,
 requires substantial manual work for every input type.
 Finding ways to automate structure-aware fuzzing further is becoming a hot
