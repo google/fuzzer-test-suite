@@ -108,7 +108,7 @@ class PngMutator {
   // Mutate the in-memory representation of a PNG file.
   // Given the same Seed, the same mutation is performed.
   void Mutate(Mutator m, unsigned int Seed) {
-    std::mt19937_64 rnd(Seed);
+    std::minstd_rand rnd(Seed);
     auto M = [&](V *v) {
       if (v->empty())
         v->resize(v->size() + 1 + rnd() % 256);
@@ -168,7 +168,7 @@ class PngMutator {
   // Takes a random chunk from p and inserts into *this.
   void CrossOver(const PngMutator &p, unsigned int Seed) {
     if (p.chunks_.empty()) return;
-    std::mt19937_64 rnd(Seed);
+    std::minstd_rand rnd(Seed);
     size_t idx = rnd() % p.chunks_.size();
     auto &ch = p.chunks_[idx];
     size_t pos = rnd() % (chunks_.size() + 1);
