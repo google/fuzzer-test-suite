@@ -585,3 +585,4 @@ research topic.
   coverage based greybox fuzzing to be highly effective in testing applications
   processing structured file formats such as PDF, PNG WAV and so on.
 * [syzkaller](https://github.com/google/syzkaller) - kernel fuzzer.
+* [QuickCheck](http://hackage.haskell.org/package/QuickCheck): QuickCheck: Automatic testing of Haskell programs. Clones for other languages are available too. Essentially, a generation-based fuzzer. 
