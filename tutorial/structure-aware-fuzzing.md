@@ -586,3 +586,4 @@ research topic.
   processing structured file formats such as PDF, PNG WAV and so on.
 * [syzkaller](https://github.com/google/syzkaller) - kernel fuzzer.
 * [QuickCheck](http://hackage.haskell.org/package/QuickCheck): QuickCheck: Automatic testing of Haskell programs. Clones for other languages are available too. Essentially, a generation-based fuzzer. 
+* [JQF](https://github.com/rohanpadhye/jqf): Combines QuickCheck-like generators with coverage-guided fuzzing for Java. One can write a *generator* function, which simply returns a random object of some type (e.g. an AST). JQF automatically biases the generator using code coverage feedback. The tool has found new bugs in software such as the Google Closure Compiler.
