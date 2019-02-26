@@ -9,7 +9,7 @@ CXXFLAGS="${CXXFLAGS} -std=gnu++98"
 build_lib() {
   rm -rf BUILD
   cp -rf SRC BUILD
-  (cd BUILD && make clean &&  make -j)
+  (cd BUILD && make clean &&  make -j $JOBS)
 }
 
 get_git_revision https://github.com/google/re2.git 499ef7eff7455ce9c9fae86111d4a77b6ac335de SRC

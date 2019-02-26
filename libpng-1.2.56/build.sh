@@ -10,7 +10,7 @@
 build_lib() {
   rm -rf BUILD
   cp -rf libpng-1.2.56 BUILD
-  (cd BUILD && ./configure &&  make -j)
+  (cd BUILD && ./configure &&  make -j $JOBS)
 }
 
 build_lib || exit 1
