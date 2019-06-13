@@ -172,7 +172,7 @@ Try running the fuzzer:
 ```shell
 ./openssl-1.0.1f-fsanitize_fuzzer
 ```
-You whould see something like this in a few seconds:
+You should see something like this in a few seconds:
 ```
 ==5781==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x629000009748 at pc 0x0000004a9817...
 READ of size 19715 at 0x629000009748 thread T0
