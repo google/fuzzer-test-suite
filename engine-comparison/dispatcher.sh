@@ -132,6 +132,16 @@ download_engine() {
 
   . "${fengine_config}"
   case "${FUZZING_ENGINE}" in
+    honggfuzz)
+      if [[ ! -f "${HONGGFUZZ_SRC}/" ]]; then
+        echo "Checking out honggfuzz"
+        git clone https://github.com/google/honggfuzz.git "${HONGGFUZZ_SRC}"
+        # Unset CC, CXX and CFLAGS so we don't try to compile honggfuzz
+        # with honggfuzz-clang (which common.sh sets CC to)
+        echo "Building honggfuzz"
+        (cd "${HONGGFUZZ_SRC}" && env -u CC -u CXX -u CFLAGS -u CXXFLAGS make)
+      fi
+      ;;
     libfuzzer)
       if [[ ! -d "${LIBFUZZER_SRC}/standalone" ]]; then
         echo "Checking out libFuzzer"
@@ -211,6 +221,7 @@ package_benchmark_fuzzer() {
     cp "${building_dir}"/*.dict "${send_dir}"
 
   [[ "${FUZZING_ENGINE}" == "afl" ]] && cp "${AFL_SRC}/afl-fuzz" "${send_dir}"
+  [[ "${FUZZING_ENGINE}" == "honggfuzz" ]] && cp "${HONGGFUZZ_SRC}/honggfuzz" "${send_dir}"
 }
 
 # Starts a runner VM

@@ -145,6 +145,16 @@ main() {
       exec_cmd="${exec_cmd} -x ${dict_path}@9"
     fi
     exec_cmd="${exec_cmd} -m none -- ${binary}"
+  elif [[ "${FUZZING_ENGINE}" == "honggfuzz" ]]; then
+    chmod 750 honggfuzz
+
+    local exec_cmd="./honggfuzz ${BINARY_RUNTIME_OPTIONS} --sanitizers --persistent --threads 1"
+    local exec_cmd="${exec_cmd} --input seeds --crashdir crashes --covdir_all corpus"
+    if ls ./*.dict; then
+      local dict_path="$(find . -maxdepth 1 -name "*.dict" | head -n 1)"
+      exec_cmd="${exec_cmd} --dict ${dict_path}"
+    fi
+    exec_cmd="${exec_cmd} -- ${binary}"
   elif [[ "${FUZZING_ENGINE}" == "libfuzzer" || \
     "${FUZZING_ENGINE}" == "fsanitize_fuzzer" ]]; then
     export ASAN_OPTIONS="symbolize=0"
