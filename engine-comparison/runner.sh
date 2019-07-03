@@ -62,7 +62,7 @@ conduct_experiment() {
     # Delete most crashes and logs to save disk space.
     find . -name "fuzz-[1-9][0-9]*.log" -delete
     if [[ -z "$(ls -A crashes)" ]]; then
-      mv corpus/crashes/* corpus/hangs/* crashes/
+      mv corpus/crashes/* corpus/hangs/* honggfuzz-crashes/* crashes/
       mv crash-* leak* timeout* oom* crashes/
       if [[ -n "$(ls -A crashes)" ]]; then
         cp fuzz-0.log crashes/* results/
@@ -148,8 +148,11 @@ main() {
   elif [[ "${FUZZING_ENGINE}" == "honggfuzz" ]]; then
     chmod 750 honggfuzz
 
-    local exec_cmd="./honggfuzz ${BINARY_RUNTIME_OPTIONS} --sanitizers --persistent --threads 1"
-    local exec_cmd="${exec_cmd} --input seeds --crashdir crashes --covdir_all corpus"
+    # Honggfuzz requires the seeds directory to exist
+    [[ ! -d seeds ]] && mkdir seeds
+
+    local exec_cmd="./honggfuzz ${BINARY_RUNTIME_OPTIONS} --sanitizers --persistent --threads ${JOBS}"
+    local exec_cmd="${exec_cmd} --input seeds --crashdir honggfuzz-crashes --covdir_all corpus"
     if ls ./*.dict; then
       local dict_path="$(find . -maxdepth 1 -name "*.dict" | head -n 1)"
       exec_cmd="${exec_cmd} --dict ${dict_path}"
