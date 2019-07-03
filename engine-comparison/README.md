@@ -120,8 +120,8 @@ corresponding script invocation would be:
 
 ```shell
 ${FTS}/engine-comparison/begin-experiment.sh \
-  ./param/afl-vs-lf.cfg \
   boringssl-2016-02-12,freetype2-2017,guetzli-2017-3-30 \
+  ./param/afl-vs-lf.cfg \
   ./config/afl ./config/libfuzzer
 ```
 
