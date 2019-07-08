@@ -283,6 +283,13 @@ class PngMutator {
 
 extern "C" size_t LLVMFuzzerMutate(uint8_t *Data, size_t Size, size_t MaxSize);
 
+#if STANDALONE_TARGET
+size_t LLVMFuzzerMutate(uint8_t *Data, size_t Size, size_t MaxSize) {
+  assert(false && "LLVMFuzzerMutate should not be called from StandaloneFuzzTargetMain");
+  return 0;
+}
+#endif
+
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t *Data, size_t Size,
                                           size_t MaxSize, unsigned int Seed) {
   std::string s(reinterpret_cast<const char*>(Data), Size);
