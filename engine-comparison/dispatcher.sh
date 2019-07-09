@@ -133,7 +133,7 @@ download_engine() {
   . "${fengine_config}"
   case "${FUZZING_ENGINE}" in
     honggfuzz)
-      if [[ ! -f "${HONGGFUZZ_SRC}/" ]]; then
+      if [[ ! -d "${HONGGFUZZ_SRC}/" ]]; then
         echo "Checking out honggfuzz"
         git clone https://github.com/google/honggfuzz.git "${HONGGFUZZ_SRC}"
         # Unset CC, CXX and CFLAGS so we don't try to compile honggfuzz
