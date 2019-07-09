@@ -23,4 +23,4 @@ if [[ $FUZZING_ENGINE == "hooks" ]]; then
   # Link ASan runtime so we can hook memcmp et al.
   LIB_FUZZING_ENGINE="$LIB_FUZZING_ENGINE -fsanitize=address"
 fi
-$CXX $CXXFLAGS -std=c++11 -I BUILD/src BUILD/test/fuzzers/standard_fuzzer.cpp BUILD/src/.libs/libproj.a $LIB_FUZZING_ENGINE -o $EXECUTABLE_NAME_BASE
+$CXX $CXXFLAGS -std=c++11 -I BUILD/src BUILD/test/fuzzers/standard_fuzzer.cpp BUILD/src/.libs/libproj.a $LIB_FUZZING_ENGINE -o $EXECUTABLE_NAME_BASE -lpthread
