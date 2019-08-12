@@ -7,7 +7,7 @@
 build_lib() {
   rm -rf BUILD
   cp -rf SRC BUILD
-  (cd BUILD && ./autogen.sh && ./configure --with-harfbuzz=no --with-bzip2=no --with-png=no && make clean && make all -j $JOBS)
+  (cd BUILD && ./autogen.sh && ./configure --disable-shared --with-harfbuzz=no --with-bzip2=no --with-png=no && make clean && make all -j $JOBS)
 }
 
 get_git_revision git://git.sv.nongnu.org/freetype/freetype2.git cd02d359a6d0455e9d16b87bf9665961c4699538 SRC

@@ -7,7 +7,7 @@
 build_lib() {
   rm -rf BUILD
   cp -rf SRC BUILD
-  (cd BUILD && ./autogen.sh &&  ./configure  &&  make clean  && make -j $JOBS )
+  (cd BUILD && ./autogen.sh &&  ./configure --disable-shared &&  make clean  && make -j $JOBS )
 }
 
 get_git_revision https://github.com/OSGeo/proj.4.git d00501750b210a73f9fb107ac97a683d4e3d8e7a SRC

@@ -7,7 +7,7 @@
 build_lib() {
   rm -rf BUILD
   cp -rf SRC BUILD
-  (cd BUILD/build && ./autogen.sh && cd .. && ./configure --without-nettle && make -j $JOBS)
+  (cd BUILD/build && ./autogen.sh && cd .. && ./configure --disable-shared --without-nettle && make -j $JOBS)
 }
 
 get_git_revision https://github.com/libarchive/libarchive.git 51d7afd3644fdad725dd8faa7606b864fd125f88 SRC

@@ -7,7 +7,7 @@
 build_lib() {
   rm -rf BUILD
   cp -rf SRC BUILD
-  (cd BUILD && autoreconf -fiv && ./configure && make -j $JOBS)
+  (cd BUILD && autoreconf -fiv && ./configure --disable-shared && make -j $JOBS)
 }
 
 get_git_revision https://github.com/libjpeg-turbo/libjpeg-turbo.git b0971e47d76fdb81270e93bbf11ff5558073350d SRC

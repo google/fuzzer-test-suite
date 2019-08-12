@@ -91,6 +91,7 @@ build_coverage () {
   STANDALONE_TARGET=1
   $CC -O2 -c $LIBFUZZER_SRC/standalone/StandaloneFuzzTargetMain.c
   ar rc $LIB_FUZZING_ENGINE StandaloneFuzzTargetMain.o
+  rm *.o
 }
 
 # Build with user-defined main and hooks.

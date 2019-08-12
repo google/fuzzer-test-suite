@@ -15,6 +15,7 @@ build_lib() {
     LIB_FUZZING_ENGINE="$LIB_FUZZING_ENGINE -fsanitize=address"
   fi
   (cd BUILD && ./bootstrap && ./configure \
+    --disable-shared                    \
     --enable-fuzz-targets               \
     --enable-application-coap           \
     --enable-border-router              \
