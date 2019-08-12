@@ -7,7 +7,7 @@
 build_lib() {
   rm -rf BUILD
   cp -rf SRC BUILD
-  (cd BUILD && ./autogen.sh && ./configure && make -j $JOBS)
+  (cd BUILD && ./autogen.sh && ./configure --disable-shared && make -j $JOBS)
 }
 
 get_git_revision https://github.com/mm2/Little-CMS.git f9d75ccef0b54c9f4167d95088d4727985133c52 SRC

@@ -7,7 +7,7 @@
 build_lib() {
   rm -rf BUILD
   cp -rf SRC BUILD
-  (cd BUILD && ./autogen.sh && CCLD="$CXX $CXXFLAGS" ./configure && make -j $JOBS)
+  (cd BUILD && ./autogen.sh && CCLD="$CXX $CXXFLAGS" ./configure --disable-shared && make -j $JOBS)
 }
 
 get_git_tag https://gitlab.gnome.org/GNOME/libxml2.git v2.9.2 SRC

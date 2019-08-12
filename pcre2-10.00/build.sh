@@ -9,7 +9,7 @@ build_lib() {
   cp -rf SRC BUILD
   (cd BUILD &&
     ./autogen.sh &&
-     CCLD="$CXX $CXXFLAGS" ./configure --enable-never-backslash-C --with-match-limit=1000 --with-match-limit-recursion=1000 &&
+     CCLD="$CXX $CXXFLAGS" ./configure --disable-shared --enable-never-backslash-C --with-match-limit=1000 --with-match-limit-recursion=1000 &&
      make -j
   )
 }
