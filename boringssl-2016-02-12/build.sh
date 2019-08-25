@@ -24,4 +24,4 @@ if [[ $FUZZING_ENGINE == "hooks" ]]; then
   LIB_FUZZING_ENGINE="$LIB_FUZZING_ENGINE -fsanitize=address"
 fi
 set -x
-$CXX $CXXFLAGS -I BUILD/include BUILD/fuzz/privkey.cc ./BUILD/ssl/libssl.a ./BUILD/crypto/libcrypto.a $LIB_FUZZING_ENGINE -o $EXECUTABLE_NAME_BASE
+$CXX $CXXFLAGS -I BUILD/include BUILD/fuzz/privkey.cc ./BUILD/ssl/libssl.a ./BUILD/crypto/libcrypto.a -lpthread $LIB_FUZZING_ENGINE -o $EXECUTABLE_NAME_BASE
