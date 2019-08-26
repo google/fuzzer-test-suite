@@ -235,7 +235,7 @@ class PngMutator {
     static const size_t kMaxBuffer = 1 << 28;
     for (size_t sz = compressed.size() * 4; sz < kMaxBuffer; sz *= 2) {
       v.resize(sz);
-      size_t len = sz;
+      unsigned long len = sz;
       auto res =
           uncompress(v.data(), &len, compressed.data(), compressed.size());
       if (res == Z_BUF_ERROR) continue;
@@ -251,7 +251,7 @@ class PngMutator {
     static const size_t kMaxBuffer = 1 << 28;
     for (size_t sz = uncompressed.size(); sz < kMaxBuffer; sz *= 2) {
       v.resize(sz);
-      size_t len = sz;
+      unsigned long len = sz;
       auto res =
           compress(v.data(), &len, uncompressed.data(), uncompressed.size());
       if (res == Z_BUF_ERROR) continue;
