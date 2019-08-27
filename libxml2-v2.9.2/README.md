@@ -39,3 +39,22 @@ READ of size 1 at 0x61900000007b thread T0
     #3 0x543e73 in xmlParseStartTag2 parser.c:9707:6
     #4 0x53aecb in xmlParseElement parser.c:10069:16
 ```
+
+A use-after-free bug also exists.
+
+```
+==235609==ERROR: AddressSanitizer: heap-use-after-free ...
+READ of size 1 at 0x625000002908 thread T0
+    #0 0x77503e in xmlDictComputeFastKey dict.c:448:13
+    #1 0x77503e in xmlDictLookup dict.c:848
+    #2 0x573b6f in xmlParseNCNameComplex parser.c:3506:12
+    #3 0x573b6f in xmlParseNCName parser.c:3565
+    #4 0x57283c in xmlParseQName parser.c:8815:9
+    #5 0x548877 in xmlParseStartTag2 parser.c:9336:17
+    #6 0x544bd0 in xmlParseElement parser.c:10069:16
+    #7 0x543a85 in xmlParseContent parser.c:9982:6
+    #8 0x5457bb in xmlParseElement parser.c:10155:5
+    #9 0x55540b in xmlParseDocument parser.c:10841:2
+    #10 0x5706c1 in xmlDoRead parser.c:15298:5
+    #11 0x4f7997 in LLVMFuzzerTestOneInput
+```
