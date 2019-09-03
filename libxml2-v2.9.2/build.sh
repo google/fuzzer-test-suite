@@ -11,7 +11,7 @@ build_lib() {
 }
 
 get_git_tag https://gitlab.gnome.org/GNOME/libxml2.git v2.9.2 SRC
-get_git_revision https://github.com/mcarpenter/afl be3e88d639da5350603f6c0fee06970128504342 afl
+get_git_revision https://github.com/google/afl e9be6bce2282e8db95221c9a17fd10aba9e901bc afl
 build_lib
 build_fuzzer
 
