@@ -632,7 +632,7 @@ for *just slow* units.
 
 ## Advanced Topics
 
-* [Structure-Aware Fuzzing](structure-aware-fuzzing.md)
+* [Structure-Aware Fuzzing](https://github.com/google/fuzzing/blob/master/docs/structure-aware-fuzzing.md)
 
 ## Related links
 * [Blog post: "Guided in-process fuzzing of Chrome components"](https://security.googleblog.com/2016/08/guided-in-process-fuzzing-of-chrome.html)
