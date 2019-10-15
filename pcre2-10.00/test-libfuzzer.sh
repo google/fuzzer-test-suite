@@ -5,5 +5,5 @@
 set -x
 rm -rf $CORPUS
 mkdir $CORPUS
-[ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS/ -max_total_time=300 -jobs=$JOBS -workers=$JOBS $CORPUS
+[ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS/ -max_total_time=300 -jobs=$JOBS -workers=$JOBS $LIBFUZZER_FLAGS $CORPUS
 grep "ERROR: AddressSanitizer" fuzz-0.log

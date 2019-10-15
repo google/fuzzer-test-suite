@@ -6,5 +6,5 @@ set -x
 rm -rf $CORPUS fuzz-*.log
 mkdir -p $CORPUS
 
-[ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS/ -jobs=$JOBS -workers=$JOBS $CORPUS seeds
+[ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS/ -jobs=$JOBS -workers=$JOBS $LIBFUZZER_FLAGS $CORPUS seeds
 grep "ERROR: libFuzzer: deadly signal" fuzz-0.log || exit 1
