@@ -6,7 +6,7 @@ set -x
 rm -rf $CORPUS
 mkdir $CORPUS
 rm -f *.log
-[ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS/ -exit_on_src_pos=re2/dfa.cc:474 -exit_on_src_pos=re2/dfa.cc:474  -runs=10000000 -jobs=$JOBS -workers=$JOBS $CORPUS
+[ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS/ -exit_on_src_pos=re2/dfa.cc:474 -exit_on_src_pos=re2/dfa.cc:474  -runs=10000000 -jobs=$JOBS -workers=$JOBS $LIBFUZZER_FLAGS $CORPUS
 grep "INFO: found line matching 're2/dfa.cc:474', exiting." fuzz-0.log || exit 1
 
 # Also test merging here

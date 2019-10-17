@@ -5,5 +5,5 @@
 set -x
 rm -rf $CORPUS
 mkdir $CORPUS
-[ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS/ -max_total_time=1800 -jobs=$JOBS -workers=$JOBS $CORPUS seeds
+[ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS/ -max_total_time=1800 -jobs=$JOBS -workers=$JOBS $LIBFUZZER_FLAGS $CORPUS seeds
 grep "hb-buffer.cc:419: bool hb_buffer_t::move_to(unsigned int): Assertion `i <= out_len + (len - idx)' failed" fuzz-0.log
