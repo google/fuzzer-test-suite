@@ -4,7 +4,7 @@
 
 set -x
 . $(dirname $0)/../common.sh
-rm -rf $CORPUS
+rm -rf $CORPUS fuzz-*.log
 mkdir $CORPUS
 
 [ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS/ -jobs=$JOBS -workers=$JOBS -max_len=1000 $LIBFUZZER_FLAGS $CORPUS $SCRIPT_DIR/seeds

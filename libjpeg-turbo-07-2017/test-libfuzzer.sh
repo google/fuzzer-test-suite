@@ -3,10 +3,8 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 . $(dirname $0)/../common.sh
 set -x
-rm -rf $CORPUS
+rm -rf $CORPUS fuzz-*.log
 mkdir $CORPUS
-
-rm fuzz-*.log
 
 test_source_location() {
   SRC_LOC="$1"
