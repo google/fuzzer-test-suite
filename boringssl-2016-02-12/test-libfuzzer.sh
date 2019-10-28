@@ -9,8 +9,7 @@
 export ASAN_OPTIONS=detect_leaks=0:quarantine_size_mb=50
 
 set -x
-rm -rf $CORPUS
+rm -rf $CORPUS fuzz-*.log
 mkdir $CORPUS
-rm -f *.log
 [ -e $EXECUTABLE_NAME_BASE ] && ./$EXECUTABLE_NAME_BASE -artifact_prefix=$CORPUS/ -use_value_profile=1 -jobs=$JOBS -workers=$JOBS $LIBFUZZER_FLAGS $CORPUS seeds
 grep "AddressSanitizer: heap-use-after-free" fuzz-0.log || exit 1
