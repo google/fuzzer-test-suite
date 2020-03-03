@@ -1,5 +1,8 @@
 # fuzzer-test-suite
 
+:zap: **NOTE: Fuzzer-test-suite has been replaced by [FuzzBench](https://github.com/google/fuzzbench). 
+FuzzBench is based on many of the same ideas as FTS, such as realistic benchmarks (it actually uses some benchmarks from FTS) but has many improvements such as a free service and a design that makes adding new fuzzers and new benchmarks easier.**
+
 This is a set of tests (benchmarks) for fuzzing engines (fuzzers).
 
 The goal of this project is to have a set of fuzzing benchmarks derived from real-life
