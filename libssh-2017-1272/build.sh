@@ -13,8 +13,8 @@ build_lib() {
     mkdir build
     cd build
     cmake -DCMAKE_C_COMPILER="$CC" \
-          -DCMAKE_CXX_COMPILER="$CXX" \
-          -DCMAKE_C_FLAGS="$CFLAGS" \
+          -DCMAKE_CXX_COMPILER="$CXX -fcommon" \
+          -DCMAKE_C_FLAGS="$CFLAGS -fcommon" \
           -DCMAKE_CXX_FLAGS="$CXXFLAGS" \
           -DWITH_STATIC_LIB=ON ..
     make -j $JOBS
