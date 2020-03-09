@@ -13,9 +13,9 @@ build_lib() {
     mkdir build
     cd build
     cmake -DCMAKE_C_COMPILER="$CC" \
-          -DCMAKE_CXX_COMPILER="$CXX -fcommon" \
+          -DCMAKE_CXX_COMPILER="$CXX" \
           -DCMAKE_C_FLAGS="$CFLAGS -fcommon" \
-          -DCMAKE_CXX_FLAGS="$CXXFLAGS" \
+          -DCMAKE_CXX_FLAGS="$CXXFLAGS -fcommon" \
           -DWITH_STATIC_LIB=ON ..
     make -j $JOBS
   )
