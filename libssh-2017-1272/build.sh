@@ -7,7 +7,18 @@
 build_lib() {
   rm -rf BUILD
   cp -rf SRC BUILD
-  (cd BUILD && mkdir build && cd build && cmake -DCMAKE_C_COMPILER="$CC" -DCMAKE_CXX_COMPILER="$CXX" -DCMAKE_C_FLAGS="$CFLAGS" -DCMAKE_CXX_FLAGS="$CXXFLAGS" -DWITH_STATIC_LIB=ON  .. &&  make -j $JOBS)
+  (
+    set -e
+    cd BUILD
+    mkdir build
+    cd build
+    cmake -DCMAKE_C_COMPILER="$CC" \
+          -DCMAKE_CXX_COMPILER="$CXX" \
+          -DCMAKE_C_FLAGS="$CFLAGS" \
+          -DCMAKE_CXX_FLAGS="$CXXFLAGS" \
+          -DWITH_STATIC_LIB=ON ..
+    make -j $JOBS
+  )
 }
 
 get_git_revision git://git.libssh.org/projects/libssh.git 7c79b5c154ce2788cf5254a62468fee5112f7640 SRC
