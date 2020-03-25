@@ -5,7 +5,7 @@
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   if (size < 3 || size > 64) return 0;
-  uint16_t f = (data[0] << 16) + data[1];
+  uint16_t f = (data[0] << 8) + data[1];
   RE2::Options opt;
   opt.set_log_errors(false);
   if (f & 1) opt.set_encoding(RE2::Options::EncodingLatin1);
